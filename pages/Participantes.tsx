@@ -80,6 +80,7 @@ const Participantes: React.FC = () => {
         onPageSizeChange={setPageSize}
         onExport={handleExport}
         onCancelExport={() => {}}
+        onOpenMassExport={massExport.openMassExportModal}
       />
 
       {/* Mass Export Modal */}

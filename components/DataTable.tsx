@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Participant } from '../types';
-import { Download, Search, ChevronLeft, ChevronRight, FileJson, FileSpreadsheet, XCircle, Settings } from 'lucide-react';
+import { Download, Search, ChevronLeft, ChevronRight, ChevronDown, FileJson, FileSpreadsheet, FileText, XCircle, Settings } from 'lucide-react';
 import { ColumnSelector, ColumnConfig } from './ColumnSelector';
 import { formatNumber } from '../utils/formatters';
 
@@ -17,6 +17,7 @@ interface DataTableProps {
   onPageSizeChange: (size: number) => void;
   onExport: (format: 'csv' | 'json') => void;
   onCancelExport: () => void;
+  onOpenMassExport?: () => void;
 }
 
 // Default columns configuration
@@ -51,12 +52,16 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
 export const DataTable: React.FC<DataTableProps> = ({
   data, currentPage, totalPages, totalItems, pageSize, loading,
   isExporting, exportProgress,
-  onPageChange, onPageSizeChange, onExport, onCancelExport
+  onPageChange, onPageSizeChange, onExport, onCancelExport,
+  onOpenMassExport
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterProvincia, setFilterProvincia] = useState<string>('todas');
   const [filterEstado, setFilterEstado] = useState<string>('todos');
   const [filterSexo, setFilterSexo] = useState<string>('todos');
+
+  const [showExportSection, setShowExportSection] = useState(true);
+  const [showFormatDropdown, setShowFormatDropdown] = useState(false);
 
   // Column visibility state
   const [columns, setColumns] = useState<ColumnConfig[]>(DEFAULT_COLUMNS);
@@ -137,6 +142,19 @@ export const DataTable: React.FC<DataTableProps> = ({
     ].join(';'));
 
     return '\uFEFF' + [headers.join(';'), ...rows].join('\n');
+  };
+
+  const handleLocalJSON = () => {
+    if (filteredData.length === 0) return;
+    const blob = new Blob([JSON.stringify(filteredData, null, 2)], { type: 'application/json' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `oportunidad1424_datos_${new Date().toISOString().slice(0, 10)}.json`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   // Handle export of currently visible data (Local)
@@ -388,38 +406,82 @@ export const DataTable: React.FC<DataTableProps> = ({
             <option value={50}>50</option>
             <option value={100}>100</option>
           </select>
-
-          <button
-            onClick={handleLocalExport}
-            className="flex items-center justify-center gap-2 bg-white hover:bg-gray-50 text-gray-700 px-3 py-2 rounded-lg text-sm transition-colors border border-gray-300 shadow-sm flex-1 sm:flex-none"
-            title="Descarga solo lo que ves en la tabla"
-          >
-            <Download size={16} />
-            <span className="hidden sm:inline">Vista</span>
-          </button>
-
-          <div className="h-full w-px bg-gray-200 mx-1 hidden sm:block"></div>
-
-          <button
-            onClick={() => onExport('csv')}
-            disabled={isExporting || totalItems === 0}
-            className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white px-3 py-2 rounded-lg text-sm transition-colors shadow-sm font-medium flex-1 sm:flex-none"
-            title="Descargar Todo en formato Excel (CSV)"
-          >
-            <FileSpreadsheet size={16} />
-            <span className="hidden xl:inline">Excel</span>
-          </button>
-
-          <button
-            onClick={() => onExport('json')}
-            disabled={isExporting || totalItems === 0}
-            className="flex items-center justify-center gap-2 bg-gray-800 hover:bg-gray-900 disabled:bg-gray-600 text-white px-3 py-2 rounded-lg text-sm transition-colors shadow-sm font-medium flex-1 sm:flex-none"
-            title="Descargar Todo en formato JSON"
-          >
-            <FileJson size={16} />
-            <span className="hidden xl:inline">JSON</span>
-          </button>
         </div>
+      </div>
+
+      {/* ── Sección de exportación ── */}
+      <div className="border-t border-gray-200">
+        <button
+          onClick={() => setShowExportSection(prev => !prev)}
+          className="w-full flex items-center justify-between px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider hover:bg-gray-50 transition-colors"
+        >
+          <span>Datos</span>
+          <ChevronDown
+            size={14}
+            className={`transition-transform ${showExportSection ? '' : '-rotate-90'}`}
+          />
+        </button>
+
+        {showExportSection && (
+          <div className="px-4 py-3 flex flex-wrap items-center gap-3 bg-gray-50/50">
+            {/* Exportar dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setShowFormatDropdown(prev => !prev)}
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm"
+              >
+                <Download size={16} />
+                Exportar
+                <ChevronDown size={14} />
+              </button>
+
+              {showFormatDropdown && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setShowFormatDropdown(false)} />
+                  <div className="absolute left-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-20 py-1 min-w-[180px]">
+                    <button
+                      onClick={() => { setShowFormatDropdown(false); handleLocalExport(); }}
+                      className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
+                    >
+                      <FileText size={16} className="text-green-600" />
+                      CSV (Vista actual)
+                    </button>
+                    <button
+                      onClick={() => { setShowFormatDropdown(false); handleLocalExport(); }}
+                      className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
+                    >
+                      <FileSpreadsheet size={16} className="text-blue-600" />
+                      Excel (XLSX)
+                    </button>
+                    <button
+                      onClick={() => { setShowFormatDropdown(false); handleLocalJSON(); }}
+                      className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
+                    >
+                      <FileJson size={16} className="text-purple-600" />
+                      JSON
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Exportar Todos */}
+            {onOpenMassExport && (
+              <button
+                onClick={onOpenMassExport}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm"
+              >
+                <Download size={16} />
+                Exportar Todos
+                {totalItems > 0 && (
+                  <span className="text-[10px] bg-blue-500 px-1.5 py-0.5 rounded-full">
+                    {formatNumber(totalItems)}
+                  </span>
+                )}
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Table Content */}
