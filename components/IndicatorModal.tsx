@@ -17,7 +17,7 @@ import { formatNumber, formatPercentage } from '../utils/formatters';
 
 const CATEGORY_META: Record<
   IndicatorCategory,
-  { icon: React.FC<{ size?: number }>; primary: string; bg: string; light: string }
+  { icon: React.FC<{ size?: number; color?: string }>; primary: string; bg: string; light: string }
 > = {
   demograficos: { icon: Users, primary: '#2563eb', bg: '#eff6ff', light: '#dbeafe' },
   territoriales: { icon: MapPin, primary: '#059669', bg: '#ecfdf5', light: '#d1fae5' },
@@ -560,7 +560,7 @@ export const IndicatorModal: React.FC<IndicatorModalProps> = ({
         <div className={`flex items-start justify-between px-6 py-4 border-b ${meta.bg}`}>
           <div className="flex items-start gap-3 min-w-0">
             <div className={`p-2 rounded-xl mt-0.5 ${meta.light}`}>
-              <Icon size={20} style={{ color: meta.primary }} />
+              <Icon size={20} color={meta.primary} />
             </div>
             <div className="min-w-0">
               <h2 className="text-lg font-bold text-gray-900 leading-snug">

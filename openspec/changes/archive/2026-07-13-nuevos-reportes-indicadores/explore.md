@@ -2,7 +2,7 @@
 
 ## Context
 
-Se solicitaron 3 nuevos requerimientos de reportes/indicadores para el panel de monitoreo del programa Oportunidad 14-24. Este documento analiza la viabilidad técnica de cada uno basándose en la arquitectura actual del sistema.
+Se solicitaron 5 nuevos requerimientos de reportes/indicadores para el panel de monitoreo del programa Oportunidad 14-24. Este documento analiza la viabilidad técnica de cada uno basándose en la arquitectura actual del sistema.
 
 ---
 
@@ -87,10 +87,62 @@ No requiere cambios estructurales. Es puro agregado sobre datos existentes.
 
 ---
 
+## Requerimiento 4: Calidad del Dato — Casos con "nd" / información no verificable
+
+### Data disponible
+- Múltiples campos de `Participant` que pueden contener valores "nd", vacíos o no verificables:
+  - `telefonos`, `telefonosResponsable`, `cedulaTutor` — contacto
+  - `alergias`, `discapacidades`, `enfermedades` — perfil de salud
+  - `programasSociales`, `nivelEstudio`, `estadoCivil` — perfil social
+  - `direccion`, `sector` — ubicación
+  - `nombreTutor`, `apellidoTutor` — tutor
+
+### Algoritmo
+1. Por cada campo relevante, contar registros donde el valor sea `null`, `undefined`, `""`, `"nd"`, `"N/D"`, o `"No Disponible"`
+2. Expresar como porcentaje del total: `% nd = count(nd) / total * 100`
+3. Ranking de campos con peor calidad de dato (mayor % nd)
+4. Desglose por provincia/centro para detectar patrones geográficos
+
+### Viabilidad: ALTA
+
+Todo es client-side. Los valores "nd" ya existen en los datos; solo falta contarlos. No requiere cambios en la API.
+
+### Formato recomendado
+- **Board de indicador** (ej: `pages/indicadores/CalidadNdBoard.tsx`)
+- Similar al `CalidadDatoBoard.tsx` existente pero enfocado en nd values
+- KPI: % general de datos no disponibles
+- Tabla: campos rankeados por % nd
+- Gráfica de barras: top campos con más nd
+- Desglose por provincia: mapa de calor de calidad por región
+- Filtro por provincia/centro
+- **Importante**: esto es DISTINTO del `CalidadDatoBoard.tsx` existente (que mide completitud teléfono/dirección). Este mide la presencia de valores "nd" en TODOS los campos del participante.
+
+---
+
+## Requerimiento 5: Verificar y pulir visualmente todos los boards
+
+### Alcance
+No es un board nuevo, sino una revisión integral de los 9 boards existentes + los que se creen nuevos.
+
+### Checklist de verificación
+- [ ] **Consistencia visual**: todos los boards usan el mismo padding, colores, tipografía y espaciado
+- [ ] **KPIs coherentes**: mismo formato de números, colores de badges, tarjetas con mismo shadow/border
+- [ ] **Gráficas**: tamaños de fuente uniformes en ejes, leyendas consistentes, colores de la paleta del proyecto
+- [ ] **Responsive**: boards se ven bien en pantallas chicas (stack columns, textos no rotos)
+- [ ] **Estados vacío**: todos los boards muestran "Sin datos" o loader cuando filteredData está vacío
+- [ ] **Carga inicial**: ningún board se rompe durante la carga inicial de datos
+- [ ] **Filtros**: los filtros locales (año, provincia, sexo) funcionan y limpian estados anteriores al cambiar
+
+### Formato recomendado
+- Revisión manual board por board + lista de ajustes
+- Posible refactor a un wrapper `<BoardShell>` si hay mucha duplicación de layout
+
+---
+
 ## Análisis transversal
 
 ### Patrón a seguir
-Los 3 requerimientos se implementan como boards de indicadores siguiendo la misma estructura de `DesempenoCentroBoard.tsx`:
+Los 5 requerimientos se implementan como boards de indicadores siguiendo la misma estructura de `DesempenoCentroBoard.tsx`:
 
 ```
 1. Crear archivo en pages/indicadores/MiBoard.tsx
@@ -119,6 +171,7 @@ Ninguna. Todo es client-side sobre `dashboardData` que ya está en memoria.
 
 ## Próximos pasos sugeridos
 
-1. Decidir agrupación de cambios (1 solo cambio o 3 separados)
+1. Decidir agrupación de cambios (1 solo cambio o separados: 4 boards + 1 revisión)
 2. `/sdd-new nuevos-reportes-indicadores` para iniciar proposal formal
 3. Implementar boards siguiendo el patrón existente
+4. Ejecutar revisión visual (#5) al final, después de tener todos los boards

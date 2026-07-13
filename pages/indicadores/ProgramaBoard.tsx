@@ -5,6 +5,8 @@ import {
   PieChart, Pie, Cell,
 } from 'recharts';
 import { Activity, Award, Heart, Phone, Grid3X3, List } from 'lucide-react';
+import BoardShell from '../../components/BoardShell';
+import { tickShort, chartClass, chartH } from '../../utils/indicadores-helpers';
 import { useIndicadoresFilters } from '../../contexts/IndicadoresFiltersContext';
 import { IndicadoresFilterBar } from '../../components/IndicadoresFilterBar';
 
@@ -17,21 +19,11 @@ const ProgramaBoard: React.FC = () => {
   const { programData } = boardData;
 
   if (filteredData.length === 0) {
-    return (
-      <div className="p-6 max-w-7xl mx-auto w-full">
-        <div className="h-64 flex items-center justify-center text-gray-400 bg-white rounded-xl border border-dashed border-gray-300">
-          <p>Recopilando datos del programa...</p>
-        </div>
-      </div>
-    );
+    return <BoardShell empty />;
   }
 
-  const tickShort = (val: string) => val.length > 14 ? val.substring(0, 12) + '…' : val;
-  const chartClass = viewMode === 'grid' ? 'grid grid-cols-1 lg:grid-cols-2 gap-6' : 'space-y-6';
-  const chartH = '72';
-
   return (
-    <div className="p-6 max-w-7xl mx-auto w-full animate-in fade-in duration-500 space-y-6">
+    <BoardShell>
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center">
@@ -78,7 +70,7 @@ const ProgramaBoard: React.FC = () => {
       </div>
 
       {/* Charts */}
-      <div className={chartClass}>
+      <div className={chartClass(viewMode)}>
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
           <h3 className="text-lg font-bold text-gray-800 mb-4">Distribución por Estado</h3>
           <div className={`h-${chartH} w-full`}>
@@ -106,7 +98,7 @@ const ProgramaBoard: React.FC = () => {
                 <BarChart data={programData.activeVsGraduatedByCentro} layout="vertical" margin={{ left: 10, right: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                   <XAxis type="number" tickFormatter={formatNumber} />
-                  <YAxis dataKey="name" type="category" width={130} tickFormatter={tickShort} style={{ fontSize: '10px' }} />
+                  <YAxis dataKey="name" type="category" width={130} tickFormatter={tickShort} style={{ fontSize: '11px' }} />
                   <Tooltip formatter={(v: unknown) => formatNumber(Number(v))} />
                   <Legend />
                   <Bar dataKey="Activos" fill="#00C49F" radius={[0, 4, 4, 0]} />
@@ -125,7 +117,7 @@ const ProgramaBoard: React.FC = () => {
                 <BarChart data={programData.activeVsGraduatedByMunicipio} layout="vertical" margin={{ left: 10, right: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                   <XAxis type="number" tickFormatter={formatNumber} />
-                  <YAxis dataKey="name" type="category" width={130} tickFormatter={tickShort} style={{ fontSize: '10px' }} />
+                  <YAxis dataKey="name" type="category" width={130} tickFormatter={tickShort} style={{ fontSize: '11px' }} />
                   <Tooltip formatter={(v: unknown) => formatNumber(Number(v))} />
                   <Legend />
                   <Bar dataKey="Activos" fill="#00C49F" radius={[0, 4, 4, 0]} />
@@ -136,7 +128,7 @@ const ProgramaBoard: React.FC = () => {
           </div>
         </div>
       </div>
-    </div>
+    </BoardShell>
   );
 };
 

@@ -5,6 +5,8 @@ import {
   PieChart, Pie, Cell,
 } from 'recharts';
 import { Users, Heart, Calendar, Grid3X3, List } from 'lucide-react';
+import BoardShell from '../../components/BoardShell';
+import { tickShort, chartClass, chartH } from '../../utils/indicadores-helpers';
 import { useIndicadoresFilters } from '../../contexts/IndicadoresFiltersContext';
 import { IndicadoresFilterBar } from '../../components/IndicadoresFilterBar';
 
@@ -18,13 +20,7 @@ const DemograficosBoard: React.FC = () => {
   const { demographicData } = boardData;
 
   if (filteredData.length === 0) {
-    return (
-      <div className="p-6 max-w-7xl mx-auto w-full">
-        <div className="h-64 flex flex-col items-center justify-center text-gray-400 bg-white rounded-xl border border-dashed border-gray-300">
-          <p>Recopilando datos para indicadores demográficos...</p>
-        </div>
-      </div>
-    );
+    return <BoardShell empty />;
   }
 
   const genderPieData = [
@@ -32,10 +28,8 @@ const DemograficosBoard: React.FC = () => {
     { name: 'Masculino', value: demographicData.men },
   ];
 
-  const tickShort = (val: string) => val.length > 12 ? val.substring(0, 10) + '…' : val;
-
   return (
-    <div className="p-6 max-w-7xl mx-auto w-full animate-in fade-in duration-500 space-y-6">
+    <BoardShell>
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center">
@@ -84,11 +78,11 @@ const DemograficosBoard: React.FC = () => {
       </div>
 
       {/* Charts */}
-      <div className={viewMode === 'grid' ? 'grid grid-cols-1 lg:grid-cols-2 gap-6' : 'space-y-6'}>
+      <div className={chartClass(viewMode)}>
         {/* Gender Pie */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
           <h3 className="text-lg font-bold text-gray-800 mb-4">Distribución por Sexo</h3>
-          <div className="h-72 w-full">
+          <div className={`h-${chartH} w-full`}>
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie data={genderPieData} cx="50%" cy="50%" labelLine={false}
@@ -106,7 +100,7 @@ const DemograficosBoard: React.FC = () => {
         {/* Age Bar */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
           <h3 className="text-lg font-bold text-gray-800 mb-4">Grupos de Edad</h3>
-          <div className="h-72 w-full">
+          <div className={`h-${chartH} w-full`}>
             {demographicData.ageBuckets.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={demographicData.ageBuckets}>
@@ -125,7 +119,7 @@ const DemograficosBoard: React.FC = () => {
         {/* Marital Status Pie */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
           <h3 className="text-lg font-bold text-gray-800 mb-4">Estado Civil</h3>
-          <div className="h-72 w-full">
+          <div className={`h-${chartH} w-full`}>
             {demographicData.maritalStatus.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -149,7 +143,7 @@ const DemograficosBoard: React.FC = () => {
         {/* Gender × Age Stacked */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
           <h3 className="text-lg font-bold text-gray-800 mb-4">Sexo por Grupo de Edad</h3>
-          <div className="h-72 w-full">
+          <div className={`h-${chartH} w-full`}>
             {demographicData.genderAgeCross.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={demographicData.genderAgeCross}>
@@ -166,7 +160,7 @@ const DemograficosBoard: React.FC = () => {
           </div>
         </div>
       </div>
-    </div>
+    </BoardShell>
   );
 };
 

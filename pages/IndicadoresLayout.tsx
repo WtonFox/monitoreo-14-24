@@ -4,6 +4,7 @@ import { ROUTES } from '../types/routes';
 import {
   LayoutDashboard, Users, MapPin, Activity, Heart,
   CheckCircle, AlertTriangle, Calendar, GraduationCap, Building2,
+  TrendingDown, CalendarDays, FileWarning,
   ChevronDown,
 } from 'lucide-react';
 import { IndicadoresFiltersProvider } from '../contexts/IndicadoresFiltersContext';
@@ -27,6 +28,10 @@ const MORE_TABS = [
   { to: ROUTES.INDICADORES_COBERTURA, label: 'Cobertura Temporal', icon: Calendar },
   { to: ROUTES.INDICADORES_NIVEL_EDUCATIVO, label: 'Nivel Educativo', icon: GraduationCap },
   { to: ROUTES.INDICADORES_DESEMPENO_CENTRO, label: 'Desempeño Centro', icon: Building2 },
+  { to: ROUTES.INDICADORES_CENTROS_SIN_MENORES, label: 'Centros sin Menores', icon: Users },
+  { to: ROUTES.INDICADORES_DESERCION, label: 'Deserción', icon: TrendingDown },
+  { to: ROUTES.INDICADORES_REGISTRO_DIARIO, label: 'Registro Diario', icon: CalendarDays },
+  { to: ROUTES.INDICADORES_CALIDAD_ND, label: 'Calidad ND', icon: FileWarning },
 ];
 
 // ── Shared tab style ──
@@ -103,7 +108,7 @@ const IndicadoresLayout: React.FC = () => {
                     <NavLink
                       key={tab.to}
                       to={tab.to}
-                      end={tab.to === ROUTES.INDICADORES}
+                      end={false}
                       onClick={() => setShowMore(false)}
                       className={({ isActive }) =>
                         `flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors ${
