@@ -60,7 +60,7 @@ export const DataTable: React.FC<DataTableProps> = ({
   const [filterEstado, setFilterEstado] = useState<string>('todos');
   const [filterSexo, setFilterSexo] = useState<string>('todos');
 
-  const [showExportSection, setShowExportSection] = useState(true);
+  const [showExportSection, setShowExportSection] = useState(false);
   const [showFormatDropdown, setShowFormatDropdown] = useState(false);
 
   // Column visibility state
@@ -331,8 +331,9 @@ export const DataTable: React.FC<DataTableProps> = ({
       )}
 
       {/* Table Header / Toolbar */}
-      <div className="p-4 border-b border-gray-100 flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4">
-        <div className="relative w-full xl:w-96">
+      <div className="p-4 border-b border-gray-100 space-y-3">
+        {/* Search row */}
+        <div className="relative w-full">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <Search size={18} className="text-gray-400" />
           </div>
@@ -345,37 +346,39 @@ export const DataTable: React.FC<DataTableProps> = ({
           />
         </div>
 
-        {/* Filtros */}
-        <select
-          value={filterProvincia}
-          onChange={e => setFilterProvincia(e.target.value)}
-          className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500"
-        >
-          <option value="todas">Provincia: Todas</option>
-          {uniqueProvincias.map(p => (<option key={p} value={p}>{p}</option>))}
-        </select>
+        {/* Filters + Actions row */}
+        <div className="flex flex-wrap items-center gap-2">
+          <select
+            value={filterProvincia}
+            onChange={e => setFilterProvincia(e.target.value)}
+            className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="todas">Provincia: Todas</option>
+            {uniqueProvincias.map(p => (<option key={p} value={p}>{p}</option>))}
+          </select>
 
-        <select
-          value={filterEstado}
-          onChange={e => setFilterEstado(e.target.value)}
-          className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500"
-        >
-          <option value="todos">Estado: Todos</option>
-          {uniqueEstados.map(e => (<option key={e} value={e}>{e}</option>))}
-        </select>
+          <select
+            value={filterEstado}
+            onChange={e => setFilterEstado(e.target.value)}
+            className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="todos">Estado: Todos</option>
+            {uniqueEstados.map(e => (<option key={e} value={e}>{e}</option>))}
+          </select>
 
-        <select
-          value={filterSexo}
-          onChange={e => setFilterSexo(e.target.value)}
-          className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500"
-        >
-          <option value="todos">Sexo: Todos</option>
-          <option value="femenino">Femenino</option>
-          <option value="masculino">Masculino</option>
-        </select>
+          <select
+            value={filterSexo}
+            onChange={e => setFilterSexo(e.target.value)}
+            className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="todos">Sexo: Todos</option>
+            <option value="femenino">Femenino</option>
+            <option value="masculino">Masculino</option>
+          </select>
 
-        <div className="flex flex-wrap justify-end gap-2 w-full xl:w-auto mobile-actions">
-          {/* Column Selector Button */}
+          <div className="w-px h-6 bg-gray-200 mx-1" />
+
+          {/* Column Selector */}
           <div className="relative">
             <button
               onClick={() => setShowColumnSelector(!showColumnSelector)}
@@ -394,10 +397,8 @@ export const DataTable: React.FC<DataTableProps> = ({
             )}
           </div>
 
-          <div className="h-full w-px bg-gray-200 mx-1 hidden sm:block"></div>
-
           <select
-            className="bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm cursor-pointer flex-1 sm:flex-none"
+            className="bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm cursor-pointer"
             value={pageSize}
             onChange={(e) => onPageSizeChange(Number(e.target.value))}
           >
@@ -409,79 +410,81 @@ export const DataTable: React.FC<DataTableProps> = ({
         </div>
       </div>
 
-      {/* ── Sección de exportación ── */}
-      <div className="border-t border-gray-200">
-        <button
-          onClick={() => setShowExportSection(prev => !prev)}
-          className="w-full flex items-center justify-between px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider hover:bg-gray-50 transition-colors"
-        >
-          <span>Datos</span>
-          <ChevronDown
-            size={14}
-            className={`transition-transform ${showExportSection ? '' : '-rotate-90'}`}
-          />
-        </button>
+      {/* ── Sección de exportación (despegada de la tabla) ── */}
+      <div className="px-4 py-3 border-b border-gray-100">
+        <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+          <button
+            onClick={() => setShowExportSection(prev => !prev)}
+            className="w-full flex items-center justify-between px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wider hover:bg-gray-50 transition-colors"
+          >
+            <span>Datos</span>
+            <ChevronDown
+              size={14}
+              className={`transition-transform ${showExportSection ? '' : '-rotate-90'}`}
+            />
+          </button>
 
-        {showExportSection && (
-          <div className="px-4 py-3 flex flex-wrap items-center gap-3 bg-gray-50/50">
-            {/* Exportar dropdown */}
-            <div className="relative">
-              <button
-                onClick={() => setShowFormatDropdown(prev => !prev)}
-                className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm"
-              >
-                <Download size={16} />
-                Exportar
-                <ChevronDown size={14} />
-              </button>
+          {showExportSection && (
+            <div className="px-4 py-3 border-t border-gray-100 flex flex-wrap items-center gap-3">
+              {/* Exportar dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowFormatDropdown(prev => !prev)}
+                  className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm"
+                >
+                  <Download size={16} />
+                  Exportar
+                  <ChevronDown size={14} />
+                </button>
 
-              {showFormatDropdown && (
-                <>
-                  <div className="fixed inset-0 z-10" onClick={() => setShowFormatDropdown(false)} />
-                  <div className="absolute left-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-20 py-1 min-w-[180px]">
-                    <button
-                      onClick={() => { setShowFormatDropdown(false); handleLocalExport(); }}
-                      className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
-                    >
-                      <FileText size={16} className="text-green-600" />
-                      CSV (Vista actual)
-                    </button>
-                    <button
-                      onClick={() => { setShowFormatDropdown(false); handleLocalExport(); }}
-                      className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
-                    >
-                      <FileSpreadsheet size={16} className="text-blue-600" />
-                      Excel (XLSX)
-                    </button>
-                    <button
-                      onClick={() => { setShowFormatDropdown(false); handleLocalJSON(); }}
-                      className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
-                    >
-                      <FileJson size={16} className="text-purple-600" />
-                      JSON
-                    </button>
-                  </div>
-                </>
+                {showFormatDropdown && (
+                  <>
+                    <div className="fixed inset-0 z-10" onClick={() => setShowFormatDropdown(false)} />
+                    <div className="absolute left-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-20 py-1 min-w-[180px]">
+                      <button
+                        onClick={() => { setShowFormatDropdown(false); handleLocalExport(); }}
+                        className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
+                      >
+                        <FileText size={16} className="text-green-600" />
+                        CSV (Vista actual)
+                      </button>
+                      <button
+                        onClick={() => { setShowFormatDropdown(false); handleLocalExport(); }}
+                        className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
+                      >
+                        <FileSpreadsheet size={16} className="text-blue-600" />
+                        Excel (XLSX)
+                      </button>
+                      <button
+                        onClick={() => { setShowFormatDropdown(false); handleLocalJSON(); }}
+                        className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
+                      >
+                        <FileJson size={16} className="text-purple-600" />
+                        JSON
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Exportar Todos */}
+              {onOpenMassExport && (
+                <button
+                  onClick={onOpenMassExport}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm"
+                >
+                  <Download size={16} />
+                  Exportar Todos
+                  {totalItems > 0 && (
+                    <span className="text-[10px] bg-blue-500 px-1.5 py-0.5 rounded-full">
+                      {formatNumber(totalItems)}
+                    </span>
+                  )}
+                </button>
               )}
             </div>
-
-            {/* Exportar Todos */}
-            {onOpenMassExport && (
-              <button
-                onClick={onOpenMassExport}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm"
-              >
-                <Download size={16} />
-                Exportar Todos
-                {totalItems > 0 && (
-                  <span className="text-[10px] bg-blue-500 px-1.5 py-0.5 rounded-full">
-                    {formatNumber(totalItems)}
-                  </span>
-                )}
-              </button>
-            )}
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Table Content */}
