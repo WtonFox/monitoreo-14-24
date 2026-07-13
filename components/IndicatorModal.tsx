@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import {
   X, Users, MapPin, Activity, Heart,
-  CheckCircle2, AlertTriangle, CheckCircle, Calendar, GraduationCap, Building2,
+  CheckCircle2, AlertTriangle, CheckCircle, Calendar, GraduationCap, Building2, XCircle,
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -54,6 +54,7 @@ export const IndicatorModal: React.FC<IndicatorModalProps> = ({
   const meta = CATEGORY_META[indicator.category];
   const Icon = meta.icon;
   const isPending = indicator.status === 'pending';
+  const isNotViable = indicator.status === 'no-viable';
 
   // ESC to close
   useEffect(() => {
@@ -581,7 +582,7 @@ export const IndicatorModal: React.FC<IndicatorModalProps> = ({
         <div className="px-6 py-4 border-b border-gray-100">
           <div
             className="text-3xl font-bold break-words leading-tight"
-            style={{ color: meta.primary }}
+            style={{ color: isNotViable ? '#9ca3af' : meta.primary }}
           >
             {indicator.value}
           </div>
@@ -589,6 +590,12 @@ export const IndicatorModal: React.FC<IndicatorModalProps> = ({
             <div className="flex items-center gap-1.5 mt-2 text-xs text-orange-700 bg-orange-50 px-3 py-1.5 rounded-lg border border-orange-200">
               <AlertTriangle size={14} />
               {indicator.pendingReason}
+            </div>
+          )}
+          {isNotViable && (
+            <div className="flex items-center gap-1.5 mt-2 text-xs text-gray-500 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200">
+              <XCircle size={14} />
+              No hay datos suficientes para calcular este indicador con los filtros actuales.
             </div>
           )}
         </div>
@@ -614,11 +621,13 @@ export const IndicatorModal: React.FC<IndicatorModalProps> = ({
             className={`inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full ${
               isPending
                 ? 'bg-orange-100 text-orange-700 border border-orange-200'
+                : isNotViable
+                ? 'bg-gray-100 text-gray-500 border border-gray-200'
                 : 'bg-green-100 text-green-700 border border-green-200'
             }`}
           >
-            {isPending ? <AlertTriangle size={12} /> : <CheckCircle2 size={12} />}
-            {isPending ? 'PENDIENTE' : 'VIABLE'}
+            {isPending ? <AlertTriangle size={12} /> : isNotViable ? <XCircle size={12} /> : <CheckCircle2 size={12} />}
+            {isPending ? 'PENDIENTE' : isNotViable ? 'NO VIABLE' : 'VIABLE'}
           </span>
           <button
             onClick={onClose}

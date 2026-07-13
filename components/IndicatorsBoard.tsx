@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Users, MapPin, Activity, Heart, CheckCircle, AlertTriangle, Calendar, GraduationCap, Building2, CheckCircle2 } from 'lucide-react';
+import { Users, MapPin, Activity, Heart, CheckCircle, AlertTriangle, Calendar, GraduationCap, Building2, CheckCircle2, XCircle } from 'lucide-react';
 import type { IndicatorGroup, Indicator, IndicatorCategory } from '../hooks/useIndicators';
 import type { Participant } from '../types';
 import { useIndicatorBoards } from '../hooks/useIndicatorBoards';
@@ -125,6 +125,7 @@ const IndicatorTile: React.FC<{
   onClick: () => void;
 }> = ({ indicator, styles, onClick }) => {
   const isPending = indicator.status === 'pending';
+  const isNotViable = indicator.status === 'no-viable';
 
   return (
     <div
@@ -132,13 +133,13 @@ const IndicatorTile: React.FC<{
       className={`
         relative flex bg-white rounded-xl shadow-sm border cursor-pointer
         transition-all hover:shadow-md hover:-translate-y-0.5 active:scale-[0.99]
-        ${isPending ? 'border-orange-200 opacity-80' : 'border-gray-100'}
+        ${isPending ? 'border-orange-200 opacity-80' : isNotViable ? 'border-gray-200 opacity-60' : 'border-gray-100'}
       `}
     >
       {/* Left color accent bar */}
       <div
         className={`w-1.5 rounded-l-xl flex-shrink-0 ${
-          isPending ? 'bg-orange-400' : styles.bar
+          isPending ? 'bg-orange-400' : isNotViable ? 'bg-gray-300' : styles.bar
         }`}
       />
 
@@ -149,6 +150,10 @@ const IndicatorTile: React.FC<{
             <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 border border-orange-200">
               <AlertTriangle size={10} />
               PENDIENTE
+            </span>
+          ) : isNotViable ? (
+            <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 border border-gray-200">
+              <XCircle size={10} /> NO VIABLE
             </span>
           ) : (
             <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700 border border-green-200">
@@ -166,7 +171,7 @@ const IndicatorTile: React.FC<{
         {/* Value with subtle category-tinted background */}
         <div
           className={`inline-block px-2.5 py-0.5 rounded-lg text-lg font-bold text-gray-900 mb-3 ${
-            isPending ? 'bg-gray-50' : styles.accent
+            isPending ? 'bg-gray-50' : isNotViable ? 'bg-gray-50' : styles.accent
           }`}
         >
           {indicator.value}
@@ -201,7 +206,8 @@ const CategorySection: React.FC<{
   const Icon = CATEGORY_ICONS[group.category] || Users;
   const count = group.items.length;
   const viableCount = group.items.filter(i => i.status === 'viable').length;
-  const pendingCount = count - viableCount;
+  const pendingCount = group.items.filter(i => i.status === 'pending').length;
+  const notViableCount = group.items.filter(i => i.status === 'no-viable').length;
 
   return (
     <section
@@ -224,6 +230,12 @@ const CategorySection: React.FC<{
             <span className="text-orange-700">
               <AlertTriangle size={12} className="inline mr-0.5" />
               {pendingCount} PENDIENTES
+            </span>
+          )}
+          {notViableCount > 0 && (
+            <span className="text-gray-500">
+              <XCircle size={12} className="inline mr-0.5" />
+              {notViableCount} NO VIABLES
             </span>
           )}
         </div>

@@ -12,7 +12,7 @@ export interface Indicator {
   value: string | number;
   formula: string;
   description: string;
-  status: 'viable' | 'pending';
+  status: 'viable' | 'pending' | 'no-viable';
   pendingReason?: string;
 }
 
@@ -977,6 +977,26 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
       formula: '\u03a3 edadRegistro por centro / Total con edadRegistro por centro',
       description: 'Edad promedio al registro de los participantes que tienen un centro asignado.',
       status: 'viable',
+    });
+
+    /* --- dynamic status evaluation --- */
+
+    const evaluateStatus = (indicator: Indicator): Indicator['status'] => {
+      // Stay pending if the field is structurally unavailable (e.g., sector)
+      if (indicator.status === 'pending') return 'pending';
+
+      // If the filtered dataset is empty, nothing is viable
+      if (total === 0) return 'no-viable';
+
+      // Check if the computed value indicates no data
+      const val = String(indicator.value);
+      if (val === 'N/A' || val === 'Sin datos' || val === 'N/D') return 'no-viable';
+
+      return 'viable';
+    };
+
+    all.forEach(indicator => {
+      (indicator as any).status = evaluateStatus(indicator);
     });
 
     /* --- build groups --- */
