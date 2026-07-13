@@ -605,6 +605,17 @@ export const IndicatorModal: React.FC<IndicatorModalProps> = ({
           <p className="text-sm text-gray-600 leading-relaxed">{indicator.description}</p>
         </div>
 
+        {/* ── Data quality note for N/A-prone categories ── */}
+        {indicator.status === 'viable' && ['vulnerabilidad', 'calidad-dato', 'nivel-educativo'].includes(indicator.category) && (
+          <div className="mx-6 my-3 flex items-start gap-2 text-[11px] text-amber-700 bg-amber-50 px-3 py-2 rounded-lg border border-amber-200">
+            <AlertTriangle size={12} className="mt-0.5 flex-shrink-0" />
+            <span>
+              Los porcentajes se calculan solo sobre registros con informaci&oacute;n disponible
+              (excluye N/A, N/D). Los registros sin dato se indican como <strong>s/dato</strong>.
+            </span>
+          </div>
+        )}
+
         {/* ── Contextual data ── */}
         {indicator.status === 'viable' && (
           <div className="px-6 py-4">
