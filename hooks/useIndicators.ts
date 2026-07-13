@@ -49,11 +49,40 @@ const isEmptyValue = (val: string | null | undefined): boolean =>
 /** Compact completitud — just the percentage (full breakdown goes in the modal) */
 const completitudPct = (count: number, total: number): string => pct(count, total);
 
-/** Top-1 item as value (ranked list goes in the modal) */
-const top1Str = (record: Record<string, number>): string => {
-  const entries = topN(record, 1);
-  return entries.length > 0 ? `${entries[0][0]}: ${formatNumber(entries[0][1])}` : 'Sin datos';
-};
+/**
+ * Top N entries with "Resto" aggregation.
+ * Returns the top N items and aggregates remaining entries into a "Resto" count.
+ */
+function topNAgg(
+  record: Record<string, number>,
+  n: number = 10
+): { top: [string, number][]; resto: number } {
+  const sorted = Object.entries(record).sort(([, a], [, b]) => b - a);
+  return {
+    top: sorted.slice(0, n),
+    resto: sorted.slice(n).reduce((sum, [, v]) => sum + v, 0),
+  };
+}
+
+/**
+ * Format top N entries as display value.
+ * Shows top N items (max 5) with count/percentage, plus "Resto: N" aggregation.
+ */
+function formatTopN(
+  record: Record<string, number>,
+  showPct: boolean = false,
+  total?: number
+): string {
+  const { top, resto } = topNAgg(record, 5);
+  if (top.length === 0) return 'Sin datos';
+  const parts = top.map(([name, count], i) =>
+    `${i + 1}. ${name} (${showPct && total ? pct(count, total) : formatNumber(count)})`
+  );
+  if (resto > 0) {
+    parts.push(`Resto: ${showPct && total ? pct(resto, total) : formatNumber(resto)}`);
+  }
+  return parts.join(' | ');
+}
 
 /**
  * Compute entity-level percentages and return:
@@ -313,15 +342,7 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
     const rangeGraduatedByCentro = entityRange(centroKeys, graduatedByCentro, centroCounts);
     const rangeGraduatedByMun = entityRange(municipioKeys, graduatedByMunicipio, municipioCounts);
 
-    /* --- tops --- */
-
-    const topMunicipios = topN(municipioCounts, 1);
-    const topCentros = topN(centroCounts, 1);
-    const topCursos = topN(cursoCounts, 1);
-    const topEstados = topN(estadoCounts, 1);
-    const topEstadoCivil = topN(estadoCivilCounts, 1);
-
-    /* --- build all 34 indicators --- */
+    /* --- build all indicators --- */
 
     const all: Indicator[] = [];
 
@@ -420,10 +441,7 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
       id: 21,
       name: 'N\u00famero de participantes por estado civil',
       category: 'demograficos',
-      value:
-        topEstadoCivil.length > 0
-          ? `${topEstadoCivil[0][0]} (${formatNumber(topEstadoCivil[0][1])})`
-          : 'Sin datos',
+      value: formatTopN(estadoCivilCounts),
       formula: 'Conteo por valor de estadoCivil',
       description: 'Distribuci\u00f3n por estado civil. Mayoritariamente solteros por el rango etario del programa.',
       status: 'viable',
@@ -432,10 +450,7 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
       id: 22,
       name: 'Porcentaje de participantes por estado civil',
       category: 'demograficos',
-      value:
-        topEstadoCivil.length > 0
-          ? `${topEstadoCivil[0][0]} (${pct(topEstadoCivil[0][1], total)})`
-          : 'Sin datos',
+      value: formatTopN(estadoCivilCounts, true, total),
       formula: 'Por estadoCivil / Total × 100',
       description: 'Distribución porcentual por estado civil.',
       status: 'viable',
@@ -446,18 +461,18 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
       id: 11,
       name: 'Número de participantes por municipio',
       category: 'territoriales',
-      value: topMunicipios.length > 0 ? `${topMunicipios[0][0]} (${formatNumber(topMunicipios[0][1])})` : 'Sin datos',
+      value: formatTopN(municipioCounts),
       formula: 'Conteo por municipio',
-      description: 'Distribución territorial de participantes. Permite identificar concentraciones y apoyar planificación de intervenciones.',
+      description: 'Distribución territorial de participantes. Top municipios con mayor concentración.',
       status: 'viable',
     });
     all.push({
       id: 12,
       name: 'Porcentaje de participantes por municipio',
       category: 'territoriales',
-      value: topMunicipios.length > 0 ? `${topMunicipios[0][0]} (${pct(topMunicipios[0][1], total)})` : 'Sin datos',
+      value: formatTopN(municipioCounts, true, total),
       formula: 'Por municipio / Total × 100',
-      description: 'Distribución porcentual por municipio. Facilita comparación entre territorios.',
+      description: 'Distribución porcentual por municipio. Top municipios con mayor participación relativa.',
       status: 'viable',
     });
     all.push({
@@ -484,34 +499,34 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
       id: 15,
       name: 'Número de participantes por centro',
       category: 'territoriales',
-      value: topCentros.length > 0 ? `${topCentros[0][0]} (${formatNumber(topCentros[0][1])})` : 'Sin datos',
+      value: formatTopN(centroCounts),
       formula: 'Conteo por centro',
-      description: 'Carga operativa por centro de formación. Útil para asignación de recursos.',
+      description: 'Carga operativa por centro de formación. Top centros con mayor cantidad de participantes.',
       status: 'viable',
     });
     all.push({
       id: 16,
       name: 'Porcentaje de participantes por centro',
       category: 'territoriales',
-      value: topCentros.length > 0 ? `${topCentros[0][0]} (${pct(topCentros[0][1], total)})` : 'Sin datos',
+      value: formatTopN(centroCounts, true, total),
       formula: 'Por centro / Total × 100',
-      description: 'Distribución porcentual de la matrícula entre centros participantes.',
+      description: 'Distribución porcentual de la matrícula. Top centros con mayor participación relativa.',
       status: 'viable',
     });
     all.push({
       id: 17,
       name: 'Número de participantes por curso',
       category: 'territoriales',
-      value: topCursos.length > 0 ? `${topCursos[0][0]} (${formatNumber(topCursos[0][1])})` : 'Sin datos',
+      value: formatTopN(cursoCounts),
       formula: 'Conteo por rutaFormativa',
-      description: 'Demanda de oferta formativa. Permite identificar los cursos con mayor interés.',
+      description: 'Demanda de oferta formativa. Top cursos con mayor interés.',
       status: 'viable',
     });
     all.push({
       id: 18,
       name: 'Porcentaje de participantes por curso',
       category: 'territoriales',
-      value: topCursos.length > 0 ? `${topCursos[0][0]} (${pct(topCursos[0][1], total)})` : 'Sin datos',
+      value: formatTopN(cursoCounts, true, total),
       formula: 'Por rutaFormativa / Total × 100',
       description: 'Participación relativa entre los distintos cursos ofertados.',
       status: 'viable',
@@ -546,7 +561,7 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
       id: 19,
       name: 'Número de participantes por estado',
       category: 'programa',
-      value: topEstados.length > 0 ? `${topEstados[0][0]} (${formatNumber(topEstados[0][1])})` : 'Sin datos',
+      value: formatTopN(estadoCounts),
       formula: 'Conteo por valor de estado',
       description: 'Situación actual de los participantes dentro del programa (Activo, Egresado, Retirado, etc.).',
       status: 'viable',
@@ -555,7 +570,7 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
       id: 20,
       name: 'Porcentaje de participantes seg\u00fan estado',
       category: 'programa',
-      value: topEstados.length > 0 ? `${topEstados[0][0]} (${pct(topEstados[0][1], total)})` : 'Sin datos',
+      value: formatTopN(estadoCounts, true, total),
       formula: 'Por estado / Total × 100',
       description: 'Distribución porcentual por estado. Facilita el seguimiento de permanencia y egreso.',
       status: 'viable',
@@ -741,9 +756,9 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
       id: 44,
       name: 'Top discapacidades m\u00e1s frecuentes',
       category: 'vulnerabilidad',
-      value: Object.keys(disabilityTypes).length > 0 ? top1Str(disabilityTypes) : 'Sin datos',
+      value: Object.keys(disabilityTypes).length > 0 ? formatTopN(disabilityTypes) : 'Sin datos',
       formula: 'Conteo por tipo de discapacidad',
-      description: 'Las tres discapacidades m\u00e1s reportadas entre los participantes. \u00datil para planificar recursos de apoyo.',
+      description: 'Las discapacidades m\u00e1s reportadas entre los participantes. Top 5 + agregaci\u00f3n del resto.',
       status: 'viable',
     });
     all.push({
@@ -759,9 +774,9 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
       id: 46,
       name: 'Top enfermedades m\u00e1s frecuentes',
       category: 'vulnerabilidad',
-      value: Object.keys(diseaseTypes).length > 0 ? top1Str(diseaseTypes) : 'Sin datos',
+      value: Object.keys(diseaseTypes).length > 0 ? formatTopN(diseaseTypes) : 'Sin datos',
       formula: 'Conteo por tipo de enfermedad',
-      description: 'Las tres enfermedades m\u00e1s reportadas entre los participantes. \u00datil para planificar servicios de salud.',
+      description: 'Las enfermedades m\u00e1s reportadas entre los participantes. Top 5 + agregaci\u00f3n del resto.',
       status: 'viable',
     });
     all.push({
@@ -802,10 +817,10 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
       yearGrowthParts.push(`${yearsSorted[i]}: ${growth >= 0 ? '+' : ''}${formatPercentage(growth)}`);
     }
 
-    const centroTopEd = Object.entries(centroEducationCounts).map(([centro, levels]) => {
+    const centroTopLevels = Object.entries(centroEducationCounts).map(([centro, levels]) => {
       const top = Object.entries(levels).sort(([, a], [, b]) => b - a)[0];
       return { centro, level: top[0], count: top[1] };
-    }).sort((a, b) => b.count - a.count).slice(0, 1);
+    }).sort((a, b) => b.count - a.count);
 
     const totalWomenWithCentro = Object.values(womenByCentro).reduce((s, v) => s + v, 0);
     const totalMenWithCentro = Object.values(menByCentro).reduce((s, v) => s + v, 0);
@@ -909,13 +924,22 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
       description: 'Distribuci\u00f3n por sexo en el nivel educativo predominante. Muestra si hay brechas de g\u00e9nero por nivel acad\u00e9mico.',
       status: 'viable',
     });
+    const formatCentroTopLevels = () => {
+      if (centroTopLevels.length === 0) return 'Sin datos';
+      const top5 = centroTopLevels.slice(0, 5);
+      const resto = centroTopLevels.slice(5).reduce((s, c) => s + c.count, 0);
+      const parts = top5.map((c, i) => `${i + 1}. ${c.centro}: ${c.level} (${formatNumber(c.count)})`);
+      if (resto > 0) parts.push(`Resto: ${formatNumber(resto)}`);
+      return parts.join(' | ');
+    };
+
     all.push({
       id: 59,
       name: 'Nivel educativo predominante por centro',
       category: 'nivel-educativo',
-      value: centroTopEd.length > 0 ? `${centroTopEd[0].centro}: ${centroTopEd[0].level} (${formatNumber(centroTopEd[0].count)})` : 'Sin datos',
+      value: formatCentroTopLevels(),
       formula: 'Conteo por centro y nivelEstudio',
-      description: 'Centro con mayor concentraci\u00f3n y el nivel educativo que predomina en \u00e9l. \u00datil para planificaci\u00f3n de oferta acad\u00e9mica.',
+      description: 'Centros con su nivel educativo predominante. Top 5 + agregaci\u00f3n del resto.',
       status: 'viable',
     });
 
@@ -933,11 +957,9 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
       id: 61,
       name: 'Participantes por centro (top)',
       category: 'desempeno-centro',
-      value: Object.keys(centroCounts).length > 0
-        ? (() => { const t = topN(centroCounts, 1); return t.length > 0 ? `${t[0][0]}: ${formatNumber(t[0][1])}` : 'Sin datos'; })()
-        : 'Sin datos',
+      value: formatTopN(centroCounts),
       formula: 'Conteo por centro',
-      description: 'Los tres centros con mayor cantidad de participantes. \u00datil para identificar centros con mayor carga operativa.',
+      description: 'Top 5 centros con mayor cantidad de participantes. \u00datil para identificar centros con mayor carga operativa.',
       status: 'viable',
     });
     all.push({
