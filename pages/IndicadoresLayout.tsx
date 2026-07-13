@@ -45,24 +45,26 @@ const IndicadoresLayout: React.FC = () => {
     <div className="flex flex-col flex-1">
       {/* Tab Navigation */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="flex items-center px-2 overflow-x-auto scrollbar-hide">
-          {/* Main tabs */}
-          {MAIN_TABS.map(tab => (
-            <NavLink
-              key={tab.to}
-              to={tab.to}
-              end={tab.to === ROUTES.INDICADORES}
-              className={tabClasses}
-            >
-              <tab.icon size={16} />
-              {tab.label}
-            </NavLink>
-          ))}
+        <div className="flex items-center px-2">
+          {/* Main tabs + more button in a single flex row without overflow clipping */}
+          <div className="flex items-center overflow-x-auto scrollbar-hide flex-1 min-w-0">
+            {MAIN_TABS.map(tab => (
+              <NavLink
+                key={tab.to}
+                to={tab.to}
+                end={tab.to === ROUTES.INDICADORES}
+                className={tabClasses}
+              >
+                <tab.icon size={16} />
+                {tab.label}
+              </NavLink>
+            ))}
 
-          {/* Divider */}
-          <div className="w-px h-6 bg-gray-200 mx-1 flex-shrink-0" />
+            {/* Divider */}
+            <div className="w-px h-6 bg-gray-200 mx-1 flex-shrink-0" />
+          </div>
 
-          {/* More dropdown trigger */}
+          {/* More dropdown trigger — OUTSIDE overflow container */}
           <div className="relative flex-shrink-0">
             <button
               onClick={() => setShowMore(prev => !prev)}
