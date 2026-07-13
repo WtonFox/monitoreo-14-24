@@ -304,7 +304,7 @@ export const DataTable: React.FC<DataTableProps> = ({
             <input
               type="text"
               placeholder="Buscar..."
-              className="pl-10 pr-4 py-2 bg-white border border-gray-300 rounded-lg w-full text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm transition-shadow"
+              className="pl-10 pr-4 py-2.5 bg-white border border-gray-300 rounded-lg w-full text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm transition-shadow"
               value={searchTerm}
               onChange={(e) => onSearchChange(e.target.value)}
             />
@@ -313,7 +313,7 @@ export const DataTable: React.FC<DataTableProps> = ({
           <div className="relative flex-shrink-0">
             <button
               onClick={() => setShowColumnSelector(!showColumnSelector)}
-              className="flex items-center justify-center gap-2 bg-white hover:bg-gray-50 text-gray-700 px-3 py-2 rounded-lg text-sm transition-colors border border-gray-300 shadow-sm"
+              className="flex items-center justify-center gap-2 bg-white hover:bg-gray-50 text-gray-700 px-3 py-2.5 rounded-lg text-sm transition-colors border border-gray-300 shadow-sm"
               title="Configurar Columnas"
             >
               <Settings size={16} />
@@ -329,7 +329,7 @@ export const DataTable: React.FC<DataTableProps> = ({
           </div>
 
           <select
-            className="bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm cursor-pointer flex-shrink-0"
+            className="bg-white border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm cursor-pointer flex-shrink-0"
             value={pageSize}
             onChange={(e) => onPageSizeChange(Number(e.target.value))}
           >
@@ -340,11 +340,11 @@ export const DataTable: React.FC<DataTableProps> = ({
           </select>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-2">
           <select
             value={filterProvincia}
             onChange={e => onProvinciaChange(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500"
+            className="flex-1 border border-gray-300 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-blue-500"
           >
             <option value="todas">Provincia: Todas</option>
             {uniqueProvincias.map(p => (<option key={p} value={p}>{p}</option>))}
@@ -353,7 +353,7 @@ export const DataTable: React.FC<DataTableProps> = ({
           <select
             value={filterMunicipio}
             onChange={e => onMunicipioChange(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500"
+            className="flex-1 border border-gray-300 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-blue-500"
             disabled={filterProvincia === 'todas'}
           >
             <option value="todos">Municipio: Todos</option>
@@ -363,7 +363,7 @@ export const DataTable: React.FC<DataTableProps> = ({
           <select
             value={filterCentro}
             onChange={e => onCentroChange(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500"
+            className="flex-1 border border-gray-300 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-blue-500"
           >
             <option value="todos">Centro: Todos</option>
             {uniqueCentros.map(c => (<option key={c} value={c}>{c}</option>))}
@@ -372,7 +372,7 @@ export const DataTable: React.FC<DataTableProps> = ({
           <select
             value={filterSexo}
             onChange={e => onSexoChange(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500"
+            className="flex-1 border border-gray-300 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-blue-500"
           >
             <option value="todos">Sexo: Todos</option>
             <option value="f">Femenino</option>
