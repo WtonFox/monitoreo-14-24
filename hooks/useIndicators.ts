@@ -87,10 +87,11 @@ function entityRange(
 }
 
 /**
- * Format a range string: "XX% global · Rango: YY% – ZZ% (N entidades)"
+ * Format range info as a formula string for cross-entity indicators.
+ * The global % goes in value (big), the range + count goes in formula (small).
  */
-const formatRange = (r: { globalPct: number; minPct: number; maxPct: number; count: number }): string =>
-  `${formatPercentage(r.globalPct)} · Rango: ${formatPercentage(r.minPct)} – ${formatPercentage(r.maxPct)} (${r.count} entidades)`;
+const rangeFormula = (r: { globalPct: number; minPct: number; maxPct: number; count: number }): string =>
+  `Brecha territorial: ${formatPercentage(r.minPct)} – ${formatPercentage(r.maxPct)} en ${r.count} entidades`;
 
 /* ---- hook ---- */
 
@@ -146,8 +147,8 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
       // municipio
       if (p.municipio) {
         municipioCounts[p.municipio] = (municipioCounts[p.municipio] || 0) + 1;
-        if (p.sexo?.toLowerCase() === 'femenino') womenByMunicipio[p.municipio] = (womenByMunicipio[p.municipio] || 0) + 1;
-        if (p.sexo?.toLowerCase() === 'masculino') menByMunicipio[p.municipio] = (menByMunicipio[p.municipio] || 0) + 1;
+        if (isWomen(p.sexo)) womenByMunicipio[p.municipio] = (womenByMunicipio[p.municipio] || 0) + 1;
+        if (isMen(p.sexo)) menByMunicipio[p.municipio] = (menByMunicipio[p.municipio] || 0) + 1;
       }
 
       // centro
@@ -405,18 +406,24 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
       id: 27,
       name: '% Mujeres por municipio',
       category: 'territoriales',
-      value: formatRange(rangeWomenByMun),
-      formula: 'Tasa global (Mujeres total / Total) × 100 con rango por municipio',
-      description: 'Participación femenina global con rango de variación territorial. Una brecha amplia indica desigualdad geográfica de género. CORREGIDO: ahora muestra tasa global correcta + rango real por municipio.',
+      value: formatPercentage(rangeWomenByMun.globalPct),
+      formula: rangeFormula(rangeWomenByMun),
+      description: 'Participación femenina global. Una brecha amplia indica desigualdad de género entre territorios.',
       status: 'viable',
     });
+    const rangeMenByMun = {
+      globalPct: 100 - rangeWomenByMun.globalPct,
+      minPct: 100 - rangeWomenByMun.maxPct,
+      maxPct: 100 - rangeWomenByMun.minPct,
+      count: rangeWomenByMun.count,
+    };
     all.push({
       id: 28,
       name: '% Hombres por municipio',
       category: 'territoriales',
-      value: formatRange({ ...rangeWomenByMun, globalPct: 100 - rangeWomenByMun.globalPct, minPct: 100 - rangeWomenByMun.maxPct, maxPct: 100 - rangeWomenByMun.minPct }),
-      formula: 'Tasa global (Hombres total / Total) × 100 con rango por municipio',
-      description: 'Participación masculina global con rango de variación territorial.',
+      value: formatPercentage(rangeMenByMun.globalPct),
+      formula: rangeFormula(rangeMenByMun),
+      description: 'Participación masculina global. Complementa la lectura de equidad de género territorial.',
       status: 'viable',
     });
 
@@ -461,36 +468,36 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
       id: 33,
       name: '% Activos por centro',
       category: 'programa',
-      value: formatRange(rangeActiveByCentro),
-      formula: 'Tasa global (Activos total / Total en centros) × 100 con rango por centro',
-      description: 'Tasa de retención global con variación por centro. CORREGIDO: tasa global correcta en vez de promedio de porcentajes.',
+      value: formatPercentage(rangeActiveByCentro.globalPct),
+      formula: rangeFormula(rangeActiveByCentro),
+      description: 'Tasa de retención global. Una brecha amplia entre centros sugiere diferencias en calidad o seguimiento.',
       status: 'viable',
     });
     all.push({
       id: 34,
       name: '% Activos por municipio',
       category: 'programa',
-      value: formatRange(rangeActiveByMun),
-      formula: 'Tasa global (Activos total / Total en municipios) × 100 con rango por municipio',
-      description: 'Tasa de retención global con variación territorial. CORREGIDO: tasa global correcta en vez de promedio de porcentajes.',
+      value: formatPercentage(rangeActiveByMun.globalPct),
+      formula: rangeFormula(rangeActiveByMun),
+      description: 'Tasa de retención global por municipio. Útil para detectar territorios con baja permanencia.',
       status: 'viable',
     });
     all.push({
       id: 35,
       name: '% Egresados por centro',
       category: 'programa',
-      value: formatRange(rangeGraduatedByCentro),
-      formula: 'Tasa global (Egresados total / Total en centros) × 100 con rango por centro',
-      description: 'Tasa de finalización global con variación por centro. CORREGIDO: tasa global correcta en vez de promedio de porcentajes.',
+      value: formatPercentage(rangeGraduatedByCentro.globalPct),
+      formula: rangeFormula(rangeGraduatedByCentro),
+      description: 'Tasa de finalización global. Centros con baja tasa pueden necesitar revisión de metodología.',
       status: 'viable',
     });
     all.push({
       id: 36,
       name: '% Egresados por municipio',
       category: 'programa',
-      value: formatRange(rangeGraduatedByMun),
-      formula: 'Tasa global (Egresados total / Total en municipios) × 100 con rango por municipio',
-      description: 'Tasa de finalización global con variación territorial. CORREGIDO: tasa global correcta en vez de promedio de porcentajes.',
+      value: formatPercentage(rangeGraduatedByMun.globalPct),
+      formula: rangeFormula(rangeGraduatedByMun),
+      description: 'Tasa de finalización global por municipio. Identifica territorios con mejores resultados.',
       status: 'viable',
     });
 
