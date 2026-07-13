@@ -18,9 +18,22 @@ interface DataTableProps {
   onExport: (format: 'csv' | 'json') => void;
   onCancelExport: () => void;
   onOpenMassExport?: () => void;
+  searchTerm: string;
+  onSearchChange: (v: string) => void;
+  filterProvincia: string;
+  onProvinciaChange: (v: string) => void;
+  availableMunicipios: string[];
+  filterMunicipio: string;
+  onMunicipioChange: (v: string) => void;
+  filterCentro: string;
+  onCentroChange: (v: string) => void;
+  uniqueCentros: string[];
+  filterSexo: string;
+  onSexoChange: (v: string) => void;
+  uniqueProvincias: string[];
+  allFilteredData?: Participant[];
 }
 
-// Default columns configuration
 const DEFAULT_COLUMNS: ColumnConfig[] = [
   { id: 'fullName', label: 'Nombre Completo', visible: true, required: true },
   { id: 'cedula', label: 'Cédula', visible: true },
@@ -53,27 +66,25 @@ export const DataTable: React.FC<DataTableProps> = ({
   data, currentPage, totalPages, totalItems, pageSize, loading,
   isExporting, exportProgress,
   onPageChange, onPageSizeChange, onExport, onCancelExport,
-  onOpenMassExport
+  onOpenMassExport,
+  searchTerm, onSearchChange,
+  filterProvincia, onProvinciaChange, availableMunicipios,
+  filterMunicipio, onMunicipioChange,
+  filterCentro, onCentroChange, uniqueCentros,
+  filterSexo, onSexoChange, uniqueProvincias,
+  allFilteredData
 }) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterProvincia, setFilterProvincia] = useState<string>('todas');
-  const [filterEstado, setFilterEstado] = useState<string>('todos');
-  const [filterSexo, setFilterSexo] = useState<string>('todos');
-
   const [showExportSection, setShowExportSection] = useState(false);
   const [showFormatDropdown, setShowFormatDropdown] = useState(false);
 
-  // Column visibility state
   const [columns, setColumns] = useState<ColumnConfig[]>(DEFAULT_COLUMNS);
   const [showColumnSelector, setShowColumnSelector] = useState(false);
 
-  // Load columns from localStorage on mount
   useEffect(() => {
     try {
       const saved = localStorage.getItem('table_columns_v1');
       if (saved) {
         const parsed = JSON.parse(saved);
-        // Merge with defaults to handle new columns in future
         const merged = DEFAULT_COLUMNS.map(def => {
           const savedCol = parsed.find((p: ColumnConfig) => p.id === def.id);
           return savedCol ? { ...def, visible: savedCol.visible } : def;
@@ -85,7 +96,6 @@ export const DataTable: React.FC<DataTableProps> = ({
     }
   }, []);
 
-  // Save columns to localStorage when changed
   const saveColumns = (newCols: ColumnConfig[]) => {
     setColumns(newCols);
     localStorage.setItem('table_columns_v1', JSON.stringify(newCols));
@@ -100,7 +110,6 @@ export const DataTable: React.FC<DataTableProps> = ({
     saveColumns(DEFAULT_COLUMNS);
   };
 
-  // Helper to generate CSV content with ALL fields (Local View)
   const generateLocalCSV = (items: Participant[]) => {
     const headers = [
       'ID', 'Nombres', 'Apellidos', 'Cédula', 'Edad', 'Edad Registro',
@@ -145,8 +154,9 @@ export const DataTable: React.FC<DataTableProps> = ({
   };
 
   const handleLocalJSON = () => {
-    if (filteredData.length === 0) return;
-    const blob = new Blob([JSON.stringify(filteredData, null, 2)], { type: 'application/json' });
+    const exportData = allFilteredData || data;
+    if (exportData.length === 0) return;
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
@@ -157,11 +167,11 @@ export const DataTable: React.FC<DataTableProps> = ({
     document.body.removeChild(link);
   };
 
-  // Handle export of currently visible data (Local)
   const handleLocalExport = () => {
-    if (data.length === 0) return;
+    const exportData = allFilteredData || data;
+    if (exportData.length === 0) return;
 
-    const csvContent = generateLocalCSV(data);
+    const csvContent = generateLocalCSV(exportData);
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
@@ -173,47 +183,6 @@ export const DataTable: React.FC<DataTableProps> = ({
     document.body.removeChild(link);
   };
 
-  const uniqueProvincias = useMemo(() => {
-    const set = new Set<string>();
-    data.forEach(p => { if (p.provincia) set.add(p.provincia); });
-    return Array.from(set).sort();
-  }, [data]);
-
-  const uniqueEstados = useMemo(() => {
-    const set = new Set<string>();
-    data.forEach(p => { if (p.estado) set.add(p.estado); });
-    return Array.from(set).sort();
-  }, [data]);
-
-  // Client side filtering for visual display
-  const filteredData = useMemo(() => {
-    return data.filter(item => {
-      // Filtro de búsqueda textual
-      const term = searchTerm.toLowerCase();
-      const matchesSearch = term === '' || (
-        (item.nombres?.toLowerCase().includes(term) || false) ||
-        (item.apellidos?.toLowerCase().includes(term) || false) ||
-        (item.cedula?.includes(term) || false) ||
-        (item.provincia?.toLowerCase().includes(term) || false) ||
-        (item.municipio?.toLowerCase().includes(term) || false) ||
-        (item.centro?.toLowerCase().includes(term) || false) ||
-        (item.estado?.toLowerCase().includes(term) || false) ||
-        (item.estadoCivil?.toLowerCase().includes(term) || false) ||
-        (item.nivelEstudio?.toLowerCase().includes(term) || false) ||
-        (item.rutaFormativa?.toLowerCase().includes(term) || false)
-      );
-      if (!matchesSearch) return false;
-
-      // Filtros de selección
-      if (filterProvincia !== 'todas' && item.provincia !== filterProvincia) return false;
-      if (filterEstado !== 'todos' && item.estado !== filterEstado) return false;
-      if (filterSexo !== 'todos' && item.sexo?.toLowerCase() !== filterSexo) return false;
-
-      return true;
-    });
-  }, [data, searchTerm, filterProvincia, filterEstado, filterSexo]);
-
-  // Render Cell Content Helper
   const renderCell = (item: Participant, columnId: string) => {
     switch (columnId) {
       case 'fullName':
@@ -252,7 +221,6 @@ export const DataTable: React.FC<DataTableProps> = ({
         return <span className="text-xs whitespace-nowrap">{item.fechaRegistro ? new Date(item.fechaRegistro).toLocaleDateString() : 'N/A'}</span>;
       case 'fechaInclusion':
         return <span className="text-xs whitespace-nowrap">{item.fechaInclusion ? new Date(item.fechaInclusion).toLocaleDateString() : 'N/A'}</span>;
-
       case 'tutor':
         return <span className="text-xs">{item.tutor || 'N/A'}</span>;
       case 'cedulaTutor':
@@ -286,14 +254,12 @@ export const DataTable: React.FC<DataTableProps> = ({
 
   const visibleColumns = columns.filter(c => c.visible);
 
-  // Pagination calculations
   const startItem = totalItems === 0 ? 0 : (currentPage - 1) * pageSize + 1;
   const endItem = Math.min((currentPage - 1) * pageSize + data.length, totalItems);
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden relative">
 
-      {/* Exporting Overlay */}
       {isExporting && exportProgress && (
         <div className="absolute inset-0 z-50 bg-white/90 flex flex-col items-center justify-center p-6">
           <div className="w-full max-w-md bg-white p-6 rounded-xl shadow-2xl border border-gray-200">
@@ -301,25 +267,21 @@ export const DataTable: React.FC<DataTableProps> = ({
             <p className="text-sm text-gray-500 mb-4">
               Esto puede tomar unos minutos debido a la seguridad de la API.
             </p>
-
             <div className="w-full bg-gray-200 rounded-full h-2.5 mb-2">
               <div
                 className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
                 style={{ width: `${(exportProgress.current / exportProgress.total) * 100}%` }}
               ></div>
             </div>
-
             <div className="flex justify-between text-xs text-gray-600 mb-6">
               <span>Progreso: {Math.round((exportProgress.current / exportProgress.total) * 100)}%</span>
               <span>Lote {exportProgress.current} de {exportProgress.total}</span>
             </div>
-
             {exportProgress.errors > 0 && (
               <div className="mb-4 text-xs bg-yellow-50 text-yellow-700 p-2 rounded border border-yellow-200 flex items-center gap-2">
                 <span className="font-bold">{exportProgress.errors}</span> lotes omitidos por error en API (Data Nula).
               </div>
             )}
-
             <button
               onClick={onCancelExport}
               className="w-full flex items-center justify-center gap-2 bg-red-50 hover:bg-red-100 text-red-600 py-2 rounded-lg text-sm font-medium transition-colors"
@@ -330,9 +292,7 @@ export const DataTable: React.FC<DataTableProps> = ({
         </div>
       )}
 
-      {/* Table Header / Toolbar */}
       <div className="p-4 border-b border-gray-100 space-y-3">
-        {/* Search row */}
         <div className="relative w-full">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <Search size={18} className="text-gray-400" />
@@ -342,33 +302,43 @@ export const DataTable: React.FC<DataTableProps> = ({
             placeholder="Buscar..."
             className="pl-10 pr-4 py-2 bg-white border border-gray-300 rounded-lg w-full text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm transition-shadow"
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => onSearchChange(e.target.value)}
           />
         </div>
 
-        {/* Filters + Actions row */}
         <div className="flex flex-wrap items-center gap-2">
           <select
             value={filterProvincia}
-            onChange={e => setFilterProvincia(e.target.value)}
+            onChange={e => onProvinciaChange(e.target.value)}
             className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500"
           >
             <option value="todas">Provincia: Todas</option>
             {uniqueProvincias.map(p => (<option key={p} value={p}>{p}</option>))}
           </select>
 
+          {filterProvincia !== 'todas' && (
+            <select
+              value={filterMunicipio}
+              onChange={e => onMunicipioChange(e.target.value)}
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="todos">Municipio: Todos</option>
+              {availableMunicipios.map(m => (<option key={m} value={m}>{m}</option>))}
+            </select>
+          )}
+
           <select
-            value={filterEstado}
-            onChange={e => setFilterEstado(e.target.value)}
+            value={filterCentro}
+            onChange={e => onCentroChange(e.target.value)}
             className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500"
           >
-            <option value="todos">Estado: Todos</option>
-            {uniqueEstados.map(e => (<option key={e} value={e}>{e}</option>))}
+            <option value="todos">Centro: Todos</option>
+            {uniqueCentros.map(c => (<option key={c} value={c}>{c}</option>))}
           </select>
 
           <select
             value={filterSexo}
-            onChange={e => setFilterSexo(e.target.value)}
+            onChange={e => onSexoChange(e.target.value)}
             className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500"
           >
             <option value="todos">Sexo: Todos</option>
@@ -378,7 +348,6 @@ export const DataTable: React.FC<DataTableProps> = ({
 
           <div className="w-px h-6 bg-gray-200 mx-1" />
 
-          {/* Column Selector */}
           <div className="relative">
             <button
               onClick={() => setShowColumnSelector(!showColumnSelector)}
@@ -410,7 +379,6 @@ export const DataTable: React.FC<DataTableProps> = ({
         </div>
       </div>
 
-      {/* ── Sección de exportación (despegada de la tabla) ── */}
       <div className="px-4 py-3 border-b border-gray-100">
         <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
           <button
@@ -426,7 +394,6 @@ export const DataTable: React.FC<DataTableProps> = ({
 
           {showExportSection && (
             <div className="px-4 py-3 border-t border-gray-100 flex flex-wrap items-center gap-3">
-              {/* Exportar dropdown */}
               <div className="relative">
                 <button
                   onClick={() => setShowFormatDropdown(prev => !prev)}
@@ -467,7 +434,6 @@ export const DataTable: React.FC<DataTableProps> = ({
                 )}
               </div>
 
-              {/* Exportar Todos */}
               {onOpenMassExport && (
                 <button
                   onClick={onOpenMassExport}
@@ -487,7 +453,6 @@ export const DataTable: React.FC<DataTableProps> = ({
         </div>
       </div>
 
-      {/* Table Content */}
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse">
           <thead>
@@ -509,12 +474,12 @@ export const DataTable: React.FC<DataTableProps> = ({
                   </div>
                 </td>
               </tr>
-            ) : filteredData.length === 0 ? (
+            ) : data.length === 0 ? (
               <tr>
                 <td colSpan={visibleColumns.length} className="p-8 text-center text-gray-500">No se encontraron registros.</td>
               </tr>
             ) : (
-              filteredData.map((item) => (
+              data.map((item) => (
                 <tr key={item.id} className="hover:bg-blue-50/50 transition-colors text-sm text-gray-700">
                   {visibleColumns.map(col => (
                     <td key={`${item.id}-${col.id}`} className="p-4">
@@ -528,7 +493,6 @@ export const DataTable: React.FC<DataTableProps> = ({
         </table>
       </div>
 
-      {/* Pagination Footer */}
       <div className="p-4 border-t border-gray-100 flex items-center justify-between bg-gray-50">
         <div className="text-sm text-gray-500">
           Mostrando <span className="font-medium text-gray-900">{formatNumber(startItem)} - {formatNumber(endItem)}</span> de <span className="font-medium text-gray-900">{formatNumber(totalItems)}</span>

@@ -1,89 +1,116 @@
-import React, { useState, useEffect } from 'react';
-import { Download } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useDashboard } from '../contexts/DashboardContext';
-import { useTableData } from '../hooks/useTableData';
+import { DataTable } from '../components/DataTable';
+import { DEFAULT_PAGE_SIZE, PROVINCE_MUNICIPALITIES } from '../constants';
 import { useMassExport } from '../hooks/useMassExport';
 import { MassExportModal } from '../components/MassExportModal';
-import { DataTable } from '../components/DataTable';
-import { DEFAULT_PAGE_SIZE } from '../constants';
-import { formatNumber } from '../utils/formatters';
 
 const Participantes: React.FC = () => {
-  const { customToken } = useDashboard();
-
-  // Local pagination state
-  const [pageIndex, setPageIndex] = useState<number>(1);
-  const [pageSize, setPageSize] = useState<number>(DEFAULT_PAGE_SIZE);
-
-  // Local table data hook
-  const {
-    tableData,
-    tableTotalItems,
-    isTableLoading,
-    tableError,
-    loadTableData
-  } = useTableData(customToken, 0);
-
-  // Initial data load
-  useEffect(() => {
-    loadTableData(pageIndex, pageSize);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Reload on pagination change
-  useEffect(() => {
-    loadTableData(pageIndex, pageSize);
-  }, [pageIndex, pageSize, loadTableData]);
-
+  const { dashboardData } = useDashboard();
   const massExport = useMassExport();
 
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterProvincia, setFilterProvincia] = useState('todas');
+  const [filterMunicipio, setFilterMunicipio] = useState('todos');
+  const [filterCentro, setFilterCentro] = useState('todos');
+  const [filterSexo, setFilterSexo] = useState('todos');
+
+  const [pageIndex, setPageIndex] = useState(1);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+
+  useEffect(() => { setPageIndex(1); }, [searchTerm, filterProvincia, filterMunicipio, filterCentro, filterSexo]);
+
+  const availableMunicipios = useMemo(() => {
+    if (filterProvincia === 'todas') return [];
+    return PROVINCE_MUNICIPALITIES[filterProvincia] || [];
+  }, [filterProvincia]);
+
+  const handleProvinciaChange = (v: string) => {
+    setFilterProvincia(v);
+    setFilterMunicipio('todos');
+  };
+
+  const uniqueProvincias = useMemo(() => {
+    const set = new Set<string>();
+    dashboardData.forEach(p => { if (p.provincia) set.add(p.provincia); });
+    return Array.from(set).sort();
+  }, [dashboardData]);
+
+  const uniqueCentros = useMemo(() => {
+    const set = new Set<string>();
+    dashboardData.forEach(p => { if (p.centro) set.add(p.centro); });
+    return Array.from(set).sort();
+  }, [dashboardData]);
+
+  const filteredData = useMemo(() => {
+    let data = dashboardData;
+
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      data = data.filter(p =>
+        (p.nombres?.toLowerCase().includes(term) || false) ||
+        (p.apellidos?.toLowerCase().includes(term) || false) ||
+        (p.cedula?.includes(term) || false) ||
+        (p.provincia?.toLowerCase().includes(term) || false) ||
+        (p.municipio?.toLowerCase().includes(term) || false) ||
+        (p.centro?.toLowerCase().includes(term) || false) ||
+        (p.estado?.toLowerCase().includes(term) || false) ||
+        (p.estadoCivil?.toLowerCase().includes(term) || false) ||
+        (p.nivelEstudio?.toLowerCase().includes(term) || false) ||
+        (p.rutaFormativa?.toLowerCase().includes(term) || false)
+      );
+    }
+
+    if (filterProvincia !== 'todas') data = data.filter(p => p.provincia === filterProvincia);
+    if (filterMunicipio !== 'todos') data = data.filter(p => p.municipio === filterMunicipio);
+    if (filterCentro !== 'todos') data = data.filter(p => p.centro === filterCentro);
+    if (filterSexo !== 'todos') data = data.filter(p => p.sexo?.toLowerCase() === filterSexo);
+
+    return data;
+  }, [dashboardData, searchTerm, filterProvincia, filterMunicipio, filterCentro, filterSexo]);
+
+  const totalPages = Math.ceil(filteredData.length / pageSize);
+  const startIndex = (pageIndex - 1) * pageSize;
+  const pagedData = useMemo(() => {
+    return filteredData.slice(startIndex, startIndex + pageSize);
+  }, [filteredData, pageIndex, pageSize]);
+
   const handleExport = (_format: 'csv' | 'json') => {
-    // The DataTable provides its own local export via handleLocalExport.
-    // This stub covers the full-export button for future enhancement.
-    if (tableData.length === 0) return;
+    // Exportar datos filtrados — futuro
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto w-full animate-in slide-in-from-right-4 duration-300">
-      {tableError ? (
-        <div className="bg-red-50 p-4 rounded-lg text-red-700 border border-red-200 mb-4">
-          Error cargando tabla: {tableError}
-        </div>
-      ) : null}
-
-      {/* Acciones superiores */}
-      <div className="flex justify-end mb-4">
-        <button
-          onClick={massExport.openMassExportModal}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg text-sm font-medium transition-colors shadow-md"
-        >
-          <Download size={16} />
-          Exportar Todos
-          {tableTotalItems > 0 && (
-            <span className="text-[10px] bg-blue-500 px-1.5 py-0.5 rounded-full">
-              {formatNumber(tableTotalItems)}
-            </span>
-          )}
-        </button>
-      </div>
-
+    <div className="p-6 max-w-7xl mx-auto w-full animate-in slide-in-from-right-4 duration-300 space-y-4">
       <DataTable
-        data={tableData}
+        data={pagedData}
         currentPage={pageIndex}
         pageSize={pageSize}
-        totalItems={tableTotalItems}
-        totalPages={Math.ceil(tableTotalItems / pageSize)}
-        loading={isTableLoading}
-        isExporting={false}
-        exportProgress={{ current: 0, total: 0, errors: 0 }}
+        totalItems={filteredData.length}
+        totalPages={totalPages}
+        loading={false}
+        isExporting={massExport.isMassExporting}
+        exportProgress={massExport.massExportProgress || undefined}
         onPageChange={setPageIndex}
         onPageSizeChange={setPageSize}
         onExport={handleExport}
-        onCancelExport={() => {}}
+        onCancelExport={massExport.cancelMassExport}
         onOpenMassExport={massExport.openMassExportModal}
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        filterProvincia={filterProvincia}
+        onProvinciaChange={handleProvinciaChange}
+        availableMunicipios={availableMunicipios}
+        filterMunicipio={filterMunicipio}
+        onMunicipioChange={setFilterMunicipio}
+        filterCentro={filterCentro}
+        onCentroChange={setFilterCentro}
+        uniqueCentros={uniqueCentros}
+        filterSexo={filterSexo}
+        onSexoChange={setFilterSexo}
+        uniqueProvincias={uniqueProvincias}
+        allFilteredData={filteredData}
       />
 
-      {/* Mass Export Modal */}
       <MassExportModal
         isOpen={massExport.showMassExportModal}
         isExporting={massExport.isMassExporting}
