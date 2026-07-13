@@ -130,7 +130,7 @@ export const useDashboardData = (): UseDashboardDataResult => {
             }
 
             // Paso 2: Carga masiva con bucle WHILE
-            const BATCH_SIZE = 1000;
+            const BATCH_SIZE = 10000;
 
             let currentPage = 1;
             if (forceStartPage !== undefined) {
