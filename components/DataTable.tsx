@@ -44,6 +44,8 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
   { id: 'discapacidades', label: 'Discapacidades', visible: false },
   { id: 'enfermedades', label: 'Enfermedades', visible: false },
   { id: 'programasSociales', label: 'Programas Sociales', visible: true },
+  { id: 'fechaNacimiento', label: 'Fecha Nacimiento', visible: false },
+  { id: 'vulnerabilidades', label: 'Vulnerabilidades', visible: false },
 ];
 
 export const DataTable: React.FC<DataTableProps> = ({
@@ -52,6 +54,9 @@ export const DataTable: React.FC<DataTableProps> = ({
   onPageChange, onPageSizeChange, onExport, onCancelExport
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterProvincia, setFilterProvincia] = useState<string>('todas');
+  const [filterEstado, setFilterEstado] = useState<string>('todos');
+  const [filterSexo, setFilterSexo] = useState<string>('todos');
 
   // Column visibility state
   const [columns, setColumns] = useState<ColumnConfig[]>(DEFAULT_COLUMNS);
@@ -150,11 +155,24 @@ export const DataTable: React.FC<DataTableProps> = ({
     document.body.removeChild(link);
   };
 
+  const uniqueProvincias = useMemo(() => {
+    const set = new Set<string>();
+    data.forEach(p => { if (p.provincia) set.add(p.provincia); });
+    return Array.from(set).sort();
+  }, [data]);
+
+  const uniqueEstados = useMemo(() => {
+    const set = new Set<string>();
+    data.forEach(p => { if (p.estado) set.add(p.estado); });
+    return Array.from(set).sort();
+  }, [data]);
+
   // Client side filtering for visual display
   const filteredData = useMemo(() => {
     return data.filter(item => {
+      // Filtro de búsqueda textual
       const term = searchTerm.toLowerCase();
-      return (
+      const matchesSearch = term === '' || (
         (item.nombres?.toLowerCase().includes(term) || false) ||
         (item.apellidos?.toLowerCase().includes(term) || false) ||
         (item.cedula?.includes(term) || false) ||
@@ -166,8 +184,16 @@ export const DataTable: React.FC<DataTableProps> = ({
         (item.nivelEstudio?.toLowerCase().includes(term) || false) ||
         (item.rutaFormativa?.toLowerCase().includes(term) || false)
       );
+      if (!matchesSearch) return false;
+
+      // Filtros de selección
+      if (filterProvincia !== 'todas' && item.provincia !== filterProvincia) return false;
+      if (filterEstado !== 'todos' && item.estado !== filterEstado) return false;
+      if (filterSexo !== 'todos' && item.sexo?.toLowerCase() !== filterSexo) return false;
+
+      return true;
     });
-  }, [data, searchTerm]);
+  }, [data, searchTerm, filterProvincia, filterEstado, filterSexo]);
 
   // Render Cell Content Helper
   const renderCell = (item: Participant, columnId: string) => {
@@ -231,6 +257,10 @@ export const DataTable: React.FC<DataTableProps> = ({
         return <span className="text-xs">{item.enfermedades || 'N/A'}</span>;
       case 'programasSociales':
         return <div className="max-w-[200px] truncate text-xs" title={item.programasSociales || ''}>{item.programasSociales || 'N/A'}</div>;
+      case 'fechaNacimiento':
+        return <span className="text-xs whitespace-nowrap">{item.fechaNacimiento ? new Date(item.fechaNacimiento).toLocaleDateString() : 'N/A'}</span>;
+      case 'vulnerabilidades':
+        return <div className="max-w-[200px] truncate text-xs" title={item.vulnerabilidades || ''}>{item.vulnerabilidades || 'N/A'}</div>;
       default:
         return null;
     }
@@ -296,6 +326,35 @@ export const DataTable: React.FC<DataTableProps> = ({
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
+
+        {/* Filtros */}
+        <select
+          value={filterProvincia}
+          onChange={e => setFilterProvincia(e.target.value)}
+          className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="todas">Provincia: Todas</option>
+          {uniqueProvincias.map(p => (<option key={p} value={p}>{p}</option>))}
+        </select>
+
+        <select
+          value={filterEstado}
+          onChange={e => setFilterEstado(e.target.value)}
+          className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="todos">Estado: Todos</option>
+          {uniqueEstados.map(e => (<option key={e} value={e}>{e}</option>))}
+        </select>
+
+        <select
+          value={filterSexo}
+          onChange={e => setFilterSexo(e.target.value)}
+          className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="todos">Sexo: Todos</option>
+          <option value="femenino">Femenino</option>
+          <option value="masculino">Masculino</option>
+        </select>
 
         <div className="flex flex-wrap justify-end gap-2 w-full xl:w-auto mobile-actions">
           {/* Column Selector Button */}
