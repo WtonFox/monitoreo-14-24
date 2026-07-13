@@ -1,7 +1,7 @@
 import React from 'react';
 import { Users, UserCheck, MapPin, Building2, Map, Calendar, AlertCircle, Activity, Award } from 'lucide-react';
 import { Participant } from '../types';
-import { formatNumber } from '../utils/formatters';
+import { formatNumber, formatPercentage } from '../utils/formatters';
 
 interface StatsCardsProps {
   data: Participant[];
@@ -28,23 +28,25 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ data, totalItems }) => {
     ? (validEdadRegistro.reduce((acc, p) => acc + p.edadRegistro, 0) / validEdadRegistro.length).toFixed(1)
     : 'N/A';
 
-  // 2. % Discapacidades
-  const discapacitados = data.filter(p =>
-    p.discapacidades !== null && p.discapacidades !== 'N/D' && p.discapacidades !== 'Ninguna'
-  ).length;
-  const pctDiscapacidades = data.length > 0
-    ? ((discapacitados / data.length) * 100).toFixed(1) + '%'
+  // 2. % Discapacidades — sobre universo con dato (excluye N/A/N/D/null)
+  const withDiscapacidadData = data.filter(p =>
+    p.discapacidades !== null && p.discapacidades !== 'N/D' && p.discapacidades !== 'N/A'
+  );
+  const discapacitados = withDiscapacidadData.filter(p => p.discapacidades !== 'Ninguna');
+  const pctDiscapacidades = withDiscapacidadData.length > 0
+    ? formatPercentage((discapacitados.length / withDiscapacidadData.length) * 100) + ` (${formatNumber(withDiscapacidadData.length)} con dato)`
     : 'N/A';
 
-  // 3. % Enfermedades
-  const enfermos = data.filter(p =>
-    p.enfermedades !== null && p.enfermedades !== 'N/D' && p.enfermedades !== 'Ninguna'
-  ).length;
-  const pctEnfermedades = data.length > 0
-    ? ((enfermos / data.length) * 100).toFixed(1) + '%'
+  // 3. % Enfermedades — sobre universo con dato
+  const withEnfermedadesData = data.filter(p =>
+    p.enfermedades !== null && p.enfermedades !== 'N/D' && p.enfermedades !== 'N/A'
+  );
+  const enfermos = withEnfermedadesData.filter(p => p.enfermedades !== 'Ninguna');
+  const pctEnfermedades = withEnfermedadesData.length > 0
+    ? formatPercentage((enfermos.length / withEnfermedadesData.length) * 100) + ` (${formatNumber(withEnfermedadesData.length)} con dato)`
     : 'N/A';
 
-  // 4. Programas Sociales — most common
+  // 4. Programas Sociales — más común entre quienes tienen dato
   const programasCounts: Record<string, number> = {};
   data.forEach(p => {
     if (p.programasSociales && p.programasSociales !== 'N/A' && p.programasSociales !== 'Ninguna') {

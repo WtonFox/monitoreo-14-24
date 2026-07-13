@@ -182,6 +182,8 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
 
     // Vulnerabilidad
     const vulnerabilityCounts: Record<string, number> = { discapacidades: 0, enfermedades: 0, alergias: 0, programasSociales: 0, vulnerabilidades: 0 };
+    // Universo de registros con ALGÚN dato (incluye "Ninguna", excluye null/N/A/N/D)
+    const vulnerabilityUniverse: Record<string, number> = { discapacidades: 0, enfermedades: 0, alergias: 0, programasSociales: 0, vulnerabilidades: 0 };
     const disabilityTypes: Record<string, number> = {};
     const diseaseTypes: Record<string, number> = {};
     const allergyTypes: Record<string, number> = {};
@@ -259,37 +261,53 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
       if (hasValue(p.discapacidades)) qualityDisabilities++;
       if (hasValue(p.enfermedades)) qualityDiseases++;
 
-      // Vulnerabilidad
-      if (hasValue(p.discapacidades)) {
-        vulnerabilityCounts.discapacidades++;
-        p.discapacidades!.split(',').forEach(d => {
-          const s = d.trim();
-          if (s && !isEmptyValue(s)) disabilityTypes[s] = (disabilityTypes[s] || 0) + 1;
-        });
+      // Vulnerabilidad — universo: registros con ALGÚN dato (incluye "Ninguna")
+      // vs vulnerabilityCounts: registros con valor REAL (excluye "Ninguna")
+      if (!isEmptyValue(p.discapacidades)) {
+        vulnerabilityUniverse.discapacidades++;
+        if (hasValue(p.discapacidades)) {
+          vulnerabilityCounts.discapacidades++;
+          p.discapacidades!.split(',').forEach(d => {
+            const s = d.trim();
+            if (s && !isEmptyValue(s)) disabilityTypes[s] = (disabilityTypes[s] || 0) + 1;
+          });
+        }
       }
-      if (hasValue(p.enfermedades)) {
-        vulnerabilityCounts.enfermedades++;
-        p.enfermedades!.split(',').forEach(e => {
-          const s = e.trim();
-          if (s && !isEmptyValue(s)) diseaseTypes[s] = (diseaseTypes[s] || 0) + 1;
-        });
+      if (!isEmptyValue(p.enfermedades)) {
+        vulnerabilityUniverse.enfermedades++;
+        if (hasValue(p.enfermedades)) {
+          vulnerabilityCounts.enfermedades++;
+          p.enfermedades!.split(',').forEach(e => {
+            const s = e.trim();
+            if (s && !isEmptyValue(s)) diseaseTypes[s] = (diseaseTypes[s] || 0) + 1;
+          });
+        }
       }
-      if (hasValue(p.alergias)) {
-        vulnerabilityCounts.alergias++;
-        p.alergias!.split(',').forEach(a => {
-          const s = a.trim();
-          if (s && !isEmptyValue(s)) allergyTypes[s] = (allergyTypes[s] || 0) + 1;
-        });
+      if (!isEmptyValue(p.alergias)) {
+        vulnerabilityUniverse.alergias++;
+        if (hasValue(p.alergias)) {
+          vulnerabilityCounts.alergias++;
+          p.alergias!.split(',').forEach(a => {
+            const s = a.trim();
+            if (s && !isEmptyValue(s)) allergyTypes[s] = (allergyTypes[s] || 0) + 1;
+          });
+        }
       }
-      if (hasValue(p.programasSociales)) {
-        vulnerabilityCounts.programasSociales++;
-        p.programasSociales!.split(',').forEach(pr => {
-          const s = pr.trim();
-          if (s && !isEmptyValue(s)) socialProgramTypes[s] = (socialProgramTypes[s] || 0) + 1;
-        });
+      if (!isEmptyValue(p.programasSociales)) {
+        vulnerabilityUniverse.programasSociales++;
+        if (hasValue(p.programasSociales)) {
+          vulnerabilityCounts.programasSociales++;
+          p.programasSociales!.split(',').forEach(pr => {
+            const s = pr.trim();
+            if (s && !isEmptyValue(s)) socialProgramTypes[s] = (socialProgramTypes[s] || 0) + 1;
+          });
+        }
       }
-      if (hasValue(p.vulnerabilidades)) {
-        vulnerabilityCounts.vulnerabilidades++;
+      if (!isEmptyValue(p.vulnerabilidades)) {
+        vulnerabilityUniverse.vulnerabilidades++;
+        if (hasValue(p.vulnerabilidades)) {
+          vulnerabilityCounts.vulnerabilidades++;
+        }
       }
 
       // Cobertura Temporal
@@ -743,13 +761,21 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
     });
 
     // ── Salud y Vulnerabilidad (43-49) ──
+    const pctUniverse = (count: number, universe: number): string =>
+      universe > 0 ? pct(count, universe) + ` (s/${formatNumber(universe)} con dato)` : '0.0%';
+    const sinDato = (total: number, universe: number): string =>
+      total - universe > 0 ? `${formatNumber(total - universe)} s/dato` : '';
+
     all.push({
       id: 43,
       name: 'Porcentaje de participantes con discapacidades reportadas',
       category: 'vulnerabilidad',
-      value: vulnerabilityCounts.discapacidades > 0 ? pct(vulnerabilityCounts.discapacidades, total) : '0.0%',
-      formula: '(Con discapacidad / Total) \u00d7 100',
-      description: 'Proporci\u00f3n de participantes que reportan al menos una discapacidad. Indicador de inclusi\u00f3n y necesidades de apoyo.',
+      value: [
+        pctUniverse(vulnerabilityCounts.discapacidades, vulnerabilityUniverse.discapacidades),
+        sinDato(total, vulnerabilityUniverse.discapacidades),
+      ].filter(Boolean).join(' · '),
+      formula: '(Con discapacidad / Total con dato) × 100',
+      description: 'Proporción de participantes que reportan discapacidad, calculada solo sobre registros con dato (excluye N/A).',
       status: 'viable',
     });
     all.push({
@@ -765,9 +791,12 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
       id: 45,
       name: 'Porcentaje de participantes con enfermedades reportadas',
       category: 'vulnerabilidad',
-      value: vulnerabilityCounts.enfermedades > 0 ? pct(vulnerabilityCounts.enfermedades, total) : '0.0%',
-      formula: '(Con enfermedad / Total) \u00d7 100',
-      description: 'Proporci\u00f3n de participantes que reportan al menos una enfermedad. Indicador de perfil de salud de la poblaci\u00f3n atendida.',
+      value: [
+        pctUniverse(vulnerabilityCounts.enfermedades, vulnerabilityUniverse.enfermedades),
+        sinDato(total, vulnerabilityUniverse.enfermedades),
+      ].filter(Boolean).join(' · '),
+      formula: '(Con enfermedad / Total con dato) × 100',
+      description: 'Proporción de participantes que reportan enfermedad, calculada solo sobre registros con dato (excluye N/A).',
       status: 'viable',
     });
     all.push({
@@ -783,27 +812,36 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
       id: 47,
       name: 'Porcentaje de participantes con alergias reportadas',
       category: 'vulnerabilidad',
-      value: vulnerabilityCounts.alergias > 0 ? pct(vulnerabilityCounts.alergias, total) : '0.0%',
-      formula: '(Con alergia / Total) \u00d7 100',
-      description: 'Proporci\u00f3n de participantes que reportan al menos una alergia. Importante para la atenci\u00f3n m\u00e9dica y prevenci\u00f3n.',
+      value: [
+        pctUniverse(vulnerabilityCounts.alergias, vulnerabilityUniverse.alergias),
+        sinDato(total, vulnerabilityUniverse.alergias),
+      ].filter(Boolean).join(' · '),
+      formula: '(Con alergia / Total con dato) × 100',
+      description: 'Proporción de participantes que reportan alergia, calculada solo sobre registros con dato (excluye N/A).',
       status: 'viable',
     });
     all.push({
       id: 48,
       name: 'Porcentaje de participantes en programas sociales del gobierno',
       category: 'vulnerabilidad',
-      value: vulnerabilityCounts.programasSociales > 0 ? pct(vulnerabilityCounts.programasSociales, total) : '0.0%',
-      formula: '(En programa social / Total) \u00d7 100',
-      description: 'Proporci\u00f3n de participantes que reciben otros beneficios sociales. Ayuda a medir la vulnerabilidad socioecon\u00f3mica de la poblaci\u00f3n.',
+      value: [
+        pctUniverse(vulnerabilityCounts.programasSociales, vulnerabilityUniverse.programasSociales),
+        sinDato(total, vulnerabilityUniverse.programasSociales),
+      ].filter(Boolean).join(' · '),
+      formula: '(En programa social / Total con dato) × 100',
+      description: 'Proporción de participantes en programas sociales, calculada solo sobre registros con dato (excluye N/A).',
       status: 'viable',
     });
     all.push({
       id: 49,
       name: 'Porcentaje de participantes con vulnerabilidades reportadas',
       category: 'vulnerabilidad',
-      value: vulnerabilityCounts.vulnerabilidades > 0 ? pct(vulnerabilityCounts.vulnerabilidades, total) : '0.0%',
-      formula: '(Con vulnerabilidad / Total) \u00d7 100',
-      description: 'Proporci\u00f3n de participantes que reportan alguna condici\u00f3n de vulnerabilidad. Indicador compuesto de riesgo social.',
+      value: [
+        pctUniverse(vulnerabilityCounts.vulnerabilidades, vulnerabilityUniverse.vulnerabilidades),
+        sinDato(total, vulnerabilityUniverse.vulnerabilidades),
+      ].filter(Boolean).join(' · '),
+      formula: '(Con vulnerabilidad / Total con dato) × 100',
+      description: 'Proporción de participantes con vulnerabilidad, calculada solo sobre registros con dato (excluye N/A).',
       status: 'viable',
     });
 
