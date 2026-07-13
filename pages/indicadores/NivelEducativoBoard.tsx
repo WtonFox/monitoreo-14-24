@@ -1,6 +1,4 @@
-import React, { useMemo, useState } from 'react';
-import { useDashboard } from '../../contexts/DashboardContext';
-import { useIndicatorBoards } from '../../hooks/useIndicatorBoards';
+import React, { useState } from 'react';
 import { formatNumber, formatPercentage } from '../../utils/formatters';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
@@ -15,29 +13,11 @@ const COLORS = ['#0d9488', '#14b8a6', '#2dd4bf', '#5eead4', '#99f6e4', '#ccfbf1'
 type ViewMode = 'grid' | 'row';
 
 const NivelEducativoBoard: React.FC = () => {
-  const { dashboardData } = useDashboard();
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
-  const filters = useIndicadoresFilters();
+  const { boardData, filteredData } = useIndicadoresFilters();
+  const { educationData } = boardData;
 
-  const filteredData = useMemo(() => {
-    let data = dashboardData;
-    if (filters.year !== 'todos') {
-      data = data.filter(p =>
-        p.fechaRegistro && new Date(p.fechaRegistro).getFullYear().toString() === filters.year
-      );
-    }
-    if (filters.province !== 'todos') {
-      data = data.filter(p => p.provincia === filters.province);
-    }
-    if (filters.municipio !== 'todos') {
-      data = data.filter(p => p.municipio === filters.municipio);
-    }
-    return data;
-  }, [dashboardData, filters.year, filters.province, filters.municipio]);
-
-  const { educationData } = useIndicatorBoards(filteredData);
-
-  if (dashboardData.length === 0) {
+  if (filteredData.length === 0) {
     return (
       <div className="p-6 max-w-7xl mx-auto w-full">
         <div className="h-64 flex flex-col items-center justify-center text-gray-400 bg-white rounded-xl border border-dashed border-gray-300">
@@ -48,11 +28,11 @@ const NivelEducativoBoard: React.FC = () => {
   }
 
   const totalConDato = educationData.educationDistribution.reduce((s, e) => s + e.value, 0);
-  const totalSinDato = dashboardData.length - totalConDato;
-  const pctSinDato = dashboardData.length > 0 ? (totalSinDato / dashboardData.length) * 100 : 0;
+  const totalSinDato = filteredData.length - totalConDato;
+  const pctSinDato = filteredData.length > 0 ? (totalSinDato / filteredData.length) * 100 : 0;
   const nivelMasComun = educationData.educationDistribution.length > 0 ? educationData.educationDistribution[0] : null;
-  const pctMasComun = nivelMasComun && dashboardData.length > 0
-    ? (nivelMasComun.value / dashboardData.length) * 100
+  const pctMasComun = nivelMasComun && filteredData.length > 0
+    ? (nivelMasComun.value / filteredData.length) * 100
     : 0;
 
   const tickShort = (val: string) => val.length > 14 ? val.substring(0, 12) + '…' : val;

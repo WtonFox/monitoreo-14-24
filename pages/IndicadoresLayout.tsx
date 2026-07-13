@@ -126,7 +126,7 @@ const IndicadoresLayout: React.FC = () => {
 
       {/* Page Content */}
       <div className="flex-1">
-        <IndicadoresFiltersProvider allYears={allYears}>
+        <IndicadoresFiltersProvider allYears={allYears} rawData={dashboardData}>
           <Outlet />
         </IndicadoresFiltersProvider>
       </div>

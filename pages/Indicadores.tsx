@@ -1,5 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
-import { useDashboard } from '../contexts/DashboardContext';
+import React, { useState, useEffect } from 'react';
 import { useIndicators } from '../hooks/useIndicators';
 import { IndicatorsBoard } from '../components/IndicatorsBoard';
 import { IndicadoresFilterBar } from '../components/IndicadoresFilterBar';
@@ -86,30 +85,10 @@ const InfoModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 // ── Page component ──
 
 const Indicadores: React.FC = () => {
-  const { dashboardData } = useDashboard();
   const filters = useIndicadoresFilters();
   const [showInfo, setShowInfo] = useState(false);
 
-  const filteredData = useMemo(() => {
-    let data = dashboardData;
-    if (filters.year !== 'todos') {
-      data = data.filter(p =>
-        p.fechaRegistro && new Date(p.fechaRegistro).getFullYear().toString() === filters.year
-      );
-    }
-    if (filters.province !== 'todos') {
-      data = data.filter(p => p.provincia === filters.province);
-    }
-    if (filters.municipio !== 'todos') {
-      data = data.filter(p => p.municipio === filters.municipio);
-    }
-    if (filters.sex !== 'todos') {
-      data = data.filter(p => p.sexo?.toLowerCase() === filters.sex);
-    }
-    return data;
-  }, [dashboardData, filters.year, filters.province, filters.municipio, filters.sex]);
-
-  const { groups, lastUpdated } = useIndicators(filteredData);
+  const { groups, lastUpdated } = useIndicators(filters.filteredData);
 
   return (
     <div className="p-6 max-w-7xl mx-auto w-full animate-in fade-in duration-500 space-y-6 flex-1">
@@ -131,12 +110,12 @@ const Indicadores: React.FC = () => {
 
       <IndicadoresFilterBar />
 
-      {filteredData.length === 0 ? (
+      {filters.filteredData.length === 0 ? (
         <div className="h-64 flex flex-col items-center justify-center text-gray-400 bg-white rounded-xl border border-dashed border-gray-300">
           <p>No hay datos para los filtros seleccionados.</p>
         </div>
       ) : (
-        <IndicatorsBoard groups={groups} data={filteredData} />
+        <IndicatorsBoard groups={groups} />
       )}
 
       {showInfo && <InfoModal onClose={() => setShowInfo(false)} />}

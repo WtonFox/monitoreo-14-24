@@ -1,6 +1,4 @@
-import React, { useMemo, useState } from 'react';
-import { useDashboard } from '../../contexts/DashboardContext';
-import { useIndicatorBoards } from '../../hooks/useIndicatorBoards';
+import React, { useState } from 'react';
 import { formatNumber, formatPercentage } from '../../utils/formatters';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
@@ -16,29 +14,11 @@ const PIE_COLORS = ['#dc2626', '#fca5a5', '#fef2f2'];
 type ViewMode = 'grid' | 'row';
 
 const VulnerabilidadBoard: React.FC = () => {
-  const { dashboardData } = useDashboard();
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
-  const filters = useIndicadoresFilters();
+  const { boardData, filteredData } = useIndicadoresFilters();
+  const { vulnerabilityData } = boardData;
 
-  const filteredData = useMemo(() => {
-    let data = dashboardData;
-    if (filters.year !== 'todos') {
-      data = data.filter(p =>
-        p.fechaRegistro && new Date(p.fechaRegistro).getFullYear().toString() === filters.year
-      );
-    }
-    if (filters.province !== 'todos') {
-      data = data.filter(p => p.provincia === filters.province);
-    }
-    if (filters.municipio !== 'todos') {
-      data = data.filter(p => p.municipio === filters.municipio);
-    }
-    return data;
-  }, [dashboardData, filters.year, filters.province, filters.municipio]);
-
-  const { vulnerabilityData } = useIndicatorBoards(filteredData);
-
-  if (dashboardData.length === 0) {
+  if (filteredData.length === 0) {
     return (
       <div className="p-6 max-w-7xl mx-auto w-full">
         <div className="h-64 flex flex-col items-center justify-center text-gray-400 bg-white rounded-xl border border-dashed border-gray-300">
@@ -96,7 +76,7 @@ const VulnerabilidadBoard: React.FC = () => {
           <div className="p-3 bg-rose-50 rounded-lg text-rose-500 mr-4"><AlertTriangle size={24} /></div>
           <div>
             <p className="text-sm text-gray-500 font-medium">Total Evaluados</p>
-            <h3 className="text-2xl font-bold text-gray-800">{formatNumber(dashboardData.length)}</h3>
+            <h3 className="text-2xl font-bold text-gray-800">{formatNumber(filteredData.length)}</h3>
           </div>
         </div>
       </div>

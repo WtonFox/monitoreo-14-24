@@ -1,6 +1,4 @@
-import React, { useMemo, useState } from 'react';
-import { useDashboard } from '../../contexts/DashboardContext';
-import { useIndicatorBoards } from '../../hooks/useIndicatorBoards';
+import React, { useState } from 'react';
 import { formatNumber, formatPercentage } from '../../utils/formatters';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
@@ -15,33 +13,11 @@ const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'
 type ViewMode = 'grid' | 'row';
 
 const DemograficosBoard: React.FC = () => {
-  const { dashboardData } = useDashboard();
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
-  const filters = useIndicadoresFilters();
+  const { boardData, filteredData } = useIndicadoresFilters();
+  const { demographicData } = boardData;
 
-  // ── Real data filtering ──
-  const filteredData = useMemo(() => {
-    let data = dashboardData;
-    if (filters.year !== 'todos') {
-      data = data.filter(p =>
-        p.fechaRegistro && new Date(p.fechaRegistro).getFullYear().toString() === filters.year
-      );
-    }
-    if (filters.province !== 'todos') {
-      data = data.filter(p => p.provincia === filters.province);
-    }
-    if (filters.municipio !== 'todos') {
-      data = data.filter(p => p.municipio === filters.municipio);
-    }
-    if (filters.sex !== 'todos') {
-      data = data.filter(p => p.sexo?.toLowerCase() === filters.sex);
-    }
-    return data;
-  }, [dashboardData, filters.year, filters.province, filters.municipio, filters.sex]);
-
-  const { demographicData } = useIndicatorBoards(filteredData);
-
-  if (dashboardData.length === 0) {
+  if (filteredData.length === 0) {
     return (
       <div className="p-6 max-w-7xl mx-auto w-full">
         <div className="h-64 flex flex-col items-center justify-center text-gray-400 bg-white rounded-xl border border-dashed border-gray-300">

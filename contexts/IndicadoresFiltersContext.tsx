@@ -1,4 +1,7 @@
-import React, { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo, useDeferredValue, type ReactNode } from 'react';
+import type { Participant } from '../types';
+import type { BoardData } from '../hooks/useIndicatorBoards';
+import { useIndicatorBoards } from '../hooks/useIndicatorBoards';
 import { PROVINCE_MUNICIPALITIES } from '../constants';
 
 interface FilterState {
@@ -15,6 +18,9 @@ interface IndicadoresFiltersContextValue extends FilterState {
   setSex: (v: string) => void;
   availableYears: string[];
   availableMunicipios: string[];
+  filteredData: Participant[];
+  boardData: BoardData;
+  isStale: boolean;
 }
 
 const DEFAULT_FILTERS: FilterState = {
@@ -26,10 +32,11 @@ const DEFAULT_FILTERS: FilterState = {
 
 const IndicadoresFiltersContext = createContext<IndicadoresFiltersContextValue | null>(null);
 
-export const IndicadoresFiltersProvider: React.FC<{ children: ReactNode; allYears: string[] }> = ({
-  children,
-  allYears,
-}) => {
+export const IndicadoresFiltersProvider: React.FC<{
+  children: ReactNode;
+  allYears: string[];
+  rawData: Participant[];
+}> = ({ children, allYears, rawData }) => {
   const [year, setYearState] = useState(DEFAULT_FILTERS.year);
   const [province, setProvinceState] = useState(DEFAULT_FILTERS.province);
   const [municipio, setMunicipioState] = useState(DEFAULT_FILTERS.municipio);
@@ -45,6 +52,33 @@ export const IndicadoresFiltersProvider: React.FC<{ children: ReactNode; allYear
     return PROVINCE_MUNICIPALITIES[province] || [];
   }, [province]);
 
+  const deferredFilters = useDeferredValue({ year, province, municipio, sex });
+  const isStale = year !== deferredFilters.year
+    || province !== deferredFilters.province
+    || municipio !== deferredFilters.municipio
+    || sex !== deferredFilters.sex;
+
+  const filteredData = useMemo(() => {
+    let data = rawData;
+    if (deferredFilters.year !== 'todos') {
+      data = data.filter(p =>
+        p.fechaRegistro && new Date(p.fechaRegistro).getFullYear().toString() === deferredFilters.year
+      );
+    }
+    if (deferredFilters.province !== 'todos') {
+      data = data.filter(p => p.provincia === deferredFilters.province);
+    }
+    if (deferredFilters.municipio !== 'todos') {
+      data = data.filter(p => p.municipio === deferredFilters.municipio);
+    }
+    if (deferredFilters.sex !== 'todos') {
+      data = data.filter(p => p.sexo?.toLowerCase() === deferredFilters.sex);
+    }
+    return data;
+  }, [rawData, deferredFilters]);
+
+  const boardData = useIndicatorBoards(filteredData);
+
   const value = useMemo<IndicadoresFiltersContextValue>(() => ({
     year, province, municipio, sex,
     setYear: setYearState,
@@ -53,7 +87,14 @@ export const IndicadoresFiltersProvider: React.FC<{ children: ReactNode; allYear
     setSex: setSexState,
     availableYears: allYears,
     availableMunicipios,
-  }), [year, province, municipio, sex, setProvince, allYears, availableMunicipios]);
+    filteredData,
+    boardData,
+    isStale,
+  }), [
+    year, province, municipio, sex,
+    setProvince, allYears, availableMunicipios,
+    filteredData, boardData, isStale,
+  ]);
 
   return (
     <IndicadoresFiltersContext.Provider value={value}>

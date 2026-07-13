@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { Users, MapPin, Activity, Heart, CheckCircle, AlertTriangle, Calendar, GraduationCap, Building2, CheckCircle2, XCircle } from 'lucide-react';
 import type { IndicatorGroup, Indicator, IndicatorCategory } from '../hooks/useIndicators';
-import type { Participant } from '../types';
-import { useIndicatorBoards } from '../hooks/useIndicatorBoards';
+import { useIndicadoresFilters } from '../contexts/IndicadoresFiltersContext';
 import { IndicatorModal } from './IndicatorModal';
 
 // ---------------------------------------------------------------------------
@@ -112,7 +111,6 @@ const CATEGORY_ICONS: Record<string, React.FC<{ size?: number; className?: strin
 
 interface IndicatorsBoardProps {
   groups: IndicatorGroup[];
-  data: Participant[];
 }
 
 // ---------------------------------------------------------------------------
@@ -260,9 +258,9 @@ const CategorySection: React.FC<{
 // Board (main component)
 // ---------------------------------------------------------------------------
 
-export const IndicatorsBoard: React.FC<IndicatorsBoardProps> = ({ groups, data }) => {
+export const IndicatorsBoard: React.FC<IndicatorsBoardProps> = ({ groups }) => {
   const [selectedIndicator, setSelectedIndicator] = useState<Indicator | null>(null);
-  const boardData = useIndicatorBoards(data);
+  const { boardData } = useIndicadoresFilters();
 
   return (
     <>
