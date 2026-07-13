@@ -418,14 +418,14 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
     });
     all.push({
       id: 21,
-      name: 'Distribución por estado civil',
+      name: 'N\u00famero de participantes por estado civil',
       category: 'demograficos',
       value:
         topEstadoCivil.length > 0
           ? `${topEstadoCivil[0][0]} (${formatNumber(topEstadoCivil[0][1])})`
           : 'Sin datos',
       formula: 'Conteo por valor de estadoCivil',
-      description: 'Distribución por estado civil. Mayoritariamente solteros por el rango etario del programa.',
+      description: 'Distribuci\u00f3n por estado civil. Mayoritariamente solteros por el rango etario del programa.',
       status: 'viable',
     });
     all.push({
@@ -462,7 +462,7 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
     });
     all.push({
       id: 13,
-      name: 'Por sector',
+      name: 'N\u00famero de participantes por sector',
       category: 'territoriales',
       value: 'N/D',
       formula: 'Conteo por sector',
