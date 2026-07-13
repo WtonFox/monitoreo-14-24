@@ -1,0 +1,64 @@
+# openspec/config.yaml
+schema: spec-driven
+
+context: |
+  Tech stack: React 19 + TypeScript 7 + Vite 8
+  Architecture: SPA with react-router-dom, context-based state management,
+    service layer (services/), container/pages pattern, Leaflet maps,
+    Recharts for dashboards
+  Key libs: Leaflet (react-leaflet), Recharts, xlsx/papaparse (CSV/XLSX),
+    lucide-react (icons), idb (IndexedDB persistence)
+  API: Proxy to presidenciamonitoreo1424api.gabsocial.gob.do via Vite dev server
+  Env: VITE_API_TOKEN, VITE_BASE_PATH, GEMINI_API_KEY (.env)
+  Testing: None detected — no test runner in devDependencies or scripts
+  Style: Path alias @/ -> ./, TS strict-lite (skipLibCheck, no strict),
+    JSX react-jsx, ES2022 target, bundler module resolution
+
+strict_tdd: false
+
+testing:
+  runner: null
+  runner_command: ""
+  layers:
+    unit: false
+    integration: false
+    e2e: false
+  coverage: false
+  coverage_command: ""
+  quality:
+    linter: false
+    linter_command: ""
+    type_checker: true
+    type_checker_command: "tsc --noEmit"
+    formatter: false
+    formatter_command: ""
+
+rules:
+  proposal:
+    - Include rollback plan for risky changes
+    - Describe impact on existing changes under openspec/changes/
+    - Reference real API endpoints and data shapes from services/
+  specs:
+    - Use Given/When/Then for scenarios
+    - Use RFC 2119 keywords (MUST, SHALL, SHOULD, MAY)
+    - Cover error, loading, and empty states for async operations
+  design:
+    - Include sequence diagrams for complex flows
+    - Document architecture decisions with rationale
+    - Reference existing component patterns in components/
+  tasks:
+    - Group by phase, use hierarchical numbering
+    - Keep tasks completable in one session
+  apply:
+    guidelines:
+      - Follow existing code patterns and directory conventions
+      - Respect @/ path alias for imports
+      - Maintain existing component structure (containers vs presentational)
+    tdd: false
+    test_command: ""
+  verify:
+    test_command: ""
+    build_command: "npm run build"
+    coverage_threshold: 0
+  archive:
+    - Warn before merging destructive deltas
