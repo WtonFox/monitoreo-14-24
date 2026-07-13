@@ -7,6 +7,8 @@ import {
   PieChart, Pie, Cell,
 } from 'recharts';
 import { AlertTriangle, Grid3X3, List, Accessibility, Heart, Shield } from 'lucide-react';
+import { useIndicadoresFilters } from '../../contexts/IndicadoresFiltersContext';
+import { IndicadoresFilterBar } from '../../components/IndicadoresFilterBar';
 
 const COLORS = ['#dc2626', '#f97316', '#eab308', '#a855f7', '#ec4899'];
 const PIE_COLORS = ['#dc2626', '#fca5a5', '#fef2f2'];
@@ -16,28 +18,23 @@ type ViewMode = 'grid' | 'row';
 const VulnerabilidadBoard: React.FC = () => {
   const { dashboardData } = useDashboard();
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
-  const [yearFilter, setYearFilter] = useState<string>('todos');
-
-  const availableYears = useMemo<string[]>(() => {
-    const years = new Set<number>();
-    dashboardData.forEach(p => {
-      if (p.fechaRegistro) {
-        const y = new Date(p.fechaRegistro).getFullYear();
-        if (!isNaN(y)) years.add(y);
-      }
-    });
-    return Array.from(years).sort((a, b) => b - a).map(String);
-  }, [dashboardData]);
+  const filters = useIndicadoresFilters();
 
   const filteredData = useMemo(() => {
     let data = dashboardData;
-    if (yearFilter !== 'todos') {
+    if (filters.year !== 'todos') {
       data = data.filter(p =>
-        p.fechaRegistro && new Date(p.fechaRegistro).getFullYear().toString() === yearFilter
+        p.fechaRegistro && new Date(p.fechaRegistro).getFullYear().toString() === filters.year
       );
     }
+    if (filters.province !== 'todos') {
+      data = data.filter(p => p.provincia === filters.province);
+    }
+    if (filters.municipio !== 'todos') {
+      data = data.filter(p => p.municipio === filters.municipio);
+    }
     return data;
-  }, [dashboardData, yearFilter]);
+  }, [dashboardData, filters.year, filters.province, filters.municipio]);
 
   const { vulnerabilityData } = useIndicatorBoards(filteredData);
 
@@ -105,18 +102,11 @@ const VulnerabilidadBoard: React.FC = () => {
       </div>
 
       {/* Filters + View Toggle */}
-      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-wrap items-center justify-between gap-4">
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="flex items-center gap-2">
-            <label className="text-sm font-medium text-gray-600">Año:</label>
-            <select value={yearFilter} onChange={e => setYearFilter(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white focus:ring-2 focus:ring-red-500">
-              <option value="todos">Todos</option>
-              {availableYears.map(y => (<option key={y} value={y}>{y}</option>))}
-            </select>
-          </div>
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex-1">
+          <IndicadoresFilterBar showYear showProvince showMunicipio />
         </div>
-        <div className="flex bg-gray-100 rounded-lg p-1">
+        <div className="flex bg-gray-100 rounded-lg p-1 flex-shrink-0">
           <button onClick={() => setViewMode('grid')}
             className={`p-1.5 rounded ${viewMode === 'grid' ? 'bg-white shadow-sm text-red-600' : 'text-gray-500'}`} title="Cuadrícula"><Grid3X3 size={16} /></button>
           <button onClick={() => setViewMode('row')}

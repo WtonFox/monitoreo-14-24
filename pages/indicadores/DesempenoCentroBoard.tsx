@@ -6,34 +6,31 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts';
 import { Building2, Users, TrendingUp, Award, Grid3X3, List } from 'lucide-react';
+import { useIndicadoresFilters } from '../../contexts/IndicadoresFiltersContext';
+import { IndicadoresFilterBar } from '../../components/IndicadoresFilterBar';
 
 type ViewMode = 'grid' | 'row';
 
 const DesempenoCentroBoard: React.FC = () => {
   const { dashboardData } = useDashboard();
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
-  const [yearFilter, setYearFilter] = useState<string>('todos');
-
-  const availableYears = useMemo<string[]>(() => {
-    const years = new Set<number>();
-    dashboardData.forEach(p => {
-      if (p.fechaRegistro) {
-        const y = new Date(p.fechaRegistro).getFullYear();
-        if (!isNaN(y)) years.add(y);
-      }
-    });
-    return Array.from(years).sort((a, b) => b - a).map(String);
-  }, [dashboardData]);
+  const filters = useIndicadoresFilters();
 
   const filteredData = useMemo(() => {
     let data = dashboardData;
-    if (yearFilter !== 'todos') {
+    if (filters.year !== 'todos') {
       data = data.filter(p =>
-        p.fechaRegistro && new Date(p.fechaRegistro).getFullYear().toString() === yearFilter
+        p.fechaRegistro && new Date(p.fechaRegistro).getFullYear().toString() === filters.year
       );
     }
+    if (filters.province !== 'todos') {
+      data = data.filter(p => p.provincia === filters.province);
+    }
+    if (filters.municipio !== 'todos') {
+      data = data.filter(p => p.municipio === filters.municipio);
+    }
     return data;
-  }, [dashboardData, yearFilter]);
+  }, [dashboardData, filters.year, filters.province, filters.municipio]);
 
   const { centerData } = useIndicatorBoards(filteredData);
 
@@ -105,18 +102,11 @@ const DesempenoCentroBoard: React.FC = () => {
       </div>
 
       {/* Filters + View Toggle */}
-      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-wrap items-center justify-between gap-4">
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="flex items-center gap-2">
-            <label className="text-sm font-medium text-gray-600">Año:</label>
-            <select value={yearFilter} onChange={e => setYearFilter(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white focus:ring-2 focus:ring-slate-500">
-              <option value="todos">Todos</option>
-              {availableYears.map(y => (<option key={y} value={y}>{y}</option>))}
-            </select>
-          </div>
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex-1">
+          <IndicadoresFilterBar showYear showProvince showMunicipio />
         </div>
-        <div className="flex bg-gray-100 rounded-lg p-1">
+        <div className="flex bg-gray-100 rounded-lg p-1 flex-shrink-0">
           <button onClick={() => setViewMode('grid')}
             className={`p-1.5 rounded ${viewMode === 'grid' ? 'bg-white shadow-sm text-slate-600' : 'text-gray-500'}`} title="Cuadrícula"><Grid3X3 size={16} /></button>
           <button onClick={() => setViewMode('row')}

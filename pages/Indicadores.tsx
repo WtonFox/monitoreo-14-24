@@ -1,8 +1,9 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useDashboard } from '../contexts/DashboardContext';
 import { useIndicators } from '../hooks/useIndicators';
 import { IndicatorsBoard } from '../components/IndicatorsBoard';
-import { DOMINICAN_PROVINCES, PROVINCE_MUNICIPALITIES } from '../constants';
+import { IndicadoresFilterBar } from '../components/IndicadoresFilterBar';
+import { useIndicadoresFilters } from '../contexts/IndicadoresFiltersContext';
 import { HelpCircle, X, CheckCircle2, AlertTriangle, XCircle } from 'lucide-react';
 
 // ── Info modal content ──
@@ -32,6 +33,14 @@ const STATUS_INFO = [
 ];
 
 const InfoModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [onClose]);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto animate-in zoom-in-95 duration-200">
@@ -78,53 +87,27 @@ const InfoModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
 const Indicadores: React.FC = () => {
   const { dashboardData } = useDashboard();
-  const [yearFilter, setYearFilter] = useState<string>('todos');
-  const [provinceFilter, setProvinceFilter] = useState<string>('todos');
-  const [municipioFilter, setMunicipioFilter] = useState<string>('todos');
-  const [sexFilter, setSexFilter] = useState<string>('todos');
+  const filters = useIndicadoresFilters();
   const [showInfo, setShowInfo] = useState(false);
-
-  const availableYears = useMemo<string[]>(() => {
-    const years = new Set<number>();
-    dashboardData.forEach(p => {
-      if (p.fechaRegistro) {
-        const y = new Date(p.fechaRegistro).getFullYear();
-        if (!isNaN(y)) years.add(y);
-      }
-    });
-    return Array.from(years).sort((a, b) => b - a).map(String);
-  }, [dashboardData]);
-
-  // Municipios dependen de la provincia seleccionada
-  const availableMunicipios = useMemo<string[]>(() => {
-    if (provinceFilter === 'todos') return [];
-    return PROVINCE_MUNICIPALITIES[provinceFilter] || [];
-  }, [provinceFilter]);
-
-  // Reset municipio when province changes
-  const handleProvinceChange = (prov: string) => {
-    setProvinceFilter(prov);
-    setMunicipioFilter('todos');
-  };
 
   const filteredData = useMemo(() => {
     let data = dashboardData;
-    if (yearFilter !== 'todos') {
+    if (filters.year !== 'todos') {
       data = data.filter(p =>
-        p.fechaRegistro && new Date(p.fechaRegistro).getFullYear().toString() === yearFilter
+        p.fechaRegistro && new Date(p.fechaRegistro).getFullYear().toString() === filters.year
       );
     }
-    if (provinceFilter !== 'todos') {
-      data = data.filter(p => p.provincia === provinceFilter);
+    if (filters.province !== 'todos') {
+      data = data.filter(p => p.provincia === filters.province);
     }
-    if (municipioFilter !== 'todos') {
-      data = data.filter(p => p.municipio === municipioFilter);
+    if (filters.municipio !== 'todos') {
+      data = data.filter(p => p.municipio === filters.municipio);
     }
-    if (sexFilter !== 'todos') {
-      data = data.filter(p => p.sexo?.toLowerCase() === sexFilter);
+    if (filters.sex !== 'todos') {
+      data = data.filter(p => p.sexo?.toLowerCase() === filters.sex);
     }
     return data;
-  }, [dashboardData, yearFilter, provinceFilter, municipioFilter, sexFilter]);
+  }, [dashboardData, filters.year, filters.province, filters.municipio, filters.sex]);
 
   const { groups, lastUpdated } = useIndicators(filteredData);
 
@@ -146,44 +129,7 @@ const Indicadores: React.FC = () => {
         </span>
       </div>
 
-      {/* Filter bar */}
-      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-wrap items-center gap-4">
-        <div className="flex items-center gap-2">
-          <label className="text-sm font-medium text-gray-600">Año:</label>
-          <select value={yearFilter} onChange={e => setYearFilter(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white focus:ring-2 focus:ring-blue-500">
-            <option value="todos">Todos</option>
-            {availableYears.map(y => (<option key={y} value={y}>{y}</option>))}
-          </select>
-        </div>
-        <div className="flex items-center gap-2">
-          <label className="text-sm font-medium text-gray-600">Provincia:</label>
-          <select value={provinceFilter} onChange={e => handleProvinceChange(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white focus:ring-2 focus:ring-blue-500">
-            <option value="todos">Todas</option>
-            {DOMINICAN_PROVINCES.map(p => (<option key={p} value={p}>{p}</option>))}
-          </select>
-        </div>
-        <div className="flex items-center gap-2">
-          <label className="text-sm font-medium text-gray-600">Municipio:</label>
-          <select value={municipioFilter} onChange={e => setMunicipioFilter(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white focus:ring-2 focus:ring-blue-500"
-            disabled={provinceFilter === 'todos'}
-          >
-            <option value="todos">Todos</option>
-            {availableMunicipios.map(m => (<option key={m} value={m}>{m}</option>))}
-          </select>
-        </div>
-        <div className="flex items-center gap-2">
-          <label className="text-sm font-medium text-gray-600">Sexo:</label>
-          <select value={sexFilter} onChange={e => setSexFilter(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white focus:ring-2 focus:ring-blue-500">
-            <option value="todos">Todos</option>
-            <option value="femenino">Femenino</option>
-            <option value="masculino">Masculino</option>
-          </select>
-        </div>
-      </div>
+      <IndicadoresFilterBar />
 
       {filteredData.length === 0 ? (
         <div className="h-64 flex flex-col items-center justify-center text-gray-400 bg-white rounded-xl border border-dashed border-gray-300">

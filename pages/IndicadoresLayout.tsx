@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { ROUTES } from '../types/routes';
 import {
@@ -6,6 +6,8 @@ import {
   CheckCircle, AlertTriangle, Calendar, GraduationCap, Building2,
   ChevronDown,
 } from 'lucide-react';
+import { IndicadoresFiltersProvider } from '../contexts/IndicadoresFiltersContext';
+import { useDashboard } from '../contexts/DashboardContext';
 
 // ── Original tabs (always visible) ──
 
@@ -40,6 +42,18 @@ const tabClasses = ({ isActive }: { isActive: boolean }) =>
 
 const IndicadoresLayout: React.FC = () => {
   const [showMore, setShowMore] = useState(false);
+  const { dashboardData } = useDashboard();
+
+  const allYears = useMemo(() => {
+    const years = new Set<number>();
+    dashboardData.forEach(p => {
+      if (p.fechaRegistro) {
+        const y = new Date(p.fechaRegistro).getFullYear();
+        if (!isNaN(y)) years.add(y);
+      }
+    });
+    return Array.from(years).sort((a, b) => b - a).map(String);
+  }, [dashboardData]);
 
   return (
     <div className="flex flex-col flex-1">
@@ -112,7 +126,9 @@ const IndicadoresLayout: React.FC = () => {
 
       {/* Page Content */}
       <div className="flex-1">
-        <Outlet />
+        <IndicadoresFiltersProvider allYears={allYears}>
+          <Outlet />
+        </IndicadoresFiltersProvider>
       </div>
     </div>
   );
