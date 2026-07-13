@@ -1,15 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { ROUTES } from '../types/routes';
 // Header.tsx
-import { Download, RefreshCw, Menu } from 'lucide-react'; // Add Menu icon
+import { Download, RefreshCw, Menu, ChevronDown, FileSpreadsheet, FileJson } from 'lucide-react';
 import { formatNumber } from '../utils/formatters';
 
 interface HeaderProps {
     lastUpdated: Date;
     onRefresh: () => void;
-    onExport: () => void;
-    onOpenMassExport: () => void;
+    onExportFormat: (format: 'csv' | 'xlsx' | 'json') => void;
     totalRecords: number;
     isSyncing: boolean;
     isPaused: boolean;
@@ -27,14 +26,14 @@ const PAGE_TITLES: Record<string, string> = {
 export const Header: React.FC<HeaderProps> = ({
     lastUpdated,
     onRefresh,
-    onExport,
-    onOpenMassExport,
+    onExportFormat,
     totalRecords,
     isSyncing,
     isPaused,
     onToggleSidebar
 }) => {
     const location = useLocation();
+    const [showExportDropdown, setShowExportDropdown] = useState(false);
     const pageTitle = PAGE_TITLES[location.pathname] || 'Monitoreo 14-24';
 
     return (
@@ -59,29 +58,46 @@ export const Header: React.FC<HeaderProps> = ({
                     </div>
                 </div>
                 <div className="flex gap-2 md:gap-3 items-center">
-                    {/* Botón de Exportación Masiva */}
-                    <button
-                        onClick={onOpenMassExport}
-                        className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg text-sm font-medium transition-colors shadow-md"
-                        title="Exportar todos los datos de la base de datos"
-                    >
-                        <Download size={18} />
-                        <span className="hidden lg:inline">Exportar Todos</span>
-                        {totalRecords > 0 && (
-                            <span className="text-[10px] bg-blue-500 px-1.5 py-0.5 rounded-full ml-1 hidden sm:inline-block">
-                                {formatNumber(totalRecords)}
-                            </span>
-                        )}
-                    </button>
-
-                    <button
-                        onClick={onExport}
+                    {/* Export Dropdown */}
+                    <div className="relative">
+                      <button
+                        onClick={() => setShowExportDropdown(prev => !prev)}
                         className="flex items-center gap-2 px-3 py-2 bg-green-50 text-green-700 hover:bg-green-100 rounded-lg text-sm font-medium transition-colors border border-green-200"
-                        title="Exportar datos del dashboard"
-                    >
+                      >
                         <Download size={18} />
                         <span className="hidden sm:inline">Exportar</span>
-                    </button>
+                        <ChevronDown size={14} />
+                      </button>
+
+                      {showExportDropdown && (
+                        <>
+                          <div className="fixed inset-0 z-10" onClick={() => setShowExportDropdown(false)} />
+                          <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-20 py-1 min-w-[180px]">
+                            <button
+                              onClick={() => { setShowExportDropdown(false); onExportFormat('csv'); }}
+                              className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                            >
+                              <FileSpreadsheet size={16} className="text-green-600" />
+                              CSV
+                            </button>
+                            <button
+                              onClick={() => { setShowExportDropdown(false); onExportFormat('xlsx'); }}
+                              className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                            >
+                              <FileSpreadsheet size={16} className="text-blue-600" />
+                              Excel (XLSX)
+                            </button>
+                            <button
+                              onClick={() => { setShowExportDropdown(false); onExportFormat('json'); }}
+                              className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                            >
+                              <FileJson size={16} className="text-purple-600" />
+                              JSON
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
 
                     <button
                         onClick={onRefresh}

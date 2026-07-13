@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { Download } from 'lucide-react';
 import { useDashboard } from '../contexts/DashboardContext';
 import { useTableData } from '../hooks/useTableData';
+import { useMassExport } from '../hooks/useMassExport';
+import { MassExportModal } from '../components/MassExportModal';
 import { DataTable } from '../components/DataTable';
 import { DEFAULT_PAGE_SIZE } from '../constants';
+import { formatNumber } from '../utils/formatters';
 
 const Participantes: React.FC = () => {
   const { customToken } = useDashboard();
@@ -31,6 +35,8 @@ const Participantes: React.FC = () => {
     loadTableData(pageIndex, pageSize);
   }, [pageIndex, pageSize, loadTableData]);
 
+  const massExport = useMassExport();
+
   const handleExport = (_format: 'csv' | 'json') => {
     // The DataTable provides its own local export via handleLocalExport.
     // This stub covers the full-export button for future enhancement.
@@ -45,6 +51,22 @@ const Participantes: React.FC = () => {
         </div>
       ) : null}
 
+      {/* Acciones superiores */}
+      <div className="flex justify-end mb-4">
+        <button
+          onClick={massExport.openMassExportModal}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg text-sm font-medium transition-colors shadow-md"
+        >
+          <Download size={16} />
+          Exportar Todos
+          {tableTotalItems > 0 && (
+            <span className="text-[10px] bg-blue-500 px-1.5 py-0.5 rounded-full">
+              {formatNumber(tableTotalItems)}
+            </span>
+          )}
+        </button>
+      </div>
+
       <DataTable
         data={tableData}
         currentPage={pageIndex}
@@ -58,6 +80,15 @@ const Participantes: React.FC = () => {
         onPageSizeChange={setPageSize}
         onExport={handleExport}
         onCancelExport={() => {}}
+      />
+
+      {/* Mass Export Modal */}
+      <MassExportModal
+        isOpen={massExport.showMassExportModal}
+        isExporting={massExport.isMassExporting}
+        progress={massExport.massExportProgress}
+        onExport={massExport.handleMassExport}
+        onCancel={massExport.cancelMassExport}
       />
     </div>
   );

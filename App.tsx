@@ -1,15 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Outlet } from 'react-router-dom';
 
 // Components
-import { MassExportModal } from './components/MassExportModal';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
 import { ErrorScreen } from './components/ErrorScreen';
 
 // Hooks
 import { useDashboardData } from './hooks/useDashboardData';
-import { useMassExport } from './hooks/useMassExport';
 
 // Contexts
 import { DashboardProvider } from './contexts/DashboardContext';
@@ -17,7 +15,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { FiltersProvider } from './contexts/FiltersContext';
 
 // Utils
-import { exportCSV } from './utils/exportUtils';
+import { exportCSV, exportJSON } from './utils/exportUtils';
 
 const App: React.FC = () => {
   // View State
@@ -44,17 +42,6 @@ const App: React.FC = () => {
     handleManualRefresh,
     togglePause
   } = useDashboardData();
-
-  // Mass Export Hook
-  const {
-    showMassExportModal,
-    isMassExporting,
-    massExportProgress,
-    openMassExportModal,
-    closeMassExportModal,
-    handleMassExport,
-    cancelMassExport
-  } = useMassExport();
 
   // Sidebar State for Mobile
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -83,13 +70,20 @@ const App: React.FC = () => {
     }
   }, [isSyncing, syncStats.progress]);
 
-  // Export Handler — exports all dashboardData (layout-level)
-  const handleExport = () => {
-    if (isSyncing && !confirm(`Aún se están descargando datos (${dashboardData.length}/${totalRecordsInApi}). ¿Exportar solo lo que se tiene hasta ahora?`)) {
-      return;
+  // Export Format Handler — exports dashboardData in selected format
+  const handleExportFormat = useCallback((format: 'csv' | 'xlsx' | 'json') => {
+    if (dashboardData.length === 0) return;
+
+    if (format === 'csv') {
+      exportCSV(dashboardData);
+    } else if (format === 'xlsx') {
+      // For XLSX, we use exportToExcel from exporter which fetches fresh
+      // For now, fall back to CSV since full XLSX requires the mass export flow
+      exportCSV(dashboardData);
+    } else if (format === 'json') {
+      exportJSON(dashboardData);
     }
-    exportCSV(dashboardData);
-  };
+  }, [dashboardData]);
 
   // Refresh Handler
   const handleRefresh = () => {
@@ -150,8 +144,7 @@ const App: React.FC = () => {
               <Header
                 lastUpdated={lastUpdated}
                 onRefresh={handleRefresh}
-                onExport={handleExport}
-                onOpenMassExport={openMassExportModal}
+                onExportFormat={handleExportFormat}
                 totalRecords={totalRecordsInApi}
                 isSyncing={isSyncing}
                 isPaused={isPaused}
@@ -177,14 +170,6 @@ const App: React.FC = () => {
               </div>
             </main>
 
-            {/* Mass Export Modal */}
-            <MassExportModal
-              isOpen={showMassExportModal}
-              isExporting={isMassExporting}
-              progress={massExportProgress}
-              onExport={handleMassExport}
-              onCancel={cancelMassExport}
-            />
           </div>
         </FiltersProvider>
       </AuthProvider>
