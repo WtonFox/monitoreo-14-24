@@ -295,7 +295,7 @@ export const DataTable: React.FC<DataTableProps> = ({
         </div>
       )}
 
-      <div className="p-4 border-b border-gray-100 space-y-3">
+      <div className="p-4 border-b border-gray-100">
         <div className="flex items-center gap-2">
           <div className="relative flex-1 min-w-0">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -304,7 +304,7 @@ export const DataTable: React.FC<DataTableProps> = ({
             <input
               type="text"
               placeholder="Buscar..."
-              className="pl-10 pr-4 py-2.5 bg-white border border-gray-300 rounded-lg w-full text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm transition-shadow"
+              className="pl-10 pr-4 h-10 bg-white border border-gray-300 rounded-lg w-full text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm transition-shadow"
               value={searchTerm}
               onChange={(e) => onSearchChange(e.target.value)}
             />
@@ -313,7 +313,7 @@ export const DataTable: React.FC<DataTableProps> = ({
           <div className="relative flex-shrink-0">
             <button
               onClick={() => setShowColumnSelector(!showColumnSelector)}
-              className="flex items-center justify-center gap-2 bg-white hover:bg-gray-50 text-gray-700 px-3 py-2.5 rounded-lg text-sm transition-colors border border-gray-300 shadow-sm"
+              className="flex items-center justify-center gap-2 bg-white hover:bg-gray-50 text-gray-700 px-3 h-10 rounded-lg text-sm transition-colors border border-gray-300 shadow-sm"
               title="Configurar Columnas"
             >
               <Settings size={16} />
@@ -329,7 +329,7 @@ export const DataTable: React.FC<DataTableProps> = ({
           </div>
 
           <select
-            className="bg-white border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm cursor-pointer flex-shrink-0"
+            className="bg-white border border-gray-300 rounded-lg px-3 h-10 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm cursor-pointer flex-shrink-0"
             value={pageSize}
             onChange={(e) => onPageSizeChange(Number(e.target.value))}
           >
@@ -339,55 +339,15 @@ export const DataTable: React.FC<DataTableProps> = ({
             <option value={100}>100</option>
           </select>
         </div>
-
-        <div className="flex items-center gap-2">
-          <select
-            value={filterProvincia}
-            onChange={e => onProvinciaChange(e.target.value)}
-            className="flex-1 border border-gray-300 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="todas">Provincia: Todas</option>
-            {uniqueProvincias.map(p => (<option key={p} value={p}>{p}</option>))}
-          </select>
-
-          <select
-            value={filterMunicipio}
-            onChange={e => onMunicipioChange(e.target.value)}
-            className="flex-1 border border-gray-300 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-blue-500"
-            disabled={filterProvincia === 'todas'}
-          >
-            <option value="todos">Municipio: Todos</option>
-            {availableMunicipios.map(m => (<option key={m} value={m}>{m}</option>))}
-          </select>
-
-          <select
-            value={filterCentro}
-            onChange={e => onCentroChange(e.target.value)}
-            className="flex-1 border border-gray-300 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="todos">Centro: Todos</option>
-            {uniqueCentros.map(c => (<option key={c} value={c}>{c}</option>))}
-          </select>
-
-          <select
-            value={filterSexo}
-            onChange={e => onSexoChange(e.target.value)}
-            className="flex-1 border border-gray-300 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="todos">Sexo: Todos</option>
-            <option value="f">Femenino</option>
-            <option value="m">Masculino</option>
-          </select>
-        </div>
       </div>
 
       <div className="px-4 py-3 border-b border-gray-100">
-        <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+        <div className="bg-white border border-gray-200 rounded-xl shadow-sm">
           <button
             onClick={() => setShowExportSection(prev => !prev)}
             className="w-full flex items-center justify-between px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wider hover:bg-gray-50 transition-colors"
           >
-            <span>Datos</span>
+            <span>Filtros y Datos</span>
             <ChevronDown
               size={14}
               className={`transition-transform ${showExportSection ? '' : '-rotate-90'}`}
@@ -395,61 +355,107 @@ export const DataTable: React.FC<DataTableProps> = ({
           </button>
 
           {showExportSection && (
-            <div className="px-4 py-3 border-t border-gray-100 flex flex-wrap items-center gap-3">
-              <div className="relative">
-                <button
-                  onClick={() => setShowFormatDropdown(prev => !prev)}
-                  className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm"
-                >
-                  <Download size={16} />
-                  Exportar
-                  <ChevronDown size={14} />
-                </button>
+            <div className="border-t border-gray-100">
+              {/* Filtros */}
+              <div className="px-4 py-3 space-y-3">
+                <div className="flex items-center gap-2">
+                  <select
+                    value={filterProvincia}
+                    onChange={e => onProvinciaChange(e.target.value)}
+                    className="flex-1 border border-gray-300 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="todas">Provincia: Todas</option>
+                    {uniqueProvincias.map(p => (<option key={p} value={p}>{p}</option>))}
+                  </select>
 
-                {showFormatDropdown && (
-                  <>
-                    <div className="fixed inset-0 z-10" onClick={() => setShowFormatDropdown(false)} />
-                    <div className="absolute left-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-20 py-1 min-w-[180px]">
-                      <button
-                        onClick={() => { setShowFormatDropdown(false); handleLocalExport(); }}
-                        className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
-                      >
-                        <FileText size={16} className="text-green-600" />
-                        CSV (Vista actual)
-                      </button>
-                      <button
-                        onClick={() => { setShowFormatDropdown(false); handleLocalExport(); }}
-                        className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
-                      >
-                        <FileSpreadsheet size={16} className="text-blue-600" />
-                        Excel (XLSX)
-                      </button>
-                      <button
-                        onClick={() => { setShowFormatDropdown(false); handleLocalJSON(); }}
-                        className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
-                      >
-                        <FileJson size={16} className="text-purple-600" />
-                        JSON
-                      </button>
-                    </div>
-                  </>
-                )}
+                  <select
+                    value={filterMunicipio}
+                    onChange={e => onMunicipioChange(e.target.value)}
+                    className="flex-1 border border-gray-300 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-blue-500"
+                    disabled={filterProvincia === 'todas'}
+                  >
+                    <option value="todos">Municipio: Todos</option>
+                    {availableMunicipios.map(m => (<option key={m} value={m}>{m}</option>))}
+                  </select>
+
+                  <select
+                    value={filterCentro}
+                    onChange={e => onCentroChange(e.target.value)}
+                    className="flex-1 border border-gray-300 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="todos">Centro: Todos</option>
+                    {uniqueCentros.map(c => (<option key={c} value={c}>{c}</option>))}
+                  </select>
+
+                  <select
+                    value={filterSexo}
+                    onChange={e => onSexoChange(e.target.value)}
+                    className="flex-1 border border-gray-300 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="todos">Sexo: Todos</option>
+                    <option value="f">Femenino</option>
+                    <option value="m">Masculino</option>
+                  </select>
+                </div>
               </div>
 
-              {onOpenMassExport && (
-                <button
-                  onClick={onOpenMassExport}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm"
-                >
-                  <Download size={16} />
-                  Exportar Todos
-                  {totalItems > 0 && (
-                    <span className="text-[10px] bg-blue-500 px-1.5 py-0.5 rounded-full">
-                      {formatNumber(totalItems)}
-                    </span>
+              {/* Exportar */}
+              <div className="px-4 py-3 border-t border-gray-100 flex flex-wrap items-center gap-3">
+                <div className="relative">
+                  <button
+                    onClick={() => setShowFormatDropdown(prev => !prev)}
+                    className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm"
+                  >
+                    <Download size={16} />
+                    Exportar
+                    <ChevronDown size={14} />
+                  </button>
+
+                  {showFormatDropdown && (
+                    <>
+                      <div className="fixed inset-0 z-10" onClick={() => setShowFormatDropdown(false)} />
+                      <div className="absolute left-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-20 py-1 min-w-[180px]">
+                        <button
+                          onClick={() => { setShowFormatDropdown(false); handleLocalExport(); }}
+                          className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
+                        >
+                          <FileText size={16} className="text-green-600" />
+                          CSV (Vista actual)
+                        </button>
+                        <button
+                          onClick={() => { setShowFormatDropdown(false); handleLocalExport(); }}
+                          className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
+                        >
+                          <FileSpreadsheet size={16} className="text-blue-600" />
+                          Excel (XLSX)
+                        </button>
+                        <button
+                          onClick={() => { setShowFormatDropdown(false); handleLocalJSON(); }}
+                          className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
+                        >
+                          <FileJson size={16} className="text-purple-600" />
+                          JSON
+                        </button>
+                      </div>
+                    </>
                   )}
-                </button>
-              )}
+                </div>
+
+                {onOpenMassExport && (
+                  <button
+                    onClick={onOpenMassExport}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm"
+                  >
+                    <Download size={16} />
+                    Exportar Todos
+                    {totalItems > 0 && (
+                      <span className="text-[10px] bg-blue-500 px-1.5 py-0.5 rounded-full">
+                        {formatNumber(totalItems)}
+                      </span>
+                    )}
+                  </button>
+                )}
+              </div>
             </div>
           )}
         </div>
