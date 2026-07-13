@@ -74,6 +74,27 @@ export const useDashboardData = (): UseDashboardDataResult => {
             try {
                 const storedData = await getAllParticipants();
                 if (storedData && storedData.length > 0) {
+                    // Verificar si la caché tiene los campos nuevos (DBv2+)
+                    // Si el primer registro tiene edadRegistro === 0 y hay datos,
+                    // es caché vieja sin los campos extendidos → limpiar y refrescar
+                    const sampleSize = Math.min(5, storedData.length);
+                    let allMissingNewFields = true;
+                    for (let i = 0; i < sampleSize; i++) {
+                        if (storedData[i].edadRegistro > 0 || storedData[i].estadoCivil) {
+                            allMissingNewFields = false;
+                            break;
+                        }
+                    }
+
+                    if (allMissingNewFields && storedData.length > 0) {
+                        console.log('Cache sin campos extendidos (DBv1). Limpiando y forzando recarga...');
+                        await clearAllData();
+                        existingIdsRef.current.clear();
+                        // Iniciar sync fresco
+                        setTimeout(() => startSmartSync(1), 500);
+                        return;
+                    }
+
                     console.log(`Loaded ${storedData.length} records from IndexedDB`);
 
                     // Restaurar datos en estado
@@ -105,7 +126,7 @@ export const useDashboardData = (): UseDashboardDataResult => {
         };
 
         loadFromDB();
-    }, []);
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     const startSmartSync = useCallback(async (forceStartPage?: number) => {
         // Prevent double execution if already syncing and not a force restart
