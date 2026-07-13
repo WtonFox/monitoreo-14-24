@@ -1,5 +1,3 @@
-import type { Participant } from '../types';
-
 /**
  * Archivo de normalización de datos de la API.
  * La API de Presidencia usa convenciones específicas que NO coinciden
@@ -21,16 +19,24 @@ export function normalizeSexo(raw: string | null | undefined): string | null {
   return raw || null;
 }
 
-/** Determina si un participante es mujer (tolera M/F y Masculino/Femenino) */
-export function isWomen(p: Participant): boolean {
-  const s = (p.sexo || '').trim().toUpperCase();
-  return s === 'F' || s === 'FEMENINO';
+/**
+ * Determina si un valor de sexo corresponde a mujer.
+ * Acepta tanto "F" como "Femenino" (case insensitive).
+ * Recibe el STRING de sexo directamente, no un Participant.
+ */
+export function isWomen(sexo: string | null | undefined): boolean {
+  const v = (sexo || '').trim().toUpperCase();
+  return v === 'F' || v === 'FEMENINO';
 }
 
-/** Determina si un participante es hombre (tolera M/F y Masculino/Femenino) */
-export function isMen(p: Participant): boolean {
-  const s = (p.sexo || '').trim().toUpperCase();
-  return s === 'M' || s === 'MASCULINO';
+/**
+ * Determina si un valor de sexo corresponde a hombre.
+ * Acepta tanto "M" como "Masculino" (case insensitive).
+ * Recibe el STRING de sexo directamente, no un Participant.
+ */
+export function isMen(sexo: string | null | undefined): boolean {
+  const v = (sexo || '').trim().toUpperCase();
+  return v === 'M' || v === 'MASCULINO';
 }
 
 /**
