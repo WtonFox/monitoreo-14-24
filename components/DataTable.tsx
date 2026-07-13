@@ -1,0 +1,436 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import { Participant } from '../types';
+import { Download, Search, ChevronLeft, ChevronRight, FileJson, FileSpreadsheet, XCircle, Settings } from 'lucide-react';
+import { ColumnSelector, ColumnConfig } from './ColumnSelector';
+import { formatNumber } from '../utils/formatters';
+
+interface DataTableProps {
+  data: Participant[];
+  currentPage: number;
+  totalPages: number;
+  totalItems: number;
+  pageSize: number;
+  loading: boolean;
+  isExporting: boolean;
+  exportProgress?: { current: number; total: number; errors: number };
+  onPageChange: (page: number) => void;
+  onPageSizeChange: (size: number) => void;
+  onExport: (format: 'csv' | 'json') => void;
+  onCancelExport: () => void;
+}
+
+// Default columns configuration
+const DEFAULT_COLUMNS: ColumnConfig[] = [
+  { id: 'fullName', label: 'Nombre Completo', visible: true, required: true },
+  { id: 'cedula', label: 'Cédula', visible: true },
+  { id: 'edad', label: 'Edad', visible: true },
+  { id: 'edadRegistro', label: 'Edad Registro', visible: false },
+  { id: 'sexo', label: 'Sexo', visible: true },
+  { id: 'estadoCivil', label: 'Estado Civil', visible: true },
+  { id: 'provincia', label: 'Provincia', visible: true },
+  { id: 'municipio', label: 'Municipio', visible: false },
+  { id: 'centro', label: 'Centro', visible: true },
+  { id: 'estado', label: 'Estado', visible: true },
+  { id: 'nivelEstudio', label: 'Nivel Estudio', visible: false },
+  { id: 'rutaFormativa', label: 'Ruta Formativa', visible: false },
+  { id: 'fechaRegistro', label: 'Fecha Registro', visible: false },
+  { id: 'fechaInclusion', label: 'Fecha Inclusión', visible: false },
+  { id: 'tutor', label: 'Tutor', visible: false },
+  { id: 'cedulaTutor', label: 'Cédula Tutor', visible: false },
+  { id: 'telefonos', label: 'Teléfonos', visible: false },
+  { id: 'telefonosResponsable', label: 'Tel. Responsable', visible: false },
+  { id: 'direccion', label: 'Dirección', visible: false },
+  { id: 'alergias', label: 'Alergias', visible: false },
+  { id: 'discapacidades', label: 'Discapacidades', visible: false },
+  { id: 'enfermedades', label: 'Enfermedades', visible: false },
+  { id: 'programasSociales', label: 'Programas Sociales', visible: true },
+];
+
+export const DataTable: React.FC<DataTableProps> = ({
+  data, currentPage, totalPages, totalItems, pageSize, loading,
+  isExporting, exportProgress,
+  onPageChange, onPageSizeChange, onExport, onCancelExport
+}) => {
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Column visibility state
+  const [columns, setColumns] = useState<ColumnConfig[]>(DEFAULT_COLUMNS);
+  const [showColumnSelector, setShowColumnSelector] = useState(false);
+
+  // Load columns from localStorage on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('table_columns_v1');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // Merge with defaults to handle new columns in future
+        const merged = DEFAULT_COLUMNS.map(def => {
+          const savedCol = parsed.find((p: ColumnConfig) => p.id === def.id);
+          return savedCol ? { ...def, visible: savedCol.visible } : def;
+        });
+        setColumns(merged);
+      }
+    } catch (e) {
+      console.error('Error loading column preferences', e);
+    }
+  }, []);
+
+  // Save columns to localStorage when changed
+  const saveColumns = (newCols: ColumnConfig[]) => {
+    setColumns(newCols);
+    localStorage.setItem('table_columns_v1', JSON.stringify(newCols));
+  };
+
+  const handleToggleColumn = (id: string) => {
+    const newCols = columns.map(c => c.id === id ? { ...c, visible: !c.visible } : c);
+    saveColumns(newCols);
+  };
+
+  const handleResetColumns = () => {
+    saveColumns(DEFAULT_COLUMNS);
+  };
+
+  // Helper to generate CSV content with ALL fields (Local View)
+  const generateLocalCSV = (items: Participant[]) => {
+    const headers = [
+      'ID', 'Nombres', 'Apellidos', 'Cédula', 'Edad', 'Edad Registro',
+      'Fecha Nacimiento', 'Fecha Registro', 'Fecha Inclusión',
+      'Tutor', 'Cédula Tutor', 'Teléfono Responsable',
+      'Vulnerabilidades', 'Alergias', 'Discapacidades', 'Enfermedades',
+      'Programas Sociales',
+      'Estado', 'Sexo', 'Estado Civil', 'Nivel Estudio', 'Provincia',
+      'Municipio', 'Centro', 'Dirección', 'Ruta Formativa'
+    ];
+
+    const rows = items.map(item => [
+      item.id,
+      `"${item.nombres || ''}"`,
+      `"${item.apellidos || ''}"`,
+      `"${item.cedula || ''}"`,
+      item.edad,
+      item.edadRegistro || '',
+      item.fechaNacimiento,
+      item.fechaRegistro,
+      item.fechaInclusion || '',
+      `"${item.tutor || ''}"`,
+      `"${item.cedulaTutor || ''}"`,
+      `"${item.telefonosResponsable || ''}"`,
+      `"${item.vulnerabilidades || ''}"`,
+      `"${item.alergias || ''}"`,
+      `"${item.discapacidades || ''}"`,
+      `"${item.enfermedades || ''}"`,
+      `"${item.programasSociales || ''}"`,
+      item.estado,
+      item.sexo,
+      `"${item.estadoCivil || ''}"`,
+      `"${item.nivelEstudio || ''}"`,
+      `"${item.provincia || ''}"`,
+      `"${item.municipio || ''}"`,
+      `"${item.centro || ''}"`,
+      `"${item.direccion || ''}"`,
+      `"${item.rutaFormativa || ''}"`
+    ].join(';'));
+
+    return '\uFEFF' + [headers.join(';'), ...rows].join('\n');
+  };
+
+  // Handle export of currently visible data (Local)
+  const handleLocalExport = () => {
+    if (data.length === 0) return;
+
+    const csvContent = generateLocalCSV(data);
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `oportunidad1424_vista_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Client side filtering for visual display
+  const filteredData = useMemo(() => {
+    return data.filter(item => {
+      const term = searchTerm.toLowerCase();
+      return (
+        (item.nombres?.toLowerCase().includes(term) || false) ||
+        (item.apellidos?.toLowerCase().includes(term) || false) ||
+        (item.cedula?.includes(term) || false) ||
+        (item.provincia?.toLowerCase().includes(term) || false) ||
+        (item.municipio?.toLowerCase().includes(term) || false) ||
+        (item.centro?.toLowerCase().includes(term) || false) ||
+        (item.estado?.toLowerCase().includes(term) || false) ||
+        (item.estadoCivil?.toLowerCase().includes(term) || false) ||
+        (item.nivelEstudio?.toLowerCase().includes(term) || false) ||
+        (item.rutaFormativa?.toLowerCase().includes(term) || false)
+      );
+    });
+  }, [data, searchTerm]);
+
+  // Render Cell Content Helper
+  const renderCell = (item: Participant, columnId: string) => {
+    switch (columnId) {
+      case 'fullName':
+        return (
+          <div>
+            <div className="font-medium text-gray-900">{item.nombres} {item.apellidos}</div>
+            <div className="text-xs text-gray-400">ID: {item.id}</div>
+          </div>
+        );
+      case 'cedula':
+        return <span className="font-mono text-xs">{item.cedula || 'N/A'}</span>;
+      case 'edad':
+        return <span>{item.edad} años</span>;
+      case 'edadRegistro':
+        return <span>{item.edadRegistro ? `${item.edadRegistro} años` : 'N/A'}</span>;
+      case 'sexo':
+        return <span>{item.sexo}</span>;
+      case 'estadoCivil':
+        return <span>{item.estadoCivil || 'N/A'}</span>;
+      case 'provincia':
+        return <span>{item.provincia || 'N/A'}</span>;
+      case 'municipio':
+        return <span>{item.municipio || 'N/A'}</span>;
+      case 'centro':
+        return <div className="max-w-xs truncate" title={item.centro || ''}>{item.centro || 'N/A'}</div>;
+      case 'estado':
+        return (
+          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full 
+                  ${item.estado === 'Activo' ? 'bg-green-100 text-green-700' :
+              item.estado === 'Retirado' ? 'bg-red-100 text-red-700' :
+                'bg-blue-100 text-blue-700'}`}>
+            {item.estado || 'Desconocido'}
+          </span>
+        );
+      case 'fechaRegistro':
+        return <span className="text-xs whitespace-nowrap">{item.fechaRegistro ? new Date(item.fechaRegistro).toLocaleDateString() : 'N/A'}</span>;
+      case 'fechaInclusion':
+        return <span className="text-xs whitespace-nowrap">{item.fechaInclusion ? new Date(item.fechaInclusion).toLocaleDateString() : 'N/A'}</span>;
+
+      case 'tutor':
+        return <span className="text-xs">{item.tutor || 'N/A'}</span>;
+      case 'cedulaTutor':
+        return <span className="font-mono text-xs">{item.cedulaTutor || 'N/A'}</span>;
+      case 'telefonos':
+        return <span className="text-xs">{item.telefonos || 'N/A'}</span>;
+      case 'telefonosResponsable':
+        return <span className="text-xs">{item.telefonosResponsable || 'N/A'}</span>;
+      case 'direccion':
+        return <div className="max-w-[200px] truncate text-xs" title={item.direccion || ''}>{item.direccion || 'N/A'}</div>;
+      case 'nivelEstudio':
+        return <span>{item.nivelEstudio || 'N/A'}</span>;
+      case 'rutaFormativa':
+        return <span>{item.rutaFormativa || 'N/A'}</span>;
+      case 'alergias':
+        return <span className="text-xs">{item.alergias || 'N/A'}</span>;
+      case 'discapacidades':
+        return <span className="text-xs">{item.discapacidades || 'N/A'}</span>;
+      case 'enfermedades':
+        return <span className="text-xs">{item.enfermedades || 'N/A'}</span>;
+      case 'programasSociales':
+        return <div className="max-w-[200px] truncate text-xs" title={item.programasSociales || ''}>{item.programasSociales || 'N/A'}</div>;
+      default:
+        return null;
+    }
+  };
+
+  const visibleColumns = columns.filter(c => c.visible);
+
+  // Pagination calculations
+  const startItem = totalItems === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const endItem = Math.min((currentPage - 1) * pageSize + data.length, totalItems);
+
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden relative">
+
+      {/* Exporting Overlay */}
+      {isExporting && exportProgress && (
+        <div className="absolute inset-0 z-50 bg-white/90 flex flex-col items-center justify-center p-6">
+          <div className="w-full max-w-md bg-white p-6 rounded-xl shadow-2xl border border-gray-200">
+            <h4 className="text-lg font-bold text-gray-800 mb-2">Descargando Base de Datos...</h4>
+            <p className="text-sm text-gray-500 mb-4">
+              Esto puede tomar unos minutos debido a la seguridad de la API.
+            </p>
+
+            <div className="w-full bg-gray-200 rounded-full h-2.5 mb-2">
+              <div
+                className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
+                style={{ width: `${(exportProgress.current / exportProgress.total) * 100}%` }}
+              ></div>
+            </div>
+
+            <div className="flex justify-between text-xs text-gray-600 mb-6">
+              <span>Progreso: {Math.round((exportProgress.current / exportProgress.total) * 100)}%</span>
+              <span>Lote {exportProgress.current} de {exportProgress.total}</span>
+            </div>
+
+            {exportProgress.errors > 0 && (
+              <div className="mb-4 text-xs bg-yellow-50 text-yellow-700 p-2 rounded border border-yellow-200 flex items-center gap-2">
+                <span className="font-bold">{exportProgress.errors}</span> lotes omitidos por error en API (Data Nula).
+              </div>
+            )}
+
+            <button
+              onClick={onCancelExport}
+              className="w-full flex items-center justify-center gap-2 bg-red-50 hover:bg-red-100 text-red-600 py-2 rounded-lg text-sm font-medium transition-colors"
+            >
+              <XCircle size={16} /> Cancelar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Table Header / Toolbar */}
+      <div className="p-4 border-b border-gray-100 flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4">
+        <div className="relative w-full xl:w-96">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Search size={18} className="text-gray-400" />
+          </div>
+          <input
+            type="text"
+            placeholder="Buscar..."
+            className="pl-10 pr-4 py-2 bg-white border border-gray-300 rounded-lg w-full text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm transition-shadow"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+
+        <div className="flex flex-wrap justify-end gap-2 w-full xl:w-auto mobile-actions">
+          {/* Column Selector Button */}
+          <div className="relative">
+            <button
+              onClick={() => setShowColumnSelector(!showColumnSelector)}
+              className="flex items-center justify-center gap-2 bg-white hover:bg-gray-50 text-gray-700 px-3 py-2 rounded-lg text-sm transition-colors border border-gray-300 shadow-sm"
+              title="Configurar Columnas"
+            >
+              <Settings size={16} />
+            </button>
+            {showColumnSelector && (
+              <ColumnSelector
+                columns={columns}
+                onToggleColumn={handleToggleColumn}
+                onReset={handleResetColumns}
+                onClose={() => setShowColumnSelector(false)}
+              />
+            )}
+          </div>
+
+          <div className="h-full w-px bg-gray-200 mx-1 hidden sm:block"></div>
+
+          <select
+            className="bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm cursor-pointer flex-1 sm:flex-none"
+            value={pageSize}
+            onChange={(e) => onPageSizeChange(Number(e.target.value))}
+          >
+            <option value={10}>10</option>
+            <option value={20}>20</option>
+            <option value={50}>50</option>
+            <option value={100}>100</option>
+          </select>
+
+          <button
+            onClick={handleLocalExport}
+            className="flex items-center justify-center gap-2 bg-white hover:bg-gray-50 text-gray-700 px-3 py-2 rounded-lg text-sm transition-colors border border-gray-300 shadow-sm flex-1 sm:flex-none"
+            title="Descarga solo lo que ves en la tabla"
+          >
+            <Download size={16} />
+            <span className="hidden sm:inline">Vista</span>
+          </button>
+
+          <div className="h-full w-px bg-gray-200 mx-1 hidden sm:block"></div>
+
+          <button
+            onClick={() => onExport('csv')}
+            disabled={isExporting || totalItems === 0}
+            className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white px-3 py-2 rounded-lg text-sm transition-colors shadow-sm font-medium flex-1 sm:flex-none"
+            title="Descargar Todo en formato Excel (CSV)"
+          >
+            <FileSpreadsheet size={16} />
+            <span className="hidden xl:inline">Excel</span>
+          </button>
+
+          <button
+            onClick={() => onExport('json')}
+            disabled={isExporting || totalItems === 0}
+            className="flex items-center justify-center gap-2 bg-gray-800 hover:bg-gray-900 disabled:bg-gray-600 text-white px-3 py-2 rounded-lg text-sm transition-colors shadow-sm font-medium flex-1 sm:flex-none"
+            title="Descargar Todo en formato JSON"
+          >
+            <FileJson size={16} />
+            <span className="hidden xl:inline">JSON</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Table Content */}
+      <div className="overflow-x-auto">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="bg-gray-50 text-gray-600 text-xs uppercase tracking-wider font-semibold">
+              {visibleColumns.map(col => (
+                <th key={col.id} className="p-4 border-b border-gray-200 whitespace-nowrap">
+                  {col.label}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {loading ? (
+              <tr>
+                <td colSpan={visibleColumns.length} className="p-8 text-center text-gray-500">
+                  <div className="flex justify-center items-center gap-2">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
+                    Cargando datos...
+                  </div>
+                </td>
+              </tr>
+            ) : filteredData.length === 0 ? (
+              <tr>
+                <td colSpan={visibleColumns.length} className="p-8 text-center text-gray-500">No se encontraron registros.</td>
+              </tr>
+            ) : (
+              filteredData.map((item) => (
+                <tr key={item.id} className="hover:bg-blue-50/50 transition-colors text-sm text-gray-700">
+                  {visibleColumns.map(col => (
+                    <td key={`${item.id}-${col.id}`} className="p-4">
+                      {renderCell(item, col.id)}
+                    </td>
+                  ))}
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Pagination Footer */}
+      <div className="p-4 border-t border-gray-100 flex items-center justify-between bg-gray-50">
+        <div className="text-sm text-gray-500">
+          Mostrando <span className="font-medium text-gray-900">{formatNumber(startItem)} - {formatNumber(endItem)}</span> de <span className="font-medium text-gray-900">{formatNumber(totalItems)}</span>
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <button
+              disabled={currentPage <= 1 || loading}
+              onClick={() => onPageChange(currentPage - 1)}
+              className="p-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-all active:scale-95"
+            >
+              <ChevronLeft size={16} />
+            </button>
+            <span className="text-sm font-medium text-gray-700 px-2 min-w-[3rem] text-center whitespace-nowrap">
+              Pág {formatNumber(currentPage)} de {formatNumber(totalPages)}
+            </span>
+            <button
+              disabled={loading || currentPage >= totalPages}
+              onClick={() => onPageChange(currentPage + 1)}
+              className="p-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-all active:scale-95"
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
