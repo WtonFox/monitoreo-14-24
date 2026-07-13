@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Users, MapPin, Activity, Heart, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Users, MapPin, Activity, Heart, CheckCircle, AlertTriangle, Calendar, GraduationCap, Building2, CheckCircle2 } from 'lucide-react';
 import type { IndicatorGroup, Indicator, IndicatorCategory } from '../hooks/useIndicators';
 import type { Participant } from '../types';
 import { useIndicatorBoards } from '../hooks/useIndicatorBoards';
@@ -52,6 +52,46 @@ const CATEGORY_STYLES: Record<
     bg: 'bg-rose-50/30',
     accent: 'bg-rose-50',
   },
+  'calidad-dato': {
+    bar: 'bg-violet-500',
+    icon: 'text-violet-600',
+    border: 'border-violet-100',
+    header: 'text-violet-800 bg-violet-50 border-violet-200',
+    bg: 'bg-violet-50/30',
+    accent: 'bg-violet-50',
+  },
+  vulnerabilidad: {
+    bar: 'bg-red-500',
+    icon: 'text-red-600',
+    border: 'border-red-100',
+    header: 'text-red-800 bg-red-50 border-red-200',
+    bg: 'bg-red-50/30',
+    accent: 'bg-red-50',
+  },
+  'cobertura-temporal': {
+    bar: 'bg-cyan-500',
+    icon: 'text-cyan-600',
+    border: 'border-cyan-100',
+    header: 'text-cyan-800 bg-cyan-50 border-cyan-200',
+    bg: 'bg-cyan-50/30',
+    accent: 'bg-cyan-50',
+  },
+  'nivel-educativo': {
+    bar: 'bg-teal-500',
+    icon: 'text-teal-600',
+    border: 'border-teal-100',
+    header: 'text-teal-800 bg-teal-50 border-teal-200',
+    bg: 'bg-teal-50/30',
+    accent: 'bg-teal-50',
+  },
+  'desempeno-centro': {
+    bar: 'bg-slate-500',
+    icon: 'text-slate-600',
+    border: 'border-slate-100',
+    header: 'text-slate-800 bg-slate-50 border-slate-200',
+    bg: 'bg-slate-50/30',
+    accent: 'bg-slate-50',
+  },
 };
 
 const CATEGORY_ICONS: Record<string, React.FC<{ size?: number; className?: string }>> = {
@@ -59,6 +99,11 @@ const CATEGORY_ICONS: Record<string, React.FC<{ size?: number; className?: strin
   territoriales: MapPin,
   programa: Activity,
   sociales: Heart,
+  'calidad-dato': CheckCircle,
+  vulnerabilidad: AlertTriangle,
+  'cobertura-temporal': Calendar,
+  'nivel-educativo': GraduationCap,
+  'desempeno-centro': Building2,
 };
 
 // ---------------------------------------------------------------------------
@@ -120,7 +165,7 @@ const IndicatorTile: React.FC<{
 
         {/* Value with subtle category-tinted background */}
         <div
-          className={`inline-block px-3 py-1 rounded-lg text-xl font-bold text-gray-900 mb-3 ${
+          className={`inline-block px-2.5 py-0.5 rounded-lg text-lg font-bold text-gray-900 mb-3 ${
             isPending ? 'bg-gray-50' : styles.accent
           }`}
         >

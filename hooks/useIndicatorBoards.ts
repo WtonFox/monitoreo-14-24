@@ -10,6 +10,11 @@ export interface BoardData {
   territorialData: TerritorialSlice;
   programData: ProgramSlice;
   socialData: SocialSlice;
+  qualityData: QualitySlice;
+  vulnerabilityData: VulnerabilitySlice;
+  temporalData: TemporalSlice;
+  educationData: EducationSlice;
+  centerData: CenterSlice;
 }
 
 export interface DemographicSlice {
@@ -51,6 +56,50 @@ export interface SocialSlice {
   genderByCurso: { name: string; Mujeres: number; Hombres: number }[];
   ageByCentro: { name: string; r14_17: number; r18_24: number }[];
   ageByCurso: { name: string; r14_17: number; r18_24: number }[];
+}
+
+export interface QualitySlice {
+  cedulaPct: number;
+  birthDatePct: number;
+  educationPct: number;
+  allergiesPct: number;
+  disabilitiesPct: number;
+  diseasesPct: number;
+  fieldBreakdown: { name: string; pct: number; total: number; ndCount: number }[];
+}
+
+export interface VulnerabilitySlice {
+  disabilitiesPct: number;
+  diseasesPct: number;
+  allergiesPct: number;
+  socialProgramsPct: number;
+  vulnerabilitiesPct: number;
+  topDisabilities: { name: string; value: number }[];
+  topDiseases: { name: string; value: number }[];
+  topAllergies: { name: string; value: number }[];
+  topSocialPrograms: { name: string; value: number }[];
+}
+
+export interface TemporalSlice {
+  registrationsByYear: { name: string; value: number }[];
+  yearGrowth: { name: string; growth: number }[];
+  avgAgeAtRegistration: number;
+  avgDaysToInclusion: number;
+  registrationsByQuarter: { name: string; value: number }[];
+}
+
+export interface EducationSlice {
+  educationDistribution: { name: string; value: number }[];
+  educationByStatus: { name: string; Activos: number; Egresados: number }[];
+  educationBySex: { name: string; Mujeres: number; Hombres: number }[];
+  topEducationByCenter: { center: string; level: string; count: number }[];
+}
+
+export interface CenterSlice {
+  totalCenters: number;
+  topCenters: { name: string; total: number; activos: number; egresados: number }[];
+  genderByCenter: { name: string; Mujeres: number; Hombres: number }[];
+  avgAgeByCenter: { name: string; avgAge: number }[];
 }
 
 // ── Helpers ──
@@ -110,6 +159,35 @@ export function useIndicatorBoards(data: Participant[]): BoardData {
     let totalGraduated = 0;
     const minors: number[] = [];
 
+    // Calidad del Dato
+    let qualityCedula = 0, qualityBirthDate = 0, qualityEducation = 0;
+    let qualityAllergies = 0, qualityDisabilities = 0, qualityDiseases = 0;
+
+    // Vulnerabilidad
+    const disabledCountMap: Record<string, number> = {};
+    const diseaseCountMap: Record<string, number> = {};
+    const allergyCountMap: Record<string, number> = {};
+    const socialProgramCountMap: Record<string, number> = {};
+    let vulnerabilityDisabilities = 0, vulnerabilityDiseases = 0, vulnerabilityAllergies = 0;
+    let vulnerabilitySocialPrograms = 0, vulnerabilityVulnerabilities = 0;
+
+    // Cobertura Temporal
+    const yearCounts: Record<string, number> = {};
+    const quarterCounts: Record<string, number> = {};
+    let totalDaysToInclusion = 0, countWithInclusion = 0;
+
+    // Nivel Educativo
+    const educationCounts: Record<string, number> = {};
+    const educationActiveStatus: Record<string, number> = {};
+    const educationGraduatedStatus: Record<string, number> = {};
+    const educationWomenCount: Record<string, number> = {};
+    const educationMenCount: Record<string, number> = {};
+    const centroEducationLevelCounts: Record<string, Record<string, number>> = {};
+
+    // Desempeño por Centro
+    const centroAgeSum: Record<string, number> = {};
+    const centroAgeCount: Record<string, number> = {};
+
     for (const p of data) {
       const age = p.edad || 0;
       const esMujer = isWomen(p.sexo);
@@ -141,6 +219,8 @@ export function useIndicatorBoards(data: Participant[]): BoardData {
         if (esHombre) menByCentro[p.centro] = (menByCentro[p.centro] || 0) + 1;
         if (age >= 14 && age <= 17) age14_17ByCentro[p.centro] = (age14_17ByCentro[p.centro] || 0) + 1;
         if (age >= 18 && age <= 24) age18_24ByCentro[p.centro] = (age18_24ByCentro[p.centro] || 0) + 1;
+        centroAgeSum[p.centro] = (centroAgeSum[p.centro] || 0) + (p.edadRegistro || 0);
+        centroAgeCount[p.centro] = (centroAgeCount[p.centro] || 0) + (p.edadRegistro > 0 ? 1 : 0);
       }
 
       // Curso
@@ -170,6 +250,76 @@ export function useIndicatorBoards(data: Participant[]): BoardData {
 
       // Minors tracking
       if (age < 18) minors.push(p.edad);
+
+      // Calidad del Dato
+      if (hasValue(p.cedula)) qualityCedula++;
+      if (hasValue(p.fechaNacimiento)) qualityBirthDate++;
+      if (hasValue(p.nivelEstudio)) qualityEducation++;
+      if (hasValue(p.alergias)) qualityAllergies++;
+      if (hasValue(p.discapacidades)) qualityDisabilities++;
+      if (hasValue(p.enfermedades)) qualityDiseases++;
+
+      // Vulnerabilidad
+      if (hasValue(p.discapacidades)) {
+        vulnerabilityDisabilities++;
+        p.discapacidades!.split(',').forEach(d => {
+          const s = d.trim();
+          if (s && !isEmptyValue(s)) disabledCountMap[s] = (disabledCountMap[s] || 0) + 1;
+        });
+      }
+      if (hasValue(p.enfermedades)) {
+        vulnerabilityDiseases++;
+        p.enfermedades!.split(',').forEach(e => {
+          const s = e.trim();
+          if (s && !isEmptyValue(s)) diseaseCountMap[s] = (diseaseCountMap[s] || 0) + 1;
+        });
+      }
+      if (hasValue(p.alergias)) {
+        vulnerabilityAllergies++;
+        p.alergias!.split(',').forEach(a => {
+          const s = a.trim();
+          if (s && !isEmptyValue(s)) allergyCountMap[s] = (allergyCountMap[s] || 0) + 1;
+        });
+      }
+      if (hasValue(p.programasSociales)) {
+        vulnerabilitySocialPrograms++;
+        p.programasSociales!.split(',').forEach(pr => {
+          const s = pr.trim();
+          if (s && !isEmptyValue(s)) socialProgramCountMap[s] = (socialProgramCountMap[s] || 0) + 1;
+        });
+      }
+      if (hasValue(p.vulnerabilidades)) {
+        vulnerabilityVulnerabilities++;
+      }
+
+      // Cobertura Temporal
+      if (p.fechaRegistro) {
+        const d = new Date(p.fechaRegistro);
+        const y = d.getFullYear();
+        yearCounts[y] = (yearCounts[y] || 0) + 1;
+        const q = Math.floor(d.getMonth() / 3) + 1;
+        quarterCounts[`Q${q}`] = (quarterCounts[`Q${q}`] || 0) + 1;
+      }
+      if (p.fechaRegistro && p.fechaInclusion) {
+        const diff = (new Date(p.fechaInclusion).getTime() - new Date(p.fechaRegistro).getTime()) / (1000 * 60 * 60 * 24);
+        if (diff >= 0) { totalDaysToInclusion += diff; countWithInclusion++; }
+      }
+
+      // Nivel Educativo
+      if (p.nivelEstudio && !isEmptyValue(p.nivelEstudio)) {
+        educationCounts[p.nivelEstudio] = (educationCounts[p.nivelEstudio] || 0) + 1;
+        const se = p.estado;
+        if (se) {
+          if (isActiveStatus(se)) educationActiveStatus[p.nivelEstudio] = (educationActiveStatus[p.nivelEstudio] || 0) + 1;
+          if (isGraduatedStatus(se)) educationGraduatedStatus[p.nivelEstudio] = (educationGraduatedStatus[p.nivelEstudio] || 0) + 1;
+        }
+        if (esMujer) educationWomenCount[p.nivelEstudio] = (educationWomenCount[p.nivelEstudio] || 0) + 1;
+        if (esHombre) educationMenCount[p.nivelEstudio] = (educationMenCount[p.nivelEstudio] || 0) + 1;
+        if (p.centro) {
+          if (!centroEducationLevelCounts[p.centro]) centroEducationLevelCounts[p.centro] = {};
+          centroEducationLevelCounts[p.centro][p.nivelEstudio] = (centroEducationLevelCounts[p.centro][p.nivelEstudio] || 0) + 1;
+        }
+      }
     }
 
     const minorsCount = minors.length;
@@ -245,6 +395,98 @@ export function useIndicatorBoards(data: Participant[]): BoardData {
       r18_24: age18_24ByCurso[c.name] || 0,
     }));
 
+    // ── Quality Data ──
+    const qualityFieldBreakdown = [
+      { name: 'C\u00e9dula', pct: safeDiv(qualityCedula, total) * 100, total: qualityCedula, ndCount: total - qualityCedula },
+      { name: 'Fecha de nacimiento', pct: safeDiv(qualityBirthDate, total) * 100, total: qualityBirthDate, ndCount: total - qualityBirthDate },
+      { name: 'Nivel de estudio', pct: safeDiv(qualityEducation, total) * 100, total: qualityEducation, ndCount: total - qualityEducation },
+      { name: 'Alergias', pct: safeDiv(qualityAllergies, total) * 100, total: qualityAllergies, ndCount: total - qualityAllergies },
+      { name: 'Discapacidades', pct: safeDiv(qualityDisabilities, total) * 100, total: qualityDisabilities, ndCount: total - qualityDisabilities },
+      { name: 'Enfermedades', pct: safeDiv(qualityDiseases, total) * 100, total: qualityDiseases, ndCount: total - qualityDiseases },
+    ];
+
+    // ── Vulnerability Data ──
+    const topDisArr = (map: Record<string, number>, n: number): { name: string; value: number }[] =>
+      Object.entries(map).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value).slice(0, n);
+
+    // ── Temporal Data ──
+    const yearsSorted = Object.keys(yearCounts).sort();
+    const registrationsByYear = yearsSorted.map(y => ({ name: y, value: yearCounts[y] }));
+    const yearGrowth = yearsSorted.slice(1).map(y => {
+      const prevIdx = yearsSorted.indexOf(String(Number(y) - 1));
+      if (prevIdx < 0) return { name: y, growth: 0 };
+      const prev = yearCounts[yearsSorted[prevIdx]];
+      const curr = yearCounts[y];
+      return { name: y, growth: prev > 0 ? ((curr - prev) / prev) * 100 : 0 };
+    });
+    const avgAgeAtRegistration = ageRegData.length > 0
+      ? ageRegData.reduce((s, p) => s + p.edadRegistro, 0) / ageRegData.length
+      : 0;
+    const avgDaysToInclusion = countWithInclusion > 0 ? totalDaysToInclusion / countWithInclusion : 0;
+    const registrationsByQuarter = Object.entries(quarterCounts)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([name, value]) => ({ name, value }));
+
+    // ── Education Data ──
+    const educationDistribution = Object.entries(educationCounts)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
+
+    const eduKeys = educationDistribution.map(e => e.name);
+    const educationByStatus = eduKeys.map(name => ({
+      name,
+      Activos: educationActiveStatus[name] || 0,
+      Egresados: educationGraduatedStatus[name] || 0,
+    }));
+    const educationBySex = eduKeys.map(name => ({
+      name,
+      Mujeres: educationWomenCount[name] || 0,
+      Hombres: educationMenCount[name] || 0,
+    }));
+
+    const topEducationByCenter = Object.entries(centroEducationLevelCounts)
+      .map(([centro, levels]) => {
+        const top = Object.entries(levels).sort(([, a], [, b]) => b - a)[0];
+        return { center: centro, level: top[0], count: top[1] };
+      })
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10);
+
+    // ── Center Data ──
+    const topCenters = Object.entries(centroCount)
+      .map(([name, totalVal]) => ({
+        name: name.length > 20 ? name.substring(0, 18) + '…' : name,
+        total: totalVal,
+        activos: activeByCentro[name] || 0,
+        egresados: graduatedByCentro[name] || 0,
+      }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 10);
+
+    const genderByCenter = topCenters.map(c => ({
+      name: c.name,
+      Mujeres: womenByCentro[c.name] || (() => {
+        const orig = Object.entries(centroCount).find(([k]) => (k.length > 20 ? k.substring(0, 18) + '…' : k) === c.name)?.[0];
+        return orig ? (womenByCentro[orig] || 0) : 0;
+      })(),
+      Hombres: menByCentro[c.name] || (() => {
+        const orig = Object.entries(centroCount).find(([k]) => (k.length > 20 ? k.substring(0, 18) + '…' : k) === c.name)?.[0];
+        return orig ? (menByCentro[orig] || 0) : 0;
+      })(),
+    }));
+
+    const avgAgeByCenter = Object.entries(centroCount)
+      .map(([name]) => {
+        const aSum = centroAgeSum[name] || 0;
+        const aCnt = centroAgeCount[name] || 0;
+        return {
+          name: name.length > 20 ? name.substring(0, 18) + '…' : name,
+          avgAge: aCnt > 0 ? aSum / aCnt : 0,
+        };
+      })
+      .sort((a, b) => b.avgAge - a.avgAge)
+      .slice(0, 10);
+
     return {
       demographicData: {
         total, women, men, womenPct, menPct, avgAgeReg,
@@ -267,6 +509,45 @@ export function useIndicatorBoards(data: Participant[]): BoardData {
         phoneCompletenessPct: safeDiv(withPhone, total) * 100,
         addressCompletenessPct: safeDiv(withAddress, total) * 100,
         genderByCentro, genderByCurso, ageByCentro, ageByCurso,
+      },
+      qualityData: {
+        cedulaPct: safeDiv(qualityCedula, total) * 100,
+        birthDatePct: safeDiv(qualityBirthDate, total) * 100,
+        educationPct: safeDiv(qualityEducation, total) * 100,
+        allergiesPct: safeDiv(qualityAllergies, total) * 100,
+        disabilitiesPct: safeDiv(qualityDisabilities, total) * 100,
+        diseasesPct: safeDiv(qualityDiseases, total) * 100,
+        fieldBreakdown: qualityFieldBreakdown,
+      },
+      vulnerabilityData: {
+        disabilitiesPct: safeDiv(vulnerabilityDisabilities, total) * 100,
+        diseasesPct: safeDiv(vulnerabilityDiseases, total) * 100,
+        allergiesPct: safeDiv(vulnerabilityAllergies, total) * 100,
+        socialProgramsPct: safeDiv(vulnerabilitySocialPrograms, total) * 100,
+        vulnerabilitiesPct: safeDiv(vulnerabilityVulnerabilities, total) * 100,
+        topDisabilities: topDisArr(disabledCountMap, 3),
+        topDiseases: topDisArr(diseaseCountMap, 3),
+        topAllergies: topDisArr(allergyCountMap, 3),
+        topSocialPrograms: topDisArr(socialProgramCountMap, 3),
+      },
+      temporalData: {
+        registrationsByYear,
+        yearGrowth,
+        avgAgeAtRegistration,
+        avgDaysToInclusion,
+        registrationsByQuarter,
+      },
+      educationData: {
+        educationDistribution,
+        educationByStatus,
+        educationBySex,
+        topEducationByCenter,
+      },
+      centerData: {
+        totalCenters: Object.keys(centroCount).length,
+        topCenters,
+        genderByCenter,
+        avgAgeByCenter,
       },
     };
   }, [data]);

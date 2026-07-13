@@ -21,6 +21,11 @@ const DemograficosBoard = React.lazy(() => import('./pages/indicadores/Demografi
 const TerritorialesBoard = React.lazy(() => import('./pages/indicadores/TerritorialesBoard'));
 const ProgramaBoard = React.lazy(() => import('./pages/indicadores/ProgramaBoard'));
 const SocialesBoard = React.lazy(() => import('./pages/indicadores/SocialesBoard'));
+const CalidadDatoBoard = React.lazy(() => import('./pages/indicadores/CalidadDatoBoard'));
+const VulnerabilidadBoard = React.lazy(() => import('./pages/indicadores/VulnerabilidadBoard'));
+const CoberturaBoard = React.lazy(() => import('./pages/indicadores/CoberturaBoard'));
+const NivelEducativoBoard = React.lazy(() => import('./pages/indicadores/NivelEducativoBoard'));
+const DesempenoCentroBoard = React.lazy(() => import('./pages/indicadores/DesempenoCentroBoard'));
 
 export const router = createHashRouter([
   {
@@ -117,6 +122,46 @@ export const router = createHashRouter([
             element: (
               <Suspense fallback={<div className="p-8 text-center text-gray-400">Cargando...</div>}>
                 <SocialesBoard />
+              </Suspense>
+            ),
+          },
+          {
+            path: 'calidad-dato',
+            element: (
+              <Suspense fallback={<div className="p-8 text-center text-gray-400">Cargando...</div>}>
+                <CalidadDatoBoard />
+              </Suspense>
+            ),
+          },
+          {
+            path: 'vulnerabilidad',
+            element: (
+              <Suspense fallback={<div className="p-8 text-center text-gray-400">Cargando...</div>}>
+                <VulnerabilidadBoard />
+              </Suspense>
+            ),
+          },
+          {
+            path: 'cobertura-temporal',
+            element: (
+              <Suspense fallback={<div className="p-8 text-center text-gray-400">Cargando...</div>}>
+                <CoberturaBoard />
+              </Suspense>
+            ),
+          },
+          {
+            path: 'nivel-educativo',
+            element: (
+              <Suspense fallback={<div className="p-8 text-center text-gray-400">Cargando...</div>}>
+                <NivelEducativoBoard />
+              </Suspense>
+            ),
+          },
+          {
+            path: 'desempeno-centro',
+            element: (
+              <Suspense fallback={<div className="p-8 text-center text-gray-400">Cargando...</div>}>
+                <DesempenoCentroBoard />
               </Suspense>
             ),
           },

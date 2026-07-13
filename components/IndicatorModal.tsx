@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import {
   X, Users, MapPin, Activity, Heart,
-  CheckCircle2, AlertTriangle,
+  CheckCircle2, AlertTriangle, CheckCircle, Calendar, GraduationCap, Building2,
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -23,6 +23,11 @@ const CATEGORY_META: Record<
   territoriales: { icon: MapPin, primary: '#059669', bg: '#ecfdf5', light: '#d1fae5' },
   programa: { icon: Activity, primary: '#d97706', bg: '#fffbeb', light: '#fef3c7' },
   sociales: { icon: Heart, primary: '#e11d48', bg: '#fff1f2', light: '#ffe4e6' },
+  'calidad-dato': { icon: CheckCircle, primary: '#7c3aed', bg: '#f5f3ff', light: '#ede9fe' },
+  vulnerabilidad: { icon: AlertTriangle, primary: '#dc2626', bg: '#fef2f2', light: '#fecaca' },
+  'cobertura-temporal': { icon: Calendar, primary: '#0891b2', bg: '#ecfeff', light: '#cffafe' },
+  'nivel-educativo': { icon: GraduationCap, primary: '#0d9488', bg: '#f0fdfa', light: '#ccfbf1' },
+  'desempeno-centro': { icon: Building2, primary: '#64748b', bg: '#f8fafc', light: '#e2e8f0' },
 };
 
 const PIE_COLORS = ['#2563eb', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6', '#06b6d4', '#f97316'];
@@ -73,7 +78,7 @@ export const IndicatorModal: React.FC<IndicatorModalProps> = ({
   // ── Category-specific contextual content ──
 
   const renderContext = () => {
-    const { demographicData, territorialData, programData, socialData } = boardData;
+    const { demographicData, territorialData, programData, socialData, qualityData, vulnerabilityData, temporalData, educationData, centerData } = boardData;
 
     switch (indicator.category) {
       case 'demograficos':
@@ -285,6 +290,246 @@ export const IndicatorModal: React.FC<IndicatorModalProps> = ({
                           className="bg-amber-400 h-1.5 transition-all"
                           style={{ width: `${100 - wp}%` }}
                         />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        );
+
+      case 'calidad-dato':
+        return (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="bg-gray-50 rounded-xl border border-gray-200 p-4">
+              <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                Completitud por campo
+              </h4>
+              <div className="space-y-4 mt-2">
+                {qualityData.fieldBreakdown.map((field, i) => (
+                  <div key={i}>
+                    <div className="flex justify-between text-xs mb-1">
+                      <span className="text-gray-600 truncate mr-2 flex-1">{field.name}</span>
+                      <span className="font-bold text-gray-900">{formatPercentage(field.pct)}</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2.5">
+                      <div
+                        className="bg-violet-500 h-2.5 rounded-full transition-all"
+                        style={{ width: `${Math.min(field.pct, 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="bg-gray-50 rounded-xl border border-gray-200 p-4">
+              <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                Resumen de calidad
+              </h4>
+              <div className="space-y-3 mt-2">
+                {[
+                  { label: 'Cédula', pct: qualityData.cedulaPct },
+                  { label: 'Fecha de nacimiento', pct: qualityData.birthDatePct },
+                  { label: 'Nivel de estudio', pct: qualityData.educationPct },
+                  { label: 'Alergias', pct: qualityData.allergiesPct },
+                  { label: 'Discapacidades', pct: qualityData.disabilitiesPct },
+                  { label: 'Enfermedades', pct: qualityData.diseasesPct },
+                ].map(item => (
+                  <div key={item.label} className="flex items-center gap-2">
+                    <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all"
+                        style={{ width: `${Math.min(item.pct, 100)}%`, backgroundColor: meta.primary }}
+                      />
+                    </div>
+                    <span className="text-xs font-semibold text-gray-700 w-24 text-right">
+                      {item.label}: {formatPercentage(item.pct)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+
+      case 'vulnerabilidad':
+        return (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="bg-gray-50 rounded-xl border border-gray-200 p-4">
+              <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                Prevalencia
+              </h4>
+              <div className="space-y-4 mt-2">
+                {[
+                  { label: 'Discapacidad', pct: vulnerabilityData.disabilitiesPct, color: 'bg-red-500' },
+                  { label: 'Enfermedad', pct: vulnerabilityData.diseasesPct, color: 'bg-orange-500' },
+                  { label: 'Alergia', pct: vulnerabilityData.allergiesPct, color: 'bg-amber-500' },
+                  { label: 'Programas Sociales', pct: vulnerabilityData.socialProgramsPct, color: 'bg-purple-500' },
+                  { label: 'Vulnerabilidades', pct: vulnerabilityData.vulnerabilitiesPct, color: 'bg-rose-500' },
+                ].map(bar => (
+                  <div key={bar.label}>
+                    <div className="flex justify-between text-xs mb-1">
+                      <span className="text-gray-600">{bar.label}</span>
+                      <span className="font-bold text-gray-900">{formatPercentage(bar.pct)}</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div className={`${bar.color} h-2 rounded-full transition-all`} style={{ width: `${Math.min(bar.pct, 100)}%` }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="bg-gray-50 rounded-xl border border-gray-200 p-4">
+              <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                Top listas
+              </h4>
+              <div className="space-y-4 mt-2">
+                {[
+                  { title: 'Discapacidades', items: vulnerabilityData.topDisabilities },
+                  { title: 'Enfermedades', items: vulnerabilityData.topDiseases },
+                  { title: 'Alergias', items: vulnerabilityData.topAllergies },
+                ].map(section => (
+                  <div key={section.title}>
+                    <h5 className="text-[10px] font-semibold text-gray-400 uppercase mb-1.5">{section.title}</h5>
+                    {section.items.length > 0 ? (
+                      <div className="space-y-1">
+                        {section.items.map((item, i) => (
+                          <div key={i} className="flex justify-between text-xs">
+                            <span className="text-gray-600 truncate mr-2 flex-1">{item.name}</span>
+                            <span className="font-semibold text-gray-900">{formatNumber(item.value)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : <p className="text-xs text-gray-400 italic">Sin datos</p>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+
+      case 'cobertura-temporal':
+        return (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="bg-gray-50 rounded-xl border border-gray-200 p-4">
+              <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                Registros por año
+              </h4>
+              <ResponsiveContainer width="100%" height={180}>
+                <BarChart data={temporalData.registrationsByYear}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis dataKey="name" tick={{ fontSize: 10 }} />
+                  <YAxis tick={{ fontSize: 10 }} />
+                  <Tooltip />
+                  <Bar dataKey="value" fill={meta.primary} radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="bg-gray-50 rounded-xl border border-gray-200 p-4">
+              <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                Métricas temporales
+              </h4>
+              <div className="space-y-4 mt-2">
+                <div className="flex justify-between items-center py-2 border-b border-gray-200">
+                  <span className="text-xs text-gray-600">Edad registro promedio</span>
+                  <span className="text-sm font-bold text-gray-900">{temporalData.avgAgeAtRegistration.toFixed(1)} años</span>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-gray-200">
+                  <span className="text-xs text-gray-600">Días a inclusión</span>
+                  <span className="text-sm font-bold text-gray-900">{temporalData.avgDaysToInclusion.toFixed(0)} días</span>
+                </div>
+                <div className="mt-4">
+                  <h5 className="text-[10px] font-semibold text-gray-400 uppercase mb-2">Registros por trimestre</h5>
+                  <ResponsiveContainer width="100%" height={100}>
+                    <BarChart data={temporalData.registrationsByQuarter}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                      <XAxis dataKey="name" tick={{ fontSize: 10 }} />
+                      <YAxis tick={{ fontSize: 10 }} hide />
+                      <Tooltip />
+                      <Bar dataKey="value" fill={meta.primary} radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+
+      case 'nivel-educativo':
+        return (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="bg-gray-50 rounded-xl border border-gray-200 p-4">
+              <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                Distribución educativa
+              </h4>
+              <ResponsiveContainer width="100%" height={180}>
+                <BarChart data={educationData.educationDistribution}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis dataKey="name" tick={{ fontSize: 10 }} />
+                  <YAxis tick={{ fontSize: 10 }} />
+                  <Tooltip />
+                  <Bar dataKey="value" fill={meta.primary} radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="bg-gray-50 rounded-xl border border-gray-200 p-4">
+              <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                Nivel × Estado
+              </h4>
+              <ResponsiveContainer width="100%" height={180}>
+                <BarChart data={educationData.educationByStatus}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis dataKey="name" tick={{ fontSize: 10 }} />
+                  <YAxis tick={{ fontSize: 10 }} />
+                  <Tooltip />
+                  <Bar dataKey="Activos" fill="#10b981" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="Egresados" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        );
+
+      case 'desempeno-centro':
+        return (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="bg-gray-50 rounded-xl border border-gray-200 p-4">
+              <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                Top centros
+              </h4>
+              <div className="space-y-2 mt-1 max-h-60 overflow-y-auto">
+                {centerData.topCenters.slice(0, 5).map((item, i) => (
+                  <div key={i} className="text-xs border-b border-gray-100 pb-1.5">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-gray-700 font-medium truncate mr-2 flex-1">{item.name}</span>
+                      <span className="font-bold text-gray-900">{formatNumber(item.total)}</span>
+                    </div>
+                    <div className="flex gap-3 text-[10px] text-gray-500">
+                      <span>Activos: {formatNumber(item.activos)}</span>
+                      <span>Egresados: {formatNumber(item.egresados)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="bg-gray-50 rounded-xl border border-gray-200 p-4">
+              <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                Género por centro
+              </h4>
+              <div className="space-y-2 mt-1">
+                {centerData.genderByCenter.slice(0, 5).map((item, i) => {
+                  const total = item.Mujeres + item.Hombres;
+                  const wp = total > 0 ? (item.Mujeres / total) * 100 : 0;
+                  return (
+                    <div key={i}>
+                      <div className="flex justify-between text-[11px] text-gray-600 mb-0.5">
+                        <span className="truncate mr-2">{item.name}</span>
+                        <span className="font-semibold tabular-nums">{formatNumber(total)}</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-1.5 flex overflow-hidden">
+                        <div className="bg-teal-500 h-1.5 transition-all" style={{ width: `${wp}%` }} />
+                        <div className="bg-amber-400 h-1.5 transition-all" style={{ width: `${100 - wp}%` }} />
                       </div>
                     </div>
                   );
