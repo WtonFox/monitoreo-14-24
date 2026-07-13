@@ -28,6 +28,7 @@ const Participantes: React.FC = () => {
   const handleProvinciaChange = (v: string) => {
     setFilterProvincia(v);
     setFilterMunicipio('todos');
+    setFilterCentro('todos');
   };
 
   const uniqueProvincias = useMemo(() => {
@@ -36,11 +37,29 @@ const Participantes: React.FC = () => {
     return Array.from(set).sort();
   }, [dashboardData]);
 
-  const uniqueCentros = useMemo(() => {
-    const set = new Set<string>();
-    dashboardData.forEach(p => { if (p.centro) set.add(p.centro); });
-    return Array.from(set).sort();
+  // Mapa: provincia → centros disponibles en esa provincia
+  const centrosByProvincia = useMemo(() => {
+    const map: Record<string, string[]> = {};
+    dashboardData.forEach(p => {
+      if (!p.centro || !p.provincia) return;
+      if (!map[p.provincia]) map[p.provincia] = [];
+      if (!map[p.provincia].includes(p.centro)) map[p.provincia].push(p.centro);
+    });
+    // Ordenar cada lista
+    Object.keys(map).forEach(k => map[k].sort());
+    return map;
   }, [dashboardData]);
+
+  // Centros filtrados por provincia seleccionada
+  const availableCentros = useMemo(() => {
+    if (filterProvincia === 'todas') {
+      // Todos los centros únicos del dataset
+      const all = new Set<string>();
+      dashboardData.forEach(p => { if (p.centro) all.add(p.centro); });
+      return Array.from(all).sort();
+    }
+    return centrosByProvincia[filterProvincia] || [];
+  }, [filterProvincia, centrosByProvincia, dashboardData]);
 
   const filteredData = useMemo(() => {
     let data = dashboardData;
@@ -104,7 +123,7 @@ const Participantes: React.FC = () => {
         onMunicipioChange={setFilterMunicipio}
         filterCentro={filterCentro}
         onCentroChange={setFilterCentro}
-        uniqueCentros={uniqueCentros}
+        uniqueCentros={availableCentros}
         filterSexo={filterSexo}
         onSexoChange={setFilterSexo}
         uniqueProvincias={uniqueProvincias}
