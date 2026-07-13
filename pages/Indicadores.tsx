@@ -29,7 +29,7 @@ const Indicadores: React.FC = () => {
           <span className="ml-3 text-gray-500 font-medium">Calculando indicadores...</span>
         </div>
       ) : (
-        <IndicatorsBoard groups={groups} />
+        <IndicatorsBoard groups={groups} data={dashboardData} />
       )}
     </div>
   );

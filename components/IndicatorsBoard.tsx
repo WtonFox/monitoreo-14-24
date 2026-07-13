@@ -1,8 +1,58 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Users, MapPin, Activity, Heart, AlertTriangle, CheckCircle2 } from 'lucide-react';
-import type { IndicatorGroup, Indicator } from '../hooks/useIndicators';
+import type { IndicatorGroup, Indicator, IndicatorCategory } from '../hooks/useIndicators';
+import type { Participant } from '../types';
+import { useIndicatorBoards } from '../hooks/useIndicatorBoards';
+import { IndicatorModal } from './IndicatorModal';
 
-/* ── icons per category ── */
+// ---------------------------------------------------------------------------
+// Per-category style tokens
+// ---------------------------------------------------------------------------
+
+const CATEGORY_STYLES: Record<
+  IndicatorCategory,
+  {
+    bar: string;
+    icon: string;
+    border: string;
+    header: string;
+    bg: string;
+    accent: string;
+  }
+> = {
+  demograficos: {
+    bar: 'bg-blue-500',
+    icon: 'text-blue-600',
+    border: 'border-blue-100',
+    header: 'text-blue-800 bg-blue-50 border-blue-200',
+    bg: 'bg-blue-50/30',
+    accent: 'bg-blue-50',
+  },
+  territoriales: {
+    bar: 'bg-emerald-500',
+    icon: 'text-emerald-600',
+    border: 'border-emerald-100',
+    header: 'text-emerald-800 bg-emerald-50 border-emerald-200',
+    bg: 'bg-emerald-50/30',
+    accent: 'bg-emerald-50',
+  },
+  programa: {
+    bar: 'bg-amber-500',
+    icon: 'text-amber-600',
+    border: 'border-amber-100',
+    header: 'text-amber-800 bg-amber-50 border-amber-200',
+    bg: 'bg-amber-50/30',
+    accent: 'bg-amber-50',
+  },
+  sociales: {
+    bar: 'bg-rose-500',
+    icon: 'text-rose-600',
+    border: 'border-rose-100',
+    header: 'text-rose-800 bg-rose-50 border-rose-200',
+    bg: 'bg-rose-50/30',
+    accent: 'bg-rose-50',
+  },
+};
 
 const CATEGORY_ICONS: Record<string, React.FC<{ size?: number; className?: string }>> = {
   demograficos: Users,
@@ -11,99 +61,111 @@ const CATEGORY_ICONS: Record<string, React.FC<{ size?: number; className?: strin
   sociales: Heart,
 };
 
-const CATEGORY_STYLES: Record<string, { bg: string; icon: string; border: string; header: string }> = {
-  demograficos: {
-    bg: 'bg-blue-50/30',
-    icon: 'text-blue-600',
-    border: 'border-blue-100',
-    header: 'text-blue-800 bg-blue-50 border-blue-200',
-  },
-  territoriales: {
-    bg: 'bg-emerald-50/30',
-    icon: 'text-emerald-600',
-    border: 'border-emerald-100',
-    header: 'text-emerald-800 bg-emerald-50 border-emerald-200',
-  },
-  programa: {
-    bg: 'bg-amber-50/30',
-    icon: 'text-amber-600',
-    border: 'border-amber-100',
-    header: 'text-amber-800 bg-amber-50 border-amber-200',
-  },
-  sociales: {
-    bg: 'bg-rose-50/30',
-    icon: 'text-rose-600',
-    border: 'border-rose-100',
-    header: 'text-rose-800 bg-rose-50 border-rose-200',
-  },
-};
-
-/* ── props ── */
+// ---------------------------------------------------------------------------
+// Props
+// ---------------------------------------------------------------------------
 
 interface IndicatorsBoardProps {
   groups: IndicatorGroup[];
+  data: Participant[];
 }
 
-/* ── single indicator tile ── */
+// ---------------------------------------------------------------------------
+// Single indicator tile
+// ---------------------------------------------------------------------------
 
-const IndicatorTile: React.FC<{ indicator: Indicator }> = ({ indicator }) => {
+const IndicatorTile: React.FC<{
+  indicator: Indicator;
+  styles: (typeof CATEGORY_STYLES)[IndicatorCategory];
+  onClick: () => void;
+}> = ({ indicator, styles, onClick }) => {
   const isPending = indicator.status === 'pending';
 
   return (
     <div
+      onClick={onClick}
       className={`
-        relative bg-white rounded-xl shadow-sm border p-4 transition-all hover:shadow-md
-        ${isPending ? 'border-orange-300 opacity-70' : 'border-gray-100'}
+        relative flex bg-white rounded-xl shadow-sm border cursor-pointer
+        transition-all hover:shadow-md hover:-translate-y-0.5 active:scale-[0.99]
+        ${isPending ? 'border-orange-200 opacity-80' : 'border-gray-100'}
       `}
     >
-      {/* status badge */}
-      <div className="absolute top-3 right-3">
-        {isPending ? (
-          <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 border border-orange-200">
-            <AlertTriangle size={10} />
-            PENDIENTE
-          </span>
-        ) : (
-          <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700 border border-green-200">
-            <CheckCircle2 size={10} />
-            VIABLE
-          </span>
+      {/* Left color accent bar */}
+      <div
+        className={`w-1.5 rounded-l-xl flex-shrink-0 ${
+          isPending ? 'bg-orange-400' : styles.bar
+        }`}
+      />
+
+      <div className="flex-1 p-4">
+        {/* Status badge — top right */}
+        <div className="absolute top-3 right-3">
+          {isPending ? (
+            <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 border border-orange-200">
+              <AlertTriangle size={10} />
+              PENDIENTE
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700 border border-green-200">
+              <CheckCircle2 size={10} />
+              VIABLE
+            </span>
+          )}
+        </div>
+
+        {/* Name */}
+        <p className="text-sm font-semibold text-gray-700 pr-20 mb-3 leading-snug">
+          {indicator.name}
+        </p>
+
+        {/* Value with subtle category-tinted background */}
+        <div
+          className={`inline-block px-3 py-1 rounded-lg text-xl font-bold text-gray-900 mb-3 ${
+            isPending ? 'bg-gray-50' : styles.accent
+          }`}
+        >
+          {indicator.value}
+        </div>
+
+        {/* Formula */}
+        <p className="text-[11px] text-gray-400 font-mono mb-1.5">{indicator.formula}</p>
+
+        {/* Description */}
+        <p className="text-[12px] text-gray-500 leading-relaxed">{indicator.description}</p>
+
+        {/* Pending reason */}
+        {isPending && indicator.pendingReason && (
+          <p className="text-[11px] text-orange-600 mt-2 font-medium italic">
+            {indicator.pendingReason}
+          </p>
         )}
       </div>
-
-      {/* name */}
-      <p className="text-sm font-semibold text-gray-700 pr-24 mb-2">{indicator.name}</p>
-
-      {/* value */}
-      <div className="text-2xl font-bold text-gray-900 mb-2 break-words">{indicator.value}</div>
-
-      {/* formula */}
-      <p className="text-[11px] text-gray-400 font-mono mb-1">{indicator.formula}</p>
-
-      {/* description */}
-      <p className="text-[11px] text-gray-500">{indicator.description}</p>
-
-      {/* pending reason (if applicable) */}
-      {isPending && indicator.pendingReason && (
-        <p className="text-[10px] text-orange-600 mt-2 font-medium italic">{indicator.pendingReason}</p>
-      )}
     </div>
   );
 };
 
-/* ── category section ── */
+// ---------------------------------------------------------------------------
+// Category section
+// ---------------------------------------------------------------------------
 
-const CategorySection: React.FC<{ group: IndicatorGroup }> = ({ group }) => {
+const CategorySection: React.FC<{
+  group: IndicatorGroup;
+  onIndicatorClick: (indicator: Indicator) => void;
+}> = ({ group, onIndicatorClick }) => {
+  const styles = CATEGORY_STYLES[group.category];
   const Icon = CATEGORY_ICONS[group.category] || Users;
-  const styles = CATEGORY_STYLES[group.category] || CATEGORY_STYLES.demograficos;
   const count = group.items.length;
   const viableCount = group.items.filter(i => i.status === 'viable').length;
   const pendingCount = count - viableCount;
 
   return (
-    <section className={`rounded-xl border ${styles.border} ${styles.bg} overflow-hidden`}>
-      {/* header */}
-      <div className={`flex items-center justify-between px-5 py-3 border-b ${styles.header}`}>
+    <section
+      className={`rounded-xl border ${styles.border} ${styles.bg} overflow-hidden`}
+    >
+      {/* Header */}
+      <div
+        className={`flex items-center justify-between px-5 py-3 border-b ${styles.header}`}
+      >
         <div className="flex items-center gap-2">
           <Icon size={20} className={styles.icon} />
           <h2 className="text-lg font-bold">{group.label}</h2>
@@ -111,35 +173,59 @@ const CategorySection: React.FC<{ group: IndicatorGroup }> = ({ group }) => {
         <div className="flex items-center gap-3 text-xs font-medium">
           <span className="text-green-700">
             <CheckCircle2 size={12} className="inline mr-0.5" />
-            {viableCount} viables
+            {viableCount} VIABLES
           </span>
           {pendingCount > 0 && (
             <span className="text-orange-700">
               <AlertTriangle size={12} className="inline mr-0.5" />
-              {pendingCount} pendientes
+              {pendingCount} PENDIENTES
             </span>
           )}
         </div>
       </div>
 
-      {/* tiles grid */}
+      {/* Tiles grid */}
       <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {group.items.map(indicator => (
-          <IndicatorTile key={indicator.id} indicator={indicator} />
+          <IndicatorTile
+            key={indicator.id}
+            indicator={indicator}
+            styles={styles}
+            onClick={() => onIndicatorClick(indicator)}
+          />
         ))}
       </div>
     </section>
   );
 };
 
-/* ── board (main component) ── */
+// ---------------------------------------------------------------------------
+// Board (main component)
+// ---------------------------------------------------------------------------
 
-export const IndicatorsBoard: React.FC<IndicatorsBoardProps> = ({ groups }) => {
+export const IndicatorsBoard: React.FC<IndicatorsBoardProps> = ({ groups, data }) => {
+  const [selectedIndicator, setSelectedIndicator] = useState<Indicator | null>(null);
+  const boardData = useIndicatorBoards(data);
+
   return (
-    <div className="space-y-8">
-      {groups.map(group => (
-        <CategorySection key={group.category} group={group} />
-      ))}
-    </div>
+    <>
+      <div className="space-y-8">
+        {groups.map(group => (
+          <CategorySection
+            key={group.category}
+            group={group}
+            onIndicatorClick={setSelectedIndicator}
+          />
+        ))}
+      </div>
+
+      {selectedIndicator && (
+        <IndicatorModal
+          indicator={selectedIndicator}
+          boardData={boardData}
+          onClose={() => setSelectedIndicator(null)}
+        />
+      )}
+    </>
   );
 };
