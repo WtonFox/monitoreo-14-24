@@ -64,7 +64,6 @@ export const useDashboardData = (): UseDashboardDataResult => {
 
     const stopSyncRef = useRef<boolean>(false);
     const isSyncingRef = useRef<boolean>(false);
-    const logCounterRef = useRef<number>(0);
     const existingIdsRef = useRef<Set<number>>(new Set());
     const statsRef = useRef<SyncStats>({ loaded: 0, errors: 0, corrupted: 0, duplicated: 0, progress: 0 });
 
@@ -214,7 +213,7 @@ export const useDashboardData = (): UseDashboardDataResult => {
 
                     for (let i = 0; i < items.length; i++) {
                         const item = items[i];
-                        const clean = sanitizeParticipant(item, i, logCounterRef);
+                        const clean = sanitizeParticipant(item, i);
 
                         if (clean.estado === 'DATA_CORRUPTA') {
                             localCorruptedCount++;

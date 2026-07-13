@@ -38,15 +38,7 @@ const getNumericValue = (p: any, key: string): number => {
  * Sanitiza y normaliza un participante desde la respuesta de la API
  * Maneja múltiples convenciones de nombres y datos inválidos
  */
-export const sanitizeParticipant = (p: any, index: number, logCounter?: { current: number }): Participant => {
-    // Logging de diagnóstico: registrar primeros 3 datos (reducido para performance)
-    if (logCounter && logCounter.current < 3) {
-        console.group(`Registro API #${logCounter.current + 1}`);
-        console.log('Datos de la API:', JSON.stringify(p, null, 2));
-        logCounter.current++;
-        console.groupEnd();
-    }
-
+export const sanitizeParticipant = (p: any, index: number): Participant => {
     // Validación básica de estructura
     if (!p || typeof p !== 'object') {
         console.warn('Registro con estructura inválida:', p);
