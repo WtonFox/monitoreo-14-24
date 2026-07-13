@@ -170,7 +170,7 @@ const IndicatorTile: React.FC<{
 
         {/* Value with subtle category-tinted background */}
         <div
-          className={`inline-block px-2.5 py-0.5 rounded-lg text-lg font-bold text-gray-900 mb-3 ${
+          className={`inline-block px-2.5 py-0.5 rounded-lg text-base font-bold text-gray-900 mb-3 ${
             isPending ? 'bg-gray-50' : isNotViable ? 'bg-gray-50' : styles.accent
           }`}
         >
