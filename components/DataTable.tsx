@@ -372,8 +372,8 @@ export const DataTable: React.FC<DataTableProps> = ({
             className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500"
           >
             <option value="todos">Sexo: Todos</option>
-            <option value="femenino">Femenino</option>
-            <option value="masculino">Masculino</option>
+            <option value="f">Femenino</option>
+            <option value="m">Masculino</option>
           </select>
         </div>
       </div>

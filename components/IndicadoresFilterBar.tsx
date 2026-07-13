@@ -56,8 +56,8 @@ export const IndicadoresFilterBar: React.FC<FilterBarProps> = ({
           <select value={filters.sex} onChange={e => filters.setSex(e.target.value)}
             className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white focus:ring-2 focus:ring-blue-500">
             <option value="todos">Todos</option>
-            <option value="femenino">Femenino</option>
-            <option value="masculino">Masculino</option>
+            <option value="f">Femenino</option>
+            <option value="m">Masculino</option>
           </select>
         </div>
       )}
