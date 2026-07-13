@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import type { Participant } from '../types';
 import { formatNumber, formatPercentage } from '../utils/formatters';
+import { isWomen, isMen, isActiveStatus, isGraduatedStatus, hasValue } from '../utils/normalize';
 
 export type IndicatorCategory = 'demograficos' | 'territoriales' | 'programa' | 'sociales';
 
@@ -100,8 +101,8 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
 
     /* --- pre-computed slices --- */
 
-    const women = count(data, p => p.sexo?.toLowerCase() === 'femenino');
-    const men = count(data, p => p.sexo?.toLowerCase() === 'masculino');
+    const women = count(data, p => isWomen(p.sexo));
+    const men = count(data, p => isMen(p.sexo));
 
     // #4: Usar edadRegistro para medir edad AL MOMENTO DEL REGISTRO (más relevante)
     const totalAgeReg = data.reduce((sum, p) => sum + (p.edadRegistro || 0), 0);
@@ -112,10 +113,10 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
 
     const age14_17 = count(data, p => p.edad >= 14 && p.edad <= 17);
     const age18_24 = count(data, p => p.edad >= 18 && p.edad <= 24);
-    const women14_17 = count(data, p => p.edad >= 14 && p.edad <= 17 && p.sexo?.toLowerCase() === 'femenino');
-    const women18_24 = count(data, p => p.edad >= 18 && p.edad <= 24 && p.sexo?.toLowerCase() === 'femenino');
-    const men14_17 = count(data, p => p.edad >= 14 && p.edad <= 17 && p.sexo?.toLowerCase() === 'masculino');
-    const men18_24 = count(data, p => p.edad >= 18 && p.edad <= 24 && p.sexo?.toLowerCase() === 'masculino');
+    const women14_17 = count(data, p => p.edad >= 14 && p.edad <= 17 && isWomen(p.sexo));
+    const women18_24 = count(data, p => p.edad >= 18 && p.edad <= 24 && isWomen(p.sexo));
+    const men14_17 = count(data, p => p.edad >= 14 && p.edad <= 17 && isMen(p.sexo));
+    const men18_24 = count(data, p => p.edad >= 18 && p.edad <= 24 && isMen(p.sexo));
 
     /* --- counts per dimension (single pass) --- */
 
@@ -164,12 +165,12 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
       const status = p.estado;
       if (status) {
         estadoCounts[status] = (estadoCounts[status] || 0) + 1;
-        if (status === 'Activo') {
+        if (isActiveStatus(status)) {
           totalActive++;
           if (p.centro) activeByCentro[p.centro] = (activeByCentro[p.centro] || 0) + 1;
           if (p.municipio) activeByMunicipio[p.municipio] = (activeByMunicipio[p.municipio] || 0) + 1;
         }
-        if (status.includes('Egresado') || status.includes('Egresada')) {
+        if (isGraduatedStatus(status)) {
           totalGraduated++;
           if (p.centro) graduatedByCentro[p.centro] = (graduatedByCentro[p.centro] || 0) + 1;
           if (p.municipio) graduatedByMunicipio[p.municipio] = (graduatedByMunicipio[p.municipio] || 0) + 1;

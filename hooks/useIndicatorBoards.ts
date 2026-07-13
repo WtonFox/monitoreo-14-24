@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import type { Participant } from '../types';
 import { formatNumber, formatPercentage } from '../utils/formatters';
+import { isWomen, isMen, isActiveStatus, isGraduatedStatus, hasValue } from '../utils/normalize';
 
 // ── Types ──
 
@@ -72,7 +73,7 @@ export function useIndicatorBoards(data: Participant[]): BoardData {
     const total = data.length;
 
     // ── Demographics ──
-    const women = count(data, p => p.sexo?.toLowerCase() === 'femenino');
+    const women = count(data, p => isWomen(p.sexo));
     const men = total - women;
     const womenPct = safeDiv(women, total) * 100;
     const menPct = safeDiv(men, total) * 100;
@@ -111,8 +112,8 @@ export function useIndicatorBoards(data: Participant[]): BoardData {
 
     for (const p of data) {
       const age = p.edad || 0;
-      const isWomen = p.sexo?.toLowerCase() === 'femenino';
-      const isMen = p.sexo?.toLowerCase() === 'masculino';
+      const esMujer = isWomen(p.sexo);
+      const esHombre = isMen(p.sexo);
 
       // Age buckets
       let bucketKey = '25+';
@@ -120,8 +121,8 @@ export function useIndicatorBoards(data: Participant[]): BoardData {
       else if (age >= 18 && age <= 20) bucketKey = '18-20';
       else if (age >= 21 && age <= 24) bucketKey = '21-24';
       buckets[bucketKey]++;
-      if (isWomen) womenBucket[bucketKey]++;
-      if (isMen) menBucket[bucketKey]++;
+      if (esMujer) womenBucket[bucketKey]++;
+      if (esHombre) menBucket[bucketKey]++;
 
       // Marital status
       if (p.estadoCivil && !isEmptyValue(p.estadoCivil))
@@ -130,14 +131,14 @@ export function useIndicatorBoards(data: Participant[]): BoardData {
       // Municipio
       if (p.municipio) {
         municipioCount[p.municipio] = (municipioCount[p.municipio] || 0) + 1;
-        if (isWomen) womenByMuni[p.municipio] = (womenByMuni[p.municipio] || 0) + 1;
+        if (esMujer) womenByMuni[p.municipio] = (womenByMuni[p.municipio] || 0) + 1;
       }
 
       // Centro
       if (p.centro) {
         centroCount[p.centro] = (centroCount[p.centro] || 0) + 1;
-        if (isWomen) womenByCentro[p.centro] = (womenByCentro[p.centro] || 0) + 1;
-        if (isMen) menByCentro[p.centro] = (menByCentro[p.centro] || 0) + 1;
+        if (esMujer) womenByCentro[p.centro] = (womenByCentro[p.centro] || 0) + 1;
+        if (esHombre) menByCentro[p.centro] = (menByCentro[p.centro] || 0) + 1;
         if (age >= 14 && age <= 17) age14_17ByCentro[p.centro] = (age14_17ByCentro[p.centro] || 0) + 1;
         if (age >= 18 && age <= 24) age18_24ByCentro[p.centro] = (age18_24ByCentro[p.centro] || 0) + 1;
       }
@@ -145,8 +146,8 @@ export function useIndicatorBoards(data: Participant[]): BoardData {
       // Curso
       if (p.rutaFormativa) {
         cursoCount[p.rutaFormativa] = (cursoCount[p.rutaFormativa] || 0) + 1;
-        if (isWomen) womenByCurso[p.rutaFormativa] = (womenByCurso[p.rutaFormativa] || 0) + 1;
-        if (isMen) menByCurso[p.rutaFormativa] = (menByCurso[p.rutaFormativa] || 0) + 1;
+        if (esMujer) womenByCurso[p.rutaFormativa] = (womenByCurso[p.rutaFormativa] || 0) + 1;
+        if (esHombre) menByCurso[p.rutaFormativa] = (menByCurso[p.rutaFormativa] || 0) + 1;
         if (age >= 14 && age <= 17) age14_17ByCurso[p.rutaFormativa] = (age14_17ByCurso[p.rutaFormativa] || 0) + 1;
         if (age >= 18 && age <= 24) age18_24ByCurso[p.rutaFormativa] = (age18_24ByCurso[p.rutaFormativa] || 0) + 1;
       }
@@ -155,12 +156,12 @@ export function useIndicatorBoards(data: Participant[]): BoardData {
       const st = p.estado;
       if (st) {
         statusCount[st] = (statusCount[st] || 0) + 1;
-        if (st === 'Activo') {
+        if (isActiveStatus(st)) {
           totalActive++;
           if (p.centro) activeByCentro[p.centro] = (activeByCentro[p.centro] || 0) + 1;
           if (p.municipio) activeByMuni[p.municipio] = (activeByMuni[p.municipio] || 0) + 1;
         }
-        if (st.includes('Egresado') || st.includes('Egresada')) {
+        if (isGraduatedStatus(st)) {
           totalGraduated++;
           if (p.centro) graduatedByCentro[p.centro] = (graduatedByCentro[p.centro] || 0) + 1;
           if (p.municipio) graduatedByMuni[p.municipio] = (graduatedByMuni[p.municipio] || 0) + 1;
