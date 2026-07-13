@@ -32,9 +32,13 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 const STORAGE_KEY = 'auth_token';
 
+const DEFAULT_ROLE = UserRole.ADMIN;
+
 function decodeToken(token: string): AuthUser | null {
   try {
-    const parts = token.split('.');
+    // Trim whitespace — avoids issues when pasting tokens with accidental spaces
+    const cleanToken = token.trim();
+    const parts = cleanToken.split('.');
     if (parts.length !== 3) return null;
 
     const payload = parts[1];
@@ -48,7 +52,8 @@ function decodeToken(token: string): AuthUser | null {
     }
 
     return {
-      role: decoded.role as UserRole,
+      // The VITE_API_TOKEN JWT may not include a role claim — default to ADMIN
+      role: (decoded.role as UserRole) || DEFAULT_ROLE,
       name: decoded.name,
       exp: decoded.exp,
     };
@@ -105,6 +110,27 @@ function getDevFallbackUser(): AuthUser | null {
 }
 
 // ---------------------------------------------------------------------------
+// Production API token fallback — uses VITE_API_TOKEN for auth when deployed
+// ---------------------------------------------------------------------------
+
+function getApiTokenUser(): AuthUser | null {
+  const apiToken = import.meta.env.VITE_API_TOKEN as string | undefined;
+  if (!apiToken) return null;
+
+  const user = decodeToken(apiToken);
+  if (!user) return null;
+
+  // Persist to localStorage so the token survives soft refreshes
+  try {
+    localStorage.setItem(STORAGE_KEY, apiToken);
+  } catch {
+    // localStorage may be unavailable (private browsing, quota, etc.)
+  }
+
+  return user;
+}
+
+// ---------------------------------------------------------------------------
 // Provider
 // ---------------------------------------------------------------------------
 
@@ -122,6 +148,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     if (!resolvedUser) {
       resolvedUser = getDevFallbackUser();
+    }
+
+    // Production fallback: use VITE_API_TOKEN from env vars for auth
+    if (!resolvedUser) {
+      resolvedUser = getApiTokenUser();
     }
 
     setUser(resolvedUser);

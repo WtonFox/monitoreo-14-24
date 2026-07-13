@@ -2,7 +2,7 @@ export const API_BASE_URL = ''; // Usaremos el proxy en Vite (dev) y Vercel/Netl
 export const API_ENDPOINT = '/api/estadisticasPresidencia/getParticipantsStaticsPaged';
 
 // Ideally this should be in an environment variable, but for this demo it is included here as requested.
-export const API_TOKEN = import.meta.env.VITE_API_TOKEN || '';
+export const API_TOKEN = (import.meta.env.VITE_API_TOKEN || '').trim();
 
 export const PAGE_SIZES = [10, 20, 50, 100];
 export const DEFAULT_PAGE_SIZE = 10;
