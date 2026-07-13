@@ -34,10 +34,10 @@ interface NavItem {
 
 const MAIN_NAV_ITEMS: NavItem[] = [
     { to: ROUTES.ESTADISTICAS, icon: LayoutDashboard, label: 'Estadísticas' },
+    { to: ROUTES.INDICADORES, icon: BarChart3, label: 'Indicadores' },
     { to: ROUTES.IMPACTO_SOCIAL, icon: Globe, label: 'Impacto Social' },
     { to: ROUTES.MAPA_INTERACTIVO, icon: MapIcon, label: 'Mapa Interactivo' },
     { to: ROUTES.PARTICIPANTES, icon: List, label: 'Participantes' },
-    { to: ROUTES.INDICADORES, icon: BarChart3, label: 'Indicadores' },
 ];
 
 const BOTTOM_NAV_ITEMS: NavItem[] = [
