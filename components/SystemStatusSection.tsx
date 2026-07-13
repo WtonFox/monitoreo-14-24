@@ -164,7 +164,7 @@ export const SystemStatusSection: React.FC<SystemStatusSectionProps> = ({
                                     {discrepancyData.map((entry, index) => (
                                         <Cell key={`cell-${index}`} fill={entry.color} />
                                     ))}
-                                    <LabelList dataKey="value" position="right" formatter={(val: number) => formatNumber(val)} style={{ fontSize: '11px', fontWeight: 'bold', fill: '#666' }} />
+                                    <LabelList dataKey="value" position="right" formatter={(val: unknown) => formatNumber(Number(val))} style={{ fontSize: '11px', fontWeight: 'bold', fill: '#666' }} />
                                 </Bar>
                             </BarChart>
                         </ResponsiveContainer>

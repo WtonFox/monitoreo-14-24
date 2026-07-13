@@ -129,11 +129,11 @@ const ProgramaBoard: React.FC = () => {
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie data={programData.statusDistribution} cx="50%" cy="50%" labelLine={false}
-                    label={({ name, percent, value }) => `${tickShort(name)}: ${formatNumber(value)} (${(percent * 100).toFixed(0)}%)`}
+                    label={({ name, percent, value }: any) => `${tickShort(name)}: ${formatNumber(value)} (${((percent || 0) * 100).toFixed(0)}%)`}
                     outerRadius={80} fill="#8884d8" dataKey="value">
                     {programData.statusDistribution.map((_, i) => (<Cell key={i} fill={COLORS[i % COLORS.length]} />))}
                   </Pie>
-                  <Tooltip formatter={(v: number) => formatNumber(v)} />
+                  <Tooltip formatter={(v: unknown) => formatNumber(Number(v))} />
                   <Legend />
                 </PieChart>
               </ResponsiveContainer>
@@ -150,7 +150,7 @@ const ProgramaBoard: React.FC = () => {
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                   <XAxis type="number" tickFormatter={formatNumber} />
                   <YAxis dataKey="name" type="category" width={130} tickFormatter={tickShort} style={{ fontSize: '10px' }} />
-                  <Tooltip formatter={(v: number) => formatNumber(v)} />
+                  <Tooltip formatter={(v: unknown) => formatNumber(Number(v))} />
                   <Legend />
                   <Bar dataKey="Activos" fill="#00C49F" radius={[0, 4, 4, 0]} />
                   <Bar dataKey="Egresados" fill="#0088FE" radius={[0, 4, 4, 0]} />
@@ -169,7 +169,7 @@ const ProgramaBoard: React.FC = () => {
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                   <XAxis type="number" tickFormatter={formatNumber} />
                   <YAxis dataKey="name" type="category" width={130} tickFormatter={tickShort} style={{ fontSize: '10px' }} />
-                  <Tooltip formatter={(v: number) => formatNumber(v)} />
+                  <Tooltip formatter={(v: unknown) => formatNumber(Number(v))} />
                   <Legend />
                   <Bar dataKey="Activos" fill="#00C49F" radius={[0, 4, 4, 0]} />
                   <Bar dataKey="Egresados" fill="#0088FE" radius={[0, 4, 4, 0]} />

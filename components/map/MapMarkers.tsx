@@ -152,7 +152,7 @@ export const MapMarkers: React.FC<MapMarkersProps> = ({
                                         {stats.topCenters.length > 0 && (
                                             <div>
                                                 <strong>Top Centros:</strong><br />
-                                                {stats.topCenters.slice(0, 2).map((c, idx) => (
+                                                {stats.topCenters.slice(0, 2).map((c: { name: string; count: number }, idx: number) => (
                                                     <span key={idx} style={{ marginLeft: '8px', fontSize: '11px', display: 'block' }}>
                                                         • {c.name.length > 30 ? c.name.substring(0, 28) + '...' : c.name} ({formatNumber(c.count)})
                                                     </span>

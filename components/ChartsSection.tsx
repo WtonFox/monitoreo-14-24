@@ -337,7 +337,7 @@ export const ChartsSection: React.FC<ChartsSectionProps> = ({ data, selectedProv
                 <XAxis dataKey="name" style={{ fontSize: '11px' }} minTickGap={30} />
                 <YAxis tickFormatter={formatNumber} style={{ fontSize: '11px' }} />
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <Tooltip formatter={(value: number) => [formatNumber(value), "Registros"]} />
+                <Tooltip formatter={(value: unknown) => [formatNumber(Number(value)), "Registros"]} />
                 {(showLabels || true) && <Legend />}
                 <Area
                   type="monotone"
@@ -345,7 +345,7 @@ export const ChartsSection: React.FC<ChartsSectionProps> = ({ data, selectedProv
                   stroke="#3b82f6"
                   fillOpacity={1}
                   fill="url(#colorReg)"
-                  label={showLabels ? { position: 'top', fontSize: 10, formatter: (value: number) => formatNumber(value) } : false}
+                  label={showLabels ? { position: 'top', fontSize: 10, formatter: (value: unknown) => formatNumber(Number(value)) } : false}
                 />
               </AreaChart>
             </ResponsiveContainer>
@@ -389,7 +389,7 @@ export const ChartsSection: React.FC<ChartsSectionProps> = ({ data, selectedProv
                 <XAxis dataKey="name" style={{ fontSize: '11px' }} minTickGap={30} />
                 <YAxis tickFormatter={formatNumber} style={{ fontSize: '11px' }} />
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <Tooltip formatter={(value: number) => [formatNumber(value), "Inclusiones"]} />
+                <Tooltip formatter={(value: unknown) => [formatNumber(Number(value)), "Inclusiones"]} />
                 {(showLabels || true) && <Legend />}
                 <Area
                   type="monotone"
@@ -397,7 +397,7 @@ export const ChartsSection: React.FC<ChartsSectionProps> = ({ data, selectedProv
                   stroke="#10b981"
                   fillOpacity={1}
                   fill="url(#colorInc)"
-                  label={showLabels ? { position: 'top', fontSize: 10, formatter: (value: number) => formatNumber(value) } : false}
+                  label={showLabels ? { position: 'top', fontSize: 10, formatter: (value: unknown) => formatNumber(Number(value)) } : false}
                 />
               </AreaChart>
             </ResponsiveContainer>
@@ -464,13 +464,13 @@ export const ChartsSection: React.FC<ChartsSectionProps> = ({ data, selectedProv
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                 <XAxis type="number" tickFormatter={formatNumber} />
                 <YAxis dataKey="name" type="category" width={80} style={{ fontSize: '11px' }} />
-                <Tooltip formatter={(value: number) => formatNumber(value)} />
+                <Tooltip formatter={(value: unknown) => formatNumber(Number(value))} />
                 {showLabels && <Legend />}
                 <Bar
                   dataKey="Cantidad"
                   fill="#3b82f6"
                   radius={[0, 4, 4, 0]}
-                  label={showLabels ? { position: 'right', fontSize: 10, formatter: (value: number) => formatNumber(value) } : false}
+                  label={showLabels ? { position: 'right', fontSize: 10, formatter: (value: unknown) => formatNumber(Number(value)) } : false}
                 />
               </BarChart>
             </ResponsiveContainer>
@@ -488,7 +488,7 @@ export const ChartsSection: React.FC<ChartsSectionProps> = ({ data, selectedProv
                   cx="50%"
                   cy="50%"
                   labelLine={showLabels}
-                  label={({ name, percent, value }) => `${name}: ${formatNumber(value)} (${(percent * 100).toFixed(0)}%)`}
+                  label={({ name, percent, value }: any) => `${name}: ${formatNumber(value)} (${((percent || 0) * 100).toFixed(0)}%)`}
                   outerRadius={80}
                   fill="#8884d8"
                   dataKey="Cantidad"
@@ -497,7 +497,7 @@ export const ChartsSection: React.FC<ChartsSectionProps> = ({ data, selectedProv
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(value: number) => formatNumber(value)} />
+                <Tooltip formatter={(value: unknown) => formatNumber(Number(value))} />
                 <Legend layout="horizontal" verticalAlign="bottom" align="center" />
               </PieChart>
             </ResponsiveContainer>
@@ -513,13 +513,13 @@ export const ChartsSection: React.FC<ChartsSectionProps> = ({ data, selectedProv
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="name" />
                 <YAxis tickFormatter={formatNumber} />
-                <Tooltip formatter={(value: number) => formatNumber(value)} />
+                <Tooltip formatter={(value: unknown) => formatNumber(Number(value))} />
                 {showLabels && <Legend />}
                 <Bar
                   dataKey="Cantidad"
                   fill="#10b981"
                   radius={[4, 4, 0, 0]}
-                  label={showLabels ? { position: 'top', fontSize: 10, formatter: (value: number) => formatNumber(value) } : false}
+                  label={showLabels ? { position: 'top', fontSize: 10, formatter: (value: unknown) => formatNumber(Number(value)) } : false}
                 />
               </BarChart>
             </ResponsiveContainer>
@@ -535,13 +535,13 @@ export const ChartsSection: React.FC<ChartsSectionProps> = ({ data, selectedProv
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="name" style={{ fontSize: '10px' }} interval={0} />
                 <YAxis tickFormatter={formatNumber} />
-                <Tooltip formatter={(value: number) => formatNumber(value)} />
+                <Tooltip formatter={(value: unknown) => formatNumber(Number(value))} />
                 {showLabels && <Legend />}
                 <Bar
                   dataKey="Cantidad"
                   fill="#f59e0b"
                   radius={[4, 4, 0, 0]}
-                  label={showLabels ? { position: 'top', fontSize: 10, formatter: (value: number) => formatNumber(value) } : false}
+                  label={showLabels ? { position: 'top', fontSize: 10, formatter: (value: unknown) => formatNumber(Number(value)) } : false}
                 />
               </BarChart>
             </ResponsiveContainer>
@@ -573,7 +573,7 @@ export const ChartsSection: React.FC<ChartsSectionProps> = ({ data, selectedProv
                   dataKey="Cantidad"
                   fill="#8884d8"
                   radius={[0, 4, 4, 0]}
-                  label={showLabels ? { position: 'right', fontSize: 10, formatter: (value: number) => formatNumber(value) } : false}
+                  label={showLabels ? { position: 'right', fontSize: 10, formatter: (value: unknown) => formatNumber(Number(value)) } : false}
                 />
               </BarChart>
             </ResponsiveContainer>
@@ -590,13 +590,13 @@ export const ChartsSection: React.FC<ChartsSectionProps> = ({ data, selectedProv
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                   <XAxis type="number" tickFormatter={formatNumber} />
                   <YAxis dataKey="name" type="category" width={100} style={{ fontSize: '10px' }} />
-                  <Tooltip formatter={(value: number) => formatNumber(value)} />
+                  <Tooltip formatter={(value: unknown) => formatNumber(Number(value))} />
                   {showLabels && <Legend />}
                   <Bar
                     dataKey="Cantidad"
                     fill="#ff6b6b"
                     radius={[0, 4, 4, 0]}
-                    label={showLabels ? { position: 'right', fontSize: 10, formatter: (value: number) => formatNumber(value) } : false}
+                    label={showLabels ? { position: 'right', fontSize: 10, formatter: (value: unknown) => formatNumber(Number(value)) } : false}
                   />
                 </BarChart>
               </ResponsiveContainer>
@@ -620,7 +620,7 @@ export const ChartsSection: React.FC<ChartsSectionProps> = ({ data, selectedProv
                     cx="50%"
                     cy="50%"
                     labelLine={showLabels}
-                    label={({ name, percent, value }) => `${name}: ${formatNumber(value)} (${(percent * 100).toFixed(0)}%)`}
+                    label={({ name, percent, value }: any) => `${name}: ${formatNumber(value)} (${((percent || 0) * 100).toFixed(0)}%)`}
                     outerRadius={80}
                     fill="#8884d8"
                     dataKey="Cantidad"
@@ -629,7 +629,7 @@ export const ChartsSection: React.FC<ChartsSectionProps> = ({ data, selectedProv
                       <Cell key={`cell-ec-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(value: number) => formatNumber(value)} />
+                  <Tooltip formatter={(value: unknown) => formatNumber(Number(value))} />
                   <Legend layout="horizontal" verticalAlign="bottom" align="center" />
                 </PieChart>
               </ResponsiveContainer>
@@ -649,13 +649,13 @@ export const ChartsSection: React.FC<ChartsSectionProps> = ({ data, selectedProv
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                   <XAxis type="number" tickFormatter={formatNumber} />
                   <YAxis dataKey="name" type="category" width={100} style={{ fontSize: '11px' }} />
-                  <Tooltip formatter={(value: number) => formatNumber(value)} />
+                  <Tooltip formatter={(value: unknown) => formatNumber(Number(value))} />
                   {showLabels && <Legend />}
                   <Bar
                     dataKey="Cantidad"
                     fill="#8884d8"
                     radius={[0, 4, 4, 0]}
-                    label={showLabels ? { position: 'right', fontSize: 10, formatter: (value: number) => formatNumber(value) } : false}
+                    label={showLabels ? { position: 'right', fontSize: 10, formatter: (value: unknown) => formatNumber(Number(value)) } : false}
                   />
                 </BarChart>
               </ResponsiveContainer>
@@ -675,13 +675,13 @@ export const ChartsSection: React.FC<ChartsSectionProps> = ({ data, selectedProv
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                   <XAxis type="number" tickFormatter={formatNumber} />
                   <YAxis dataKey="name" type="category" width={100} style={{ fontSize: '10px' }} />
-                  <Tooltip formatter={(value: number) => formatNumber(value)} />
+                  <Tooltip formatter={(value: unknown) => formatNumber(Number(value))} />
                   {showLabels && <Legend />}
                   <Bar
                     dataKey="Cantidad"
                     fill="#14b8a6"
                     radius={[0, 4, 4, 0]}
-                    label={showLabels ? { position: 'right', fontSize: 10, formatter: (value: number) => formatNumber(value) } : false}
+                    label={showLabels ? { position: 'right', fontSize: 10, formatter: (value: unknown) => formatNumber(Number(value)) } : false}
                   />
                 </BarChart>
               </ResponsiveContainer>
@@ -704,7 +704,7 @@ export const ChartsSection: React.FC<ChartsSectionProps> = ({ data, selectedProv
                       <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                       <XAxis type="number" tickFormatter={formatNumber} />
                       <YAxis dataKey="name" type="category" width={90} style={{ fontSize: '10px' }} />
-                      <Tooltip formatter={(value: number) => formatNumber(value)} />
+                      <Tooltip formatter={(value: unknown) => formatNumber(Number(value))} />
                       <Bar dataKey="Cantidad" fill="#f59e0b" radius={[0, 4, 4, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
@@ -722,7 +722,7 @@ export const ChartsSection: React.FC<ChartsSectionProps> = ({ data, selectedProv
                       <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                       <XAxis type="number" tickFormatter={formatNumber} />
                       <YAxis dataKey="name" type="category" width={90} style={{ fontSize: '10px' }} />
-                      <Tooltip formatter={(value: number) => formatNumber(value)} />
+                      <Tooltip formatter={(value: unknown) => formatNumber(Number(value))} />
                       <Bar dataKey="Cantidad" fill="#ef4444" radius={[0, 4, 4, 0]} />
                     </BarChart>
                   </ResponsiveContainer>

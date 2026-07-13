@@ -137,11 +137,11 @@ const DemograficosBoard: React.FC = () => {
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie data={genderPieData} cx="50%" cy="50%" labelLine={false}
-                  label={({ name, percent, value }) => `${name}: ${formatNumber(value)} (${(percent * 100).toFixed(0)}%)`}
+                  label={({ name, percent, value }: any) => `${name}: ${formatNumber(value)} (${((percent || 0) * 100).toFixed(0)}%)`}
                   outerRadius={80} fill="#8884d8" dataKey="value">
                   {genderPieData.map((_, i) => (<Cell key={i} fill={COLORS[i % COLORS.length]} />))}
                 </Pie>
-                <Tooltip formatter={(v: number) => formatNumber(v)} />
+                <Tooltip formatter={(v: unknown) => formatNumber(Number(v))} />
                 <Legend />
               </PieChart>
             </ResponsiveContainer>
@@ -158,7 +158,7 @@ const DemograficosBoard: React.FC = () => {
                   <CartesianGrid strokeDasharray="3 3" vertical={false} />
                   <XAxis dataKey="name" tickFormatter={tickShort} />
                   <YAxis tickFormatter={formatNumber} />
-                  <Tooltip formatter={(v: number) => formatNumber(v)} />
+                  <Tooltip formatter={(v: unknown) => formatNumber(Number(v))} />
                   <Legend />
                   <Bar dataKey="value" fill="#3b82f6" radius={[4, 4, 0, 0]} />
                 </BarChart>
@@ -175,11 +175,11 @@ const DemograficosBoard: React.FC = () => {
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie data={demographicData.maritalStatus} cx="50%" cy="50%" labelLine={false}
-                    label={({ name, percent, value }) => `${tickShort(name)}: ${formatNumber(value)} (${(percent * 100).toFixed(0)}%)`}
+                    label={({ name, percent, value }: any) => `${tickShort(name)}: ${formatNumber(value)} (${((percent || 0) * 100).toFixed(0)}%)`}
                     outerRadius={70} fill="#8884d8" dataKey="value">
                     {demographicData.maritalStatus.map((_, i) => (<Cell key={i} fill={COLORS[i % COLORS.length]} />))}
                   </Pie>
-                  <Tooltip formatter={(v: number) => formatNumber(v)} />
+                  <Tooltip formatter={(v: unknown) => formatNumber(Number(v))} />
                   <Legend />
                 </PieChart>
               </ResponsiveContainer>
@@ -201,7 +201,7 @@ const DemograficosBoard: React.FC = () => {
                   <CartesianGrid strokeDasharray="3 3" vertical={false} />
                   <XAxis dataKey="name" />
                   <YAxis tickFormatter={formatNumber} />
-                  <Tooltip formatter={(v: number) => formatNumber(v)} />
+                  <Tooltip formatter={(v: unknown) => formatNumber(Number(v))} />
                   <Legend />
                   <Bar dataKey="Mujeres" fill="#00C49F" stackId="s" radius={[4, 4, 0, 0]} />
                   <Bar dataKey="Hombres" fill="#0088FE" stackId="s" radius={[4, 4, 0, 0]} />

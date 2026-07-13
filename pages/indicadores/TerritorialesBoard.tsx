@@ -74,7 +74,7 @@ const TerritorialesBoard: React.FC = () => {
               <CartesianGrid strokeDasharray="3 3" horizontal={false} />
               <XAxis type="number" tickFormatter={formatNumber} />
               <YAxis dataKey="name" type="category" width={130} tickFormatter={tickShort} style={{ fontSize: '11px' }} />
-              <Tooltip formatter={(v: number) => formatNumber(v)} />
+              <Tooltip formatter={(v: unknown) => formatNumber(Number(v))} />
               <Legend />
               <Bar dataKey={dataKey} fill={color} radius={[0, 4, 4, 0]} />
             </BarChart>
@@ -156,7 +156,7 @@ const TerritorialesBoard: React.FC = () => {
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                   <XAxis type="number" tickFormatter={formatNumber} />
                   <YAxis dataKey="name" type="category" width={130} tickFormatter={tickShort} style={{ fontSize: '11px' }} />
-                  <Tooltip formatter={(v: number) => formatNumber(v)} />
+                  <Tooltip formatter={(v: unknown) => formatNumber(Number(v))} />
                   <Legend />
                   <Bar dataKey="Mujeres" fill="#00C49F" stackId="s" radius={[0, 4, 4, 0]} />
                   <Bar dataKey="Hombres" fill="#0088FE" stackId="s" radius={[0, 4, 4, 0]} />

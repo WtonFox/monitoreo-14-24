@@ -71,7 +71,7 @@ const SocialesBoard: React.FC = () => {
               <CartesianGrid strokeDasharray="3 3" horizontal={false} />
               <XAxis type="number" tickFormatter={formatNumber} />
               <YAxis dataKey="name" type="category" width={130} tickFormatter={tickShort} style={{ fontSize: '11px' }} />
-              <Tooltip formatter={(v: number) => formatNumber(v)} />
+              <Tooltip formatter={(v: unknown) => formatNumber(Number(v))} />
               <Legend />
               {bars.map(b => (
                 <Bar key={b.key} dataKey={b.key} fill={b.fill} stackId={b.stackId} radius={[0, 4, 4, 0]} />

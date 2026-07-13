@@ -173,8 +173,8 @@ export function useIndicatorBoards(data: Participant[]): BoardData {
     }
 
     const minorsCount = minors.length;
-    const minorsWithTutor = count(data, p => (p.edad || 0) < 18 && p.tutor && !isEmptyValue(p.tutor));
-    const tutorsTotal = data.filter(p => p.tutor && !isEmptyValue(p.tutor));
+    const minorsWithTutor = count(data, p => (p.edad || 0) < 18 && !!p.tutor && !isEmptyValue(p.tutor));
+    const tutorsTotal = data.filter(p => !!p.tutor && !isEmptyValue(p.tutor));
     const tutorsWithPhone = tutorsTotal.filter(p => p.telefonosResponsable && !isEmptyValue(p.telefonosResponsable));
     const withPhone = count(data, p => !isEmptyValue(p.telefonos));
     const withAddress = count(data, p => !isEmptyValue(p.direccion));

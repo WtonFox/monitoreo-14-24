@@ -172,7 +172,7 @@ export const ImpactSection: React.FC<ImpactSectionProps> = ({ data }) => {
                     style={{ fontSize: '11px' }}
                   />
                   <Tooltip
-                    formatter={(value: number) => formatNumber(value)}
+                    formatter={(value: unknown) => formatNumber(Number(value))}
                   />
                   <Bar dataKey="value" fill="#ef4444" radius={[0, 4, 4, 0]} barSize={20} />
                 </BarChart>
@@ -211,7 +211,7 @@ export const ImpactSection: React.FC<ImpactSectionProps> = ({ data }) => {
                         tickFormatter={tickShort}
                         style={{ fontSize: '10px' }}
                       />
-                      <Tooltip formatter={(value: number) => formatNumber(value)} />
+                      <Tooltip formatter={(value: unknown) => formatNumber(Number(value))} />
                       <Bar dataKey="value" fill="#f59e0b" radius={[0, 4, 4, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
@@ -244,7 +244,7 @@ export const ImpactSection: React.FC<ImpactSectionProps> = ({ data }) => {
                         tickFormatter={tickShort}
                         style={{ fontSize: '10px' }}
                       />
-                      <Tooltip formatter={(value: number) => formatNumber(value)} />
+                      <Tooltip formatter={(value: unknown) => formatNumber(Number(value))} />
                       <Bar dataKey="value" fill="#3b82f6" radius={[0, 4, 4, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
@@ -277,7 +277,7 @@ export const ImpactSection: React.FC<ImpactSectionProps> = ({ data }) => {
                         tickFormatter={tickShort}
                         style={{ fontSize: '10px' }}
                       />
-                      <Tooltip formatter={(value: number) => formatNumber(value)} />
+                      <Tooltip formatter={(value: unknown) => formatNumber(Number(value))} />
                       <Bar dataKey="value" fill="#ef4444" radius={[0, 4, 4, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
@@ -303,7 +303,7 @@ export const ImpactSection: React.FC<ImpactSectionProps> = ({ data }) => {
                   <CartesianGrid strokeDasharray="3 3" vertical={false} />
                   <XAxis dataKey="name" style={{ fontSize: '11px' }} />
                   <YAxis tickFormatter={formatNumber} />
-                  <Tooltip formatter={(value: number) => formatNumber(value)} />
+                  <Tooltip formatter={(value: unknown) => formatNumber(Number(value))} />
                   <Bar dataKey="value" fill="#f59e0b" radius={[4, 4, 0, 0]} barSize={40} />
                 </BarChart>
               </ResponsiveContainer>
@@ -335,7 +335,7 @@ export const ImpactSection: React.FC<ImpactSectionProps> = ({ data }) => {
                     tickFormatter={tickShort}
                     style={{ fontSize: '10px' }}
                   />
-                  <Tooltip formatter={(value: number) => formatNumber(value)} />
+                  <Tooltip formatter={(value: unknown) => formatNumber(Number(value))} />
                   <Bar dataKey="value" fill="#8884d8" radius={[0, 4, 4, 0]} barSize={16} />
                 </BarChart>
               </ResponsiveContainer>
@@ -364,7 +364,7 @@ export const ImpactSection: React.FC<ImpactSectionProps> = ({ data }) => {
                   <XAxis
                     type="number"
                     domain={[0, 100]}
-                    tickFormatter={(v: number) => `${v}%`}
+                    tickFormatter={(v: unknown) => `${v}%`}
                   />
                   <YAxis
                     dataKey="name"
@@ -373,7 +373,7 @@ export const ImpactSection: React.FC<ImpactSectionProps> = ({ data }) => {
                     tickFormatter={tickShort}
                     style={{ fontSize: '10px' }}
                   />
-                  <Tooltip formatter={(value: number) => `${value.toFixed(1)}%`} />
+                  <Tooltip formatter={(value: unknown) => `${Number(value).toFixed(1)}%`} />
                   <Legend />
                   <Bar
                     dataKey="phonePct"
@@ -411,7 +411,7 @@ export const ImpactSection: React.FC<ImpactSectionProps> = ({ data }) => {
                 <XAxis dataKey="name" />
                 <YAxis />
                 <Tooltip
-                  formatter={(value: number) => `${value.toFixed(1)} años`}
+                  formatter={(value: unknown) => `${Number(value).toFixed(1)} años`}
                 />
                 <Bar dataKey="Edad" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={60} />
               </BarChart>
