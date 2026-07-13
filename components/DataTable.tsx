@@ -293,62 +293,21 @@ export const DataTable: React.FC<DataTableProps> = ({
       )}
 
       <div className="p-4 border-b border-gray-100 space-y-3">
-        <div className="relative w-full">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search size={18} className="text-gray-400" />
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1 min-w-0">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search size={18} className="text-gray-400" />
+            </div>
+            <input
+              type="text"
+              placeholder="Buscar..."
+              className="pl-10 pr-4 py-2 bg-white border border-gray-300 rounded-lg w-full text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm transition-shadow"
+              value={searchTerm}
+              onChange={(e) => onSearchChange(e.target.value)}
+            />
           </div>
-          <input
-            type="text"
-            placeholder="Buscar..."
-            className="pl-10 pr-4 py-2 bg-white border border-gray-300 rounded-lg w-full text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm transition-shadow"
-            value={searchTerm}
-            onChange={(e) => onSearchChange(e.target.value)}
-          />
-        </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <select
-            value={filterProvincia}
-            onChange={e => onProvinciaChange(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="todas">Provincia: Todas</option>
-            {uniqueProvincias.map(p => (<option key={p} value={p}>{p}</option>))}
-          </select>
-
-          {filterProvincia !== 'todas' && (
-            <select
-              value={filterMunicipio}
-              onChange={e => onMunicipioChange(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="todos">Municipio: Todos</option>
-              {availableMunicipios.map(m => (<option key={m} value={m}>{m}</option>))}
-            </select>
-          )}
-
-          <select
-            value={filterCentro}
-            onChange={e => onCentroChange(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="todos">Centro: Todos</option>
-            {uniqueCentros.map(c => (<option key={c} value={c}>{c}</option>))}
-          </select>
-
-          <select
-            value={filterSexo}
-            onChange={e => onSexoChange(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="todos">Sexo: Todos</option>
-            <option value="femenino">Femenino</option>
-            <option value="masculino">Masculino</option>
-          </select>
-
-          <div className="w-px h-6 bg-gray-200 mx-1" />
-
-          <div className="relative">
+          <div className="relative flex-shrink-0">
             <button
               onClick={() => setShowColumnSelector(!showColumnSelector)}
               className="flex items-center justify-center gap-2 bg-white hover:bg-gray-50 text-gray-700 px-3 py-2 rounded-lg text-sm transition-colors border border-gray-300 shadow-sm"
@@ -367,7 +326,7 @@ export const DataTable: React.FC<DataTableProps> = ({
           </div>
 
           <select
-            className="bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm cursor-pointer"
+            className="bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm cursor-pointer flex-shrink-0"
             value={pageSize}
             onChange={(e) => onPageSizeChange(Number(e.target.value))}
           >
@@ -375,6 +334,46 @@ export const DataTable: React.FC<DataTableProps> = ({
             <option value={20}>20</option>
             <option value={50}>50</option>
             <option value={100}>100</option>
+          </select>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <select
+            value={filterProvincia}
+            onChange={e => onProvinciaChange(e.target.value)}
+            className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="todas">Provincia: Todas</option>
+            {uniqueProvincias.map(p => (<option key={p} value={p}>{p}</option>))}
+          </select>
+
+          <select
+            value={filterMunicipio}
+            onChange={e => onMunicipioChange(e.target.value)}
+            className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500"
+            disabled={filterProvincia === 'todas'}
+          >
+            <option value="todos">Municipio: Todos</option>
+            {availableMunicipios.map(m => (<option key={m} value={m}>{m}</option>))}
+          </select>
+
+          <select
+            value={filterCentro}
+            onChange={e => onCentroChange(e.target.value)}
+            className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="todos">Centro: Todos</option>
+            {uniqueCentros.map(c => (<option key={c} value={c}>{c}</option>))}
+          </select>
+
+          <select
+            value={filterSexo}
+            onChange={e => onSexoChange(e.target.value)}
+            className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="todos">Sexo: Todos</option>
+            <option value="femenino">Femenino</option>
+            <option value="masculino">Masculino</option>
           </select>
         </div>
       </div>
@@ -452,6 +451,10 @@ export const DataTable: React.FC<DataTableProps> = ({
           )}
         </div>
       </div>
+    </div>
+
+      {/* ── Table container ── */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden relative">
 
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse">
