@@ -223,7 +223,7 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
     });
     all.push({
       id: 2,
-      name: '% Mujeres',
+      name: 'Porcentaje de mujeres inscritas',
       category: 'demograficos',
       value: pct(women, total),
       formula: '(Mujeres / Total) × 100',
@@ -232,7 +232,7 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
     });
     all.push({
       id: 3,
-      name: '% Hombres',
+      name: 'Porcentaje de hombres inscritos',
       category: 'demograficos',
       value: pct(men, total),
       formula: '(Hombres / Total) × 100',
@@ -241,7 +241,7 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
     });
     all.push({
       id: 4,
-      name: 'Edad promedio',
+      name: 'Edad promedio de los participantes',
       category: 'demograficos',
       value: `Al registro: ${avgAgeReg} · Actual: ${avgAgeNow}`,
       formula: 'Σ Edad / Total',
@@ -250,7 +250,7 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
     });
     all.push({
       id: 5,
-      name: '% 14-17 años',
+      name: '% Participantes de 14-17 años',
       category: 'demograficos',
       value: pct(age14_17, total),
       formula: '(Edad 14-17 / Total) × 100',
@@ -259,7 +259,7 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
     });
     all.push({
       id: 6,
-      name: '% 18-24 años',
+      name: '% Participantes de 18-24 años',
       category: 'demograficos',
       value: pct(age18_24, total),
       formula: '(Edad 18-24 / Total) × 100',
@@ -268,7 +268,7 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
     });
     all.push({
       id: 7,
-      name: '% Mujeres 14-17',
+      name: '% Mujeres de 14-17 años',
       category: 'demograficos',
       value: pct(women14_17, women),
       formula: '(Mujeres 14-17 / Total Mujeres) × 100',
@@ -277,7 +277,7 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
     });
     all.push({
       id: 8,
-      name: '% Mujeres 18-24',
+      name: '% Mujeres de 18-24 años',
       category: 'demograficos',
       value: pct(women18_24, women),
       formula: '(Mujeres 18-24 / Total Mujeres) × 100',
@@ -286,7 +286,7 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
     });
     all.push({
       id: 9,
-      name: '% Hombres 14-17',
+      name: '% Hombres de 14-17 años',
       category: 'demograficos',
       value: pct(men14_17, men),
       formula: '(Hombres 14-17 / Total Hombres) × 100',
@@ -295,7 +295,7 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
     });
     all.push({
       id: 10,
-      name: '% Hombres 18-24',
+      name: '% Hombres de 18-24 años',
       category: 'demograficos',
       value: pct(men18_24, men),
       formula: '(Hombres 18-24 / Total Hombres) × 100',
@@ -304,7 +304,7 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
     });
     all.push({
       id: 21,
-      name: 'Por estado civil',
+      name: 'Distribución por estado civil',
       category: 'demograficos',
       value:
         topEstadoCivil.length > 0
@@ -316,7 +316,7 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
     });
     all.push({
       id: 22,
-      name: '% por estado civil',
+      name: '% por cada estado civil',
       category: 'demograficos',
       value:
         topEstadoCivil.length > 0
@@ -330,7 +330,7 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
     // ── Territoriales (11-18, 27-28) ──
     all.push({
       id: 11,
-      name: 'Por municipio',
+      name: 'Número de participantes por municipio',
       category: 'territoriales',
       value: topMunicipios.length > 0 ? `${topMunicipios[0][0]} (${formatNumber(topMunicipios[0][1])})` : 'Sin datos',
       formula: 'Conteo por municipio',
@@ -339,7 +339,7 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
     });
     all.push({
       id: 12,
-      name: '% por municipio',
+      name: '% Participantes por municipio',
       category: 'territoriales',
       value: topMunicipios.length > 0 ? `${topMunicipios[0][0]} (${pct(topMunicipios[0][1], total)})` : 'Sin datos',
       formula: 'Por municipio / Total × 100',
@@ -368,7 +368,7 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
     });
     all.push({
       id: 15,
-      name: 'Por centro',
+      name: 'Número de participantes por centro',
       category: 'territoriales',
       value: topCentros.length > 0 ? `${topCentros[0][0]} (${formatNumber(topCentros[0][1])})` : 'Sin datos',
       formula: 'Conteo por centro',
@@ -377,7 +377,7 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
     });
     all.push({
       id: 16,
-      name: '% por centro',
+      name: '% Participantes por centro',
       category: 'territoriales',
       value: topCentros.length > 0 ? `${topCentros[0][0]} (${pct(topCentros[0][1], total)})` : 'Sin datos',
       formula: 'Por centro / Total × 100',
@@ -386,7 +386,7 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
     });
     all.push({
       id: 17,
-      name: 'Por curso/ruta formativa',
+      name: 'Número de participantes por curso',
       category: 'territoriales',
       value: topCursos.length > 0 ? `${topCursos[0][0]} (${formatNumber(topCursos[0][1])})` : 'Sin datos',
       formula: 'Conteo por rutaFormativa',
@@ -395,7 +395,7 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
     });
     all.push({
       id: 18,
-      name: '% por curso/ruta formativa',
+      name: '% Participantes por curso',
       category: 'territoriales',
       value: topCursos.length > 0 ? `${topCursos[0][0]} (${pct(topCursos[0][1], total)})` : 'Sin datos',
       formula: 'Por rutaFormativa / Total × 100',
@@ -430,7 +430,7 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
     // ── Estado del Programa (19-20, 25-26, 33-36) ──
     all.push({
       id: 19,
-      name: 'Por estado',
+      name: 'Número de participantes por estado',
       category: 'programa',
       value: topEstados.length > 0 ? `${topEstados[0][0]} (${formatNumber(topEstados[0][1])})` : 'Sin datos',
       formula: 'Conteo por valor de estado',
@@ -439,7 +439,7 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
     });
     all.push({
       id: 20,
-      name: '% por estado',
+      name: '% Participantes seg\u00fan estado',
       category: 'programa',
       value: topEstados.length > 0 ? `${topEstados[0][0]} (${pct(topEstados[0][1], total)})` : 'Sin datos',
       formula: 'Por estado / Total × 100',
@@ -448,7 +448,7 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
     });
     all.push({
       id: 25,
-      name: '% Menores con responsable',
+      name: '% Menores de edad con responsable asignado',
       category: 'programa',
       value: minors.length > 0 ? pct(minorsWithTutor.length, minors.length) : '0.0%',
       formula: '(Menores con tutor / Total menores) × 100',
@@ -457,7 +457,7 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
     });
     all.push({
       id: 26,
-      name: '% Responsables con teléfono',
+      name: '% Responsables con teléfono registrado',
       category: 'programa',
       value: pct(tutorsWithPhone.length, tutorsTotal.length),
       formula: '(Responsables con teléfono / Total responsables) × 100',
@@ -504,7 +504,7 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
     // ── Sociales (23-24, 29-32) ──
     all.push({
       id: 23,
-      name: '% Con teléfono',
+      name: '% Participantes con teléfono',
       category: 'sociales',
       value: pct(withPhone, total),
       formula: '(Con teléfono registrado / Total) × 100',
@@ -513,7 +513,7 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
     });
     all.push({
       id: 24,
-      name: '% Con dirección',
+      name: '% Participantes con dirección',
       category: 'sociales',
       value: pct(withAddress, total),
       formula: '(Con dirección registrada / Total) × 100',
@@ -522,7 +522,7 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
     });
     all.push({
       id: 29,
-      name: '% Mujeres por centro',
+      name: '% Mujeres en los centros',
       category: 'sociales',
       value: total > 0 ? pct(women, total) : '0.0%',
       formula: '(Mujeres / Total) × 100',
@@ -531,7 +531,7 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
     });
     all.push({
       id: 30,
-      name: '% Hombres por centro',
+      name: '% Hombres en los centros',
       category: 'sociales',
       value: total > 0 ? pct(men, total) : '0.0%',
       formula: '(Hombres / Total) × 100',
@@ -540,7 +540,7 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
     });
     all.push({
       id: 31,
-      name: '% Grupo etario por centro',
+      name: '% Grupo etario en los centros',
       category: 'sociales',
       value: `14-17: ${pct(age14_17, total)} · 18-24: ${pct(age18_24, total)}`,
       formula: '(Grupo etario / Total) × 100',
@@ -549,7 +549,7 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
     });
     all.push({
       id: 32,
-      name: '% Grupo etario por curso',
+      name: '% Grupo etario en los cursos',
       category: 'sociales',
       value: `14-17: ${pct(age14_17, total)} · 18-24: ${pct(age18_24, total)}`,
       formula: '(Grupo etario / Total) × 100',
@@ -575,3 +575,5 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
     return { indicators: all, groups, lastUpdated };
   }, [data]);
 }
+
+
