@@ -4,6 +4,8 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts';
 import { MapPin, Building2, BookOpen, Grid3X3, List } from 'lucide-react';
+import BoardShell from '../../components/BoardShell';
+import { tickShort, chartClass, chartH } from '../../utils/indicadores-helpers';
 import { useIndicadoresFilters } from '../../contexts/IndicadoresFiltersContext';
 import { IndicadoresFilterBar } from '../../components/IndicadoresFilterBar';
 
@@ -15,19 +17,8 @@ const TerritorialesBoard: React.FC = () => {
   const { territorialData } = boardData;
 
   if (filteredData.length === 0) {
-    return (
-      <div className="p-6 max-w-7xl mx-auto w-full">
-        <div className="h-64 flex flex-col items-center justify-center text-gray-400 bg-white rounded-xl border border-dashed border-gray-300">
-          <p>Recopilando datos territoriales...</p>
-        </div>
-      </div>
-    );
+    return <BoardShell empty />;
   }
-
-  const tickShort = (val: string) => val.length > 14 ? val.substring(0, 12) + '…' : val;
-
-  const chartClass = viewMode === 'grid' ? 'grid grid-cols-1 lg:grid-cols-2 gap-6' : 'space-y-6';
-  const chartH = viewMode === 'grid' ? 72 : 64;
 
   const renderHorizBar = (
     title: string,
@@ -56,7 +47,7 @@ const TerritorialesBoard: React.FC = () => {
   );
 
   return (
-    <div className="p-6 max-w-7xl mx-auto w-full animate-in fade-in duration-500 space-y-6">
+    <BoardShell>
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center">
@@ -98,7 +89,7 @@ const TerritorialesBoard: React.FC = () => {
       </div>
 
       {/* Charts */}
-      <div className={chartClass}>
+      <div className={chartClass(viewMode)}>
         {renderHorizBar('Top 10 Municipios', territorialData.topMunicipios, '#10b981', 'value', 'Sin datos de municipios')}
         {renderHorizBar('Top 10 Centros', territorialData.topCentros, '#8b5cf6', 'value', 'Sin datos de centros')}
         {renderHorizBar('Top 10 Rutas Formativas', territorialData.topCursos, '#f59e0b', 'value', 'Sin datos de cursos')}
@@ -122,7 +113,7 @@ const TerritorialesBoard: React.FC = () => {
           </div>
         </div>
       </div>
-    </div>
+    </BoardShell>
   );
 };
 

@@ -4,6 +4,8 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts';
 import { Phone, MapPin, Grid3X3, List } from 'lucide-react';
+import BoardShell from '../../components/BoardShell';
+import { tickShort, chartClass, chartH } from '../../utils/indicadores-helpers';
 import { useIndicadoresFilters } from '../../contexts/IndicadoresFiltersContext';
 import { IndicadoresFilterBar } from '../../components/IndicadoresFilterBar';
 
@@ -15,18 +17,9 @@ const SocialesBoard: React.FC = () => {
   const { socialData } = boardData;
 
   if (filteredData.length === 0) {
-    return (
-      <div className="p-6 max-w-7xl mx-auto w-full">
-        <div className="h-64 flex items-center justify-center text-gray-400 bg-white rounded-xl border border-dashed border-gray-300">
-          <p>Recopilando datos sociales...</p>
-        </div>
-      </div>
-    );
+    return <BoardShell empty />;
   }
 
-  const tickShort = (val: string) => val.length > 14 ? val.substring(0, 12) + '…' : val;
-  const chartClass = viewMode === 'grid' ? 'grid grid-cols-1 lg:grid-cols-2 gap-6' : 'space-y-6';
-  const chartH = '72';
 
   const renderHorizBar = (
     title: string,
@@ -56,7 +49,7 @@ const SocialesBoard: React.FC = () => {
   );
 
   return (
-    <div className="p-6 max-w-7xl mx-auto w-full animate-in fade-in duration-500 space-y-6">
+    <BoardShell>
       {/* Progress KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
@@ -101,7 +94,7 @@ const SocialesBoard: React.FC = () => {
       </div>
 
       {/* Charts */}
-      <div className={chartClass}>
+      <div className={chartClass(viewMode)}>
         {renderHorizBar('Sexo por Centro (Top 10)', socialData.genderByCentro,
           [{ key: 'Mujeres', fill: '#00C49F', stackId: 's' }, { key: 'Hombres', fill: '#0088FE', stackId: 's' }],
           'Sin datos de género por centro')}
@@ -115,7 +108,7 @@ const SocialesBoard: React.FC = () => {
           [{ key: 'r14_17', fill: '#0088FE', stackId: 'a' }, { key: 'r18_24', fill: '#00C49F', stackId: 'a' }],
           'Sin datos etarios por curso')}
       </div>
-    </div>
+    </BoardShell>
   );
 };
 

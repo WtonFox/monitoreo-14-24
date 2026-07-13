@@ -5,6 +5,8 @@ import {
   PieChart, Pie, Cell,
 } from 'recharts';
 import { GraduationCap, BookOpen, Grid3X3, List } from 'lucide-react';
+import BoardShell from '../../components/BoardShell';
+import { tickShort, chartClass, chartH } from '../../utils/indicadores-helpers';
 import { useIndicadoresFilters } from '../../contexts/IndicadoresFiltersContext';
 import { IndicadoresFilterBar } from '../../components/IndicadoresFilterBar';
 
@@ -18,13 +20,7 @@ const NivelEducativoBoard: React.FC = () => {
   const { educationData } = boardData;
 
   if (filteredData.length === 0) {
-    return (
-      <div className="p-6 max-w-7xl mx-auto w-full">
-        <div className="h-64 flex flex-col items-center justify-center text-gray-400 bg-white rounded-xl border border-dashed border-gray-300">
-          <p>Recopilando datos de nivel educativo...</p>
-        </div>
-      </div>
-    );
+    return <BoardShell empty />;
   }
 
   const totalConDato = educationData.educationDistribution.reduce((s, e) => s + e.value, 0);
@@ -35,12 +31,8 @@ const NivelEducativoBoard: React.FC = () => {
     ? (nivelMasComun.value / filteredData.length) * 100
     : 0;
 
-  const tickShort = (val: string) => val.length > 14 ? val.substring(0, 12) + '…' : val;
-  const chartClass = viewMode === 'grid' ? 'grid grid-cols-1 lg:grid-cols-2 gap-6' : 'space-y-6';
-  const chartH = '72';
-
   return (
-    <div className="p-6 max-w-7xl mx-auto w-full animate-in fade-in duration-500 space-y-6">
+    <BoardShell>
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center">
@@ -82,14 +74,14 @@ const NivelEducativoBoard: React.FC = () => {
         </div>
         <div className="flex bg-gray-100 rounded-lg p-1 flex-shrink-0">
           <button onClick={() => setViewMode('grid')}
-            className={`p-1.5 rounded ${viewMode === 'grid' ? 'bg-white shadow-sm text-teal-600' : 'text-gray-500'}`} title="Cuadrícula"><Grid3X3 size={16} /></button>
+            className={`p-1.5 rounded ${viewMode === 'grid' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500'}`} title="Cuadrícula"><Grid3X3 size={16} /></button>
           <button onClick={() => setViewMode('row')}
-            className={`p-1.5 rounded ${viewMode === 'row' ? 'bg-white shadow-sm text-teal-600' : 'text-gray-500'}`} title="Fila"><List size={16} /></button>
+            className={`p-1.5 rounded ${viewMode === 'row' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500'}`} title="Fila"><List size={16} /></button>
         </div>
       </div>
 
       {/* Charts */}
-      <div className={chartClass}>
+      <div className={chartClass(viewMode)}>
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
           <h3 className="text-lg font-bold text-gray-800 mb-4">Distribución Educativa</h3>
           <div className={`h-${chartH} w-full`}>
@@ -175,7 +167,7 @@ const NivelEducativoBoard: React.FC = () => {
           </div>
         </div>
       </div>
-    </div>
+    </BoardShell>
   );
 };
 
