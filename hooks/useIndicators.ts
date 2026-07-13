@@ -46,13 +46,14 @@ const safeDiv = (a: number, b: number): number => (b > 0 ? a / b : 0);
 const isEmptyValue = (val: string | null | undefined): boolean =>
   val === null || val === undefined || val.trim() === '' || val === 'N/A' || val === 'N/D';
 
-const completitudStr = (count: number, total: number): string => {
-  const nd = total - count;
-  return `Con dato: ${formatNumber(count)} (${pct(count, total)}) | N/D: ${formatNumber(nd)} (${pct(nd, total)})`;
-};
+/** Compact completitud — just the percentage (full breakdown goes in the modal) */
+const completitudPct = (count: number, total: number): string => pct(count, total);
 
-const top3Str = (record: Record<string, number>): string =>
-  topN(record, 3).map(([k, v], i) => `${i + 1}. ${k}: ${formatNumber(v)}`).join(' | ');
+/** Top-1 item as value (ranked list goes in the modal) */
+const top1Str = (record: Record<string, number>): string => {
+  const entries = topN(record, 1);
+  return entries.length > 0 ? `${entries[0][0]}: ${formatNumber(entries[0][1])}` : 'Sin datos';
+};
 
 /**
  * Compute entity-level percentages and return:
@@ -675,7 +676,7 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
       id: 37,
       name: 'Porcentaje de registros con c\u00e9dula v\u00e1lida',
       category: 'calidad-dato',
-      value: completitudStr(qualityCedula, total),
+      value: completitudPct(qualityCedula, total),
       formula: '(C\u00e9dula no vac\u00eda / Total) \u00d7 100',
       description: 'Mide la completitud del documento de identidad. Afecta la capacidad de identificar un\u00edvocamente a los participantes.',
       status: 'viable',
@@ -684,7 +685,7 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
       id: 38,
       name: 'Porcentaje de registros con fecha de nacimiento',
       category: 'calidad-dato',
-      value: completitudStr(qualityBirthDate, total),
+      value: completitudPct(qualityBirthDate, total),
       formula: '(Fecha de nacimiento registrada / Total) \u00d7 100',
       description: 'Mide la completitud de la fecha de nacimiento. Afecta la capacidad de calcular edad exacta y hacer cruces demogr\u00e1ficos.',
       status: 'viable',
@@ -693,7 +694,7 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
       id: 39,
       name: 'Porcentaje de registros con nivel de estudio',
       category: 'calidad-dato',
-      value: completitudStr(qualityEducation, total),
+      value: completitudPct(qualityEducation, total),
       formula: '(Nivel de estudio registrado / Total) \u00d7 100',
       description: 'Mide la completitud del nivel educativo. Afecta el an\u00e1lisis de perfil acad\u00e9mico de los participantes.',
       status: 'viable',
@@ -702,7 +703,7 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
       id: 40,
       name: 'Porcentaje de registros con alergias documentadas',
       category: 'calidad-dato',
-      value: completitudStr(qualityAllergies, total),
+      value: completitudPct(qualityAllergies, total),
       formula: '(Alergias documentadas / Total) \u00d7 100',
       description: 'Mide la completitud del registro de alergias. Afecta la capacidad de atenci\u00f3n en salud y prevenci\u00f3n de riesgos.',
       status: 'viable',
@@ -711,7 +712,7 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
       id: 41,
       name: 'Porcentaje de registros con discapacidades documentadas',
       category: 'calidad-dato',
-      value: completitudStr(qualityDisabilities, total),
+      value: completitudPct(qualityDisabilities, total),
       formula: '(Discapacidades documentadas / Total) \u00d7 100',
       description: 'Mide la completitud del registro de discapacidades. Afecta la identificaci\u00f3n de necesidades de inclusi\u00f3n.',
       status: 'viable',
@@ -720,7 +721,7 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
       id: 42,
       name: 'Porcentaje de registros con enfermedades documentadas',
       category: 'calidad-dato',
-      value: completitudStr(qualityDiseases, total),
+      value: completitudPct(qualityDiseases, total),
       formula: '(Enfermedades documentadas / Total) \u00d7 100',
       description: 'Mide la completitud del registro de enfermedades. Afecta la capacidad de seguimiento m\u00e9dico de los participantes.',
       status: 'viable',
@@ -740,7 +741,7 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
       id: 44,
       name: 'Top discapacidades m\u00e1s frecuentes',
       category: 'vulnerabilidad',
-      value: Object.keys(disabilityTypes).length > 0 ? top3Str(disabilityTypes) : 'Sin datos',
+      value: Object.keys(disabilityTypes).length > 0 ? top1Str(disabilityTypes) : 'Sin datos',
       formula: 'Conteo por tipo de discapacidad',
       description: 'Las tres discapacidades m\u00e1s reportadas entre los participantes. \u00datil para planificar recursos de apoyo.',
       status: 'viable',
@@ -758,7 +759,7 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
       id: 46,
       name: 'Top enfermedades m\u00e1s frecuentes',
       category: 'vulnerabilidad',
-      value: Object.keys(diseaseTypes).length > 0 ? top3Str(diseaseTypes) : 'Sin datos',
+      value: Object.keys(diseaseTypes).length > 0 ? top1Str(diseaseTypes) : 'Sin datos',
       formula: 'Conteo por tipo de enfermedad',
       description: 'Las tres enfermedades m\u00e1s reportadas entre los participantes. \u00datil para planificar servicios de salud.',
       status: 'viable',
@@ -933,7 +934,7 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
       name: 'Participantes por centro (top)',
       category: 'desempeno-centro',
       value: Object.keys(centroCounts).length > 0
-        ? topN(centroCounts, 3).map(([k, v]) => `${k}: ${formatNumber(v)}`).join(' | ')
+        ? (() => { const t = topN(centroCounts, 1); return t.length > 0 ? `${t[0][0]}: ${formatNumber(t[0][1])}` : 'Sin datos'; })()
         : 'Sin datos',
       formula: 'Conteo por centro',
       description: 'Los tres centros con mayor cantidad de participantes. \u00datil para identificar centros con mayor carga operativa.',
@@ -962,7 +963,7 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
       name: 'Distribuci\u00f3n de g\u00e9nero por centro (global)',
       category: 'desempeno-centro',
       value: totalWithCentro > 0
-        ? `% Mujeres: ${pct(totalWomenWithCentro, totalWithCentro)} | % Hombres: ${pct(totalMenWithCentro, totalWithCentro)}`
+        ? `M: ${pct(totalWomenWithCentro, totalWithCentro)}  ·  H: ${pct(totalMenWithCentro, totalWithCentro)}`
         : 'Sin datos',
       formula: 'Por sexo / Total con centro \u00d7 100',
       description: 'Distribuci\u00f3n global de g\u00e9nero entre participantes con centro asignado.',
