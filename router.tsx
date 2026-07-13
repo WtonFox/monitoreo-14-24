@@ -26,6 +26,10 @@ const VulnerabilidadBoard = React.lazy(() => import('./pages/indicadores/Vulnera
 const CoberturaBoard = React.lazy(() => import('./pages/indicadores/CoberturaBoard'));
 const NivelEducativoBoard = React.lazy(() => import('./pages/indicadores/NivelEducativoBoard'));
 const DesempenoCentroBoard = React.lazy(() => import('./pages/indicadores/DesempenoCentroBoard'));
+const CentrosSinMenoresBoard = React.lazy(() => import('./pages/indicadores/CentrosSinMenoresBoard'));
+const DesercionBoard = React.lazy(() => import('./pages/indicadores/DesercionBoard'));
+const RegistroDiarioBoard = React.lazy(() => import('./pages/indicadores/RegistroDiarioBoard'));
+const CalidadNdBoard = React.lazy(() => import('./pages/indicadores/CalidadNdBoard'));
 
 export const router = createHashRouter([
   {
@@ -162,6 +166,38 @@ export const router = createHashRouter([
             element: (
               <Suspense fallback={<div className="p-8 text-center text-gray-400">Cargando...</div>}>
                 <DesempenoCentroBoard />
+              </Suspense>
+            ),
+          },
+          {
+            path: 'centros-sin-menores',
+            element: (
+              <Suspense fallback={<div className="p-8 text-center text-gray-400">Cargando...</div>}>
+                <CentrosSinMenoresBoard />
+              </Suspense>
+            ),
+          },
+          {
+            path: 'desercion',
+            element: (
+              <Suspense fallback={<div className="p-8 text-center text-gray-400">Cargando...</div>}>
+                <DesercionBoard />
+              </Suspense>
+            ),
+          },
+          {
+            path: 'registro-diario',
+            element: (
+              <Suspense fallback={<div className="p-8 text-center text-gray-400">Cargando...</div>}>
+                <RegistroDiarioBoard />
+              </Suspense>
+            ),
+          },
+          {
+            path: 'calidad-nd',
+            element: (
+              <Suspense fallback={<div className="p-8 text-center text-gray-400">Cargando...</div>}>
+                <CalidadNdBoard />
               </Suspense>
             ),
           },

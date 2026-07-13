@@ -108,7 +108,11 @@ const Participantes: React.FC = () => {
         totalPages={totalPages}
         loading={false}
         isExporting={massExport.isMassExporting}
-        exportProgress={massExport.massExportProgress || undefined}
+        exportProgress={massExport.massExportProgress ? {
+          current: massExport.massExportProgress.currentPage,
+          total: massExport.massExportProgress.totalPages,
+          errors: massExport.massExportProgress.error ? 1 : 0,
+        } : undefined}
         onPageChange={setPageIndex}
         onPageSizeChange={setPageSize}
         onExport={handleExport}
