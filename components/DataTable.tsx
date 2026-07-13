@@ -258,7 +258,10 @@ export const DataTable: React.FC<DataTableProps> = ({
   const endItem = Math.min((currentPage - 1) * pageSize + data.length, totalItems);
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden relative">
+    <div className="space-y-4">
+
+      {/* ── Filters + Datos panel ── */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100">
 
       {isExporting && exportProgress && (
         <div className="absolute inset-0 z-50 bg-white/90 flex flex-col items-center justify-center p-6">
@@ -450,10 +453,10 @@ export const DataTable: React.FC<DataTableProps> = ({
             </div>
           )}
         </div>
+        </div>
       </div>
-    </div>
 
-      {/* ── Table container ── */}
+      {/* ── Table panel ── */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden relative">
 
       <div className="overflow-x-auto">
@@ -522,6 +525,7 @@ export const DataTable: React.FC<DataTableProps> = ({
           </div>
         </div>
       </div>
+    </div>
     </div>
   );
 };
