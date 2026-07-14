@@ -196,10 +196,9 @@ describe('utils/normalize — hasValue (canonical)', () => {
         expect(hasValue('algún valor')).toBe(true);
     });
 
-    it('returns true for "Sin Centro" — NOT_AVAILABLE only when centro field', () => {
-        // Without field dispatch, "Sin Centro" is PRESENT in non-centro contexts
-        // (current behavior matches hasValue returning true for it)
-        expect(hasValue('Sin Centro')).toBe(true);
+    it('returns false for "Sin Centro" (NOT_AVAILABLE per canonical vocabulary)', () => {
+        expect(hasValue('Sin Centro')).toBe(false);
+        expect(isNotAvailable('Sin Centro')).toBe(true);
     });
 });
 
