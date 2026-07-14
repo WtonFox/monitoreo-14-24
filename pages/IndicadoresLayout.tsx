@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { ROUTES } from '../types/routes';
 import {
   LayoutDashboard, Users, MapPin, Activity, Heart,
@@ -48,6 +48,7 @@ const tabClasses = ({ isActive }: { isActive: boolean }) =>
 const IndicadoresLayout: React.FC = () => {
   const [showMore, setShowMore] = useState(false);
   const { dashboardData } = useDashboard();
+  const location = useLocation();
 
   const allYears = useMemo(() => {
     const years = new Set<number>();
@@ -83,14 +84,14 @@ const IndicadoresLayout: React.FC = () => {
             <div className="w-px h-6 bg-gray-200 mx-1 flex-shrink-0" />
           </div>
 
-          {/* Active More Tab pill — shows between divider and Más indicadores when a MORE_TAB is active */}
+          {/* Active More Tab pill — reactive to route changes via useLocation */}
           {(() => {
-            const currentPath = window.location.hash.replace('#', '').split('?')[0];
+            const currentPath = location.hash.replace('#', '').split('?')[0];
             const activeTab = MORE_TABS.find(t => t.to === currentPath);
             if (!activeTab) return null;
             const Icon = activeTab.icon;
             return (
-              <div className="flex items-center gap-1.5 px-3 py-3 border-b-2 border-blue-600 text-blue-700 text-sm font-medium flex-shrink-0 whitespace-nowrap">
+              <div className="flex items-center gap-1.5 px-3 py-3 border-b-2 border-blue-600 text-blue-700 text-sm font-medium flex-shrink-0 whitespace-nowrap mr-1">
                 <Icon size={16} />
                 <span>{activeTab.label}</span>
               </div>
@@ -102,7 +103,7 @@ const IndicadoresLayout: React.FC = () => {
             <button
               onClick={() => setShowMore(prev => !prev)}
               className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-                MORE_TABS.some(t => t.to === window.location.hash.replace('#', '').split('?')[0])
+                MORE_TABS.some(t => t.to === location.hash.replace('#', '').split('?')[0])
                   ? 'border-blue-600 text-blue-700'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
