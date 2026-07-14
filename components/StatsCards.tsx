@@ -32,25 +32,32 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ data, totalItems }) => {
   const withDiscapacidadData = data.filter(p =>
     p.discapacidades !== null && p.discapacidades !== 'N/D' && p.discapacidades !== 'N/A'
   );
-  const discapacitados = withDiscapacidadData.filter(p => p.discapacidades !== 'Ninguna');
-  const discapacitadosCount = discapacitados.length;
+  const discapacitadosCount = withDiscapacidadData.filter(p => p.discapacidades !== 'Ninguna').length;
 
   // 3. Registrados con enfermedad — universo con dato
   const withEnfermedadesData = data.filter(p =>
     p.enfermedades !== null && p.enfermedades !== 'N/D' && p.enfermedades !== 'N/A'
   );
-  const enfermos = withEnfermedadesData.filter(p => p.enfermedades !== 'Ninguna');
-  const enfermosCount = enfermos.length;
+  const enfermosCount = withEnfermedadesData.filter(p => p.enfermedades !== 'Ninguna').length;
 
-  // 4. Programa Social — estudiantes con algún programa registrado
-  const withPrograma = data.filter(p =>
-    p.programasSociales !== null && p.programasSociales !== 'N/A' && p.programasSociales !== 'N/D' && p.programasSociales !== 'Ninguna'
-  ).length;
+  // 4. Programa Social — universo con dato (excluye N/A/N/D/null), luego filtrar Ninguna
+  const withProgramaData = data.filter(p =>
+    p.programasSociales !== null && p.programasSociales !== 'N/A' && p.programasSociales !== 'N/D'
+  );
+  const withPrograma = withProgramaData.filter(p => p.programasSociales !== 'Ninguna').length;
 
-  // 5. Vulnerabilidad — estudiantes con vulnerabilidad registrada
-  const withVulnerabilidad = data.filter(p =>
-    p.vulnerabilidades !== null && p.vulnerabilidades !== 'N/A' && p.vulnerabilidades !== 'N/D' && p.vulnerabilidades !== 'Ninguna'
-  ).length;
+  // 5. Vulnerabilidad — universo con dato, luego filtrar Ninguna
+  const withVulnerabilidadData = data.filter(p =>
+    p.vulnerabilidades !== null && p.vulnerabilidades !== 'N/A' && p.vulnerabilidades !== 'N/D'
+  );
+  const withVulnerabilidad = withVulnerabilidadData.filter(p => p.vulnerabilidades !== 'Ninguna').length;
+
+  // Helper para mostrar conteo con universo
+  const universeLabel = (count: number, universe: number): string => {
+    if (universe === 0) return '0 / 0';
+    const pct = ((count / universe) * 100).toFixed(0);
+    return `${formatNumber(count)} / ${formatNumber(universe)} (${pct}%)`;
+  };
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-6">
@@ -121,7 +128,7 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ data, totalItems }) => {
         </div>
         <div>
           <p className="text-sm text-gray-500 font-medium">Registrados con Discapacidad</p>
-          <h3 className="text-2xl font-bold text-gray-800">{formatNumber(discapacitadosCount)}</h3>
+          <h3 className="text-2xl font-bold text-gray-800">{universeLabel(discapacitadosCount, withDiscapacidadData.length)}</h3>
         </div>
       </div>
 
@@ -131,7 +138,7 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ data, totalItems }) => {
         </div>
         <div>
           <p className="text-sm text-gray-500 font-medium">Registrados con Enfermedad</p>
-          <h3 className="text-2xl font-bold text-gray-800">{formatNumber(enfermosCount)}</h3>
+          <h3 className="text-2xl font-bold text-gray-800">{universeLabel(enfermosCount, withEnfermedadesData.length)}</h3>
         </div>
       </div>
 
@@ -141,7 +148,7 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ data, totalItems }) => {
         </div>
         <div>
           <p className="text-sm text-gray-500 font-medium">En Programa Social</p>
-          <h3 className="text-2xl font-bold text-gray-800">{formatNumber(withPrograma)}</h3>
+          <h3 className="text-2xl font-bold text-gray-800">{universeLabel(withPrograma, withProgramaData.length)}</h3>
         </div>
       </div>
 
@@ -151,7 +158,7 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ data, totalItems }) => {
         </div>
         <div>
           <p className="text-sm text-gray-500 font-medium">Registrados con Vulnerabilidad</p>
-          <h3 className="text-2xl font-bold text-gray-800">{formatNumber(withVulnerabilidad)}</h3>
+          <h3 className="text-2xl font-bold text-gray-800">{universeLabel(withVulnerabilidad, withVulnerabilidadData.length)}</h3>
         </div>
       </div>
 
