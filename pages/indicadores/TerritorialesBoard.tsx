@@ -1,15 +1,16 @@
-import React, { useState } from 'react';
-import { formatNumber } from '../../utils/formatters';
+import React, { useState } from 'react'
+import { formatNumber } from '../../utils/formatters'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-} from 'recharts';
-import { MapPin, Building2, BookOpen, Grid3X3, List } from 'lucide-react';
-import BoardShell from '../../components/BoardShell';
-import { tickShort, chartClass, chartH } from '../../utils/indicadores-helpers';
-import { useIndicadoresFilters } from '../../contexts/IndicadoresFiltersContext';
-import { IndicadoresFilterBar } from '../../components/IndicadoresFilterBar';
+} from 'recharts'
+import { MapPin, Building2, BookOpen, Grid3X3, List } from 'lucide-react'
+import BoardShell from '../../components/BoardShell'
+import { tickShort, chartClass, chartH } from '../../utils/indicadores-helpers'
+import { useIndicadoresFilters } from '../../contexts/IndicadoresFiltersContext'
+import { IndicadoresFilterBar } from '../../components/IndicadoresFilterBar'
+import BoardInfo from '../../components/BoardInfo';
 
-type ViewMode = 'grid' | 'row';
+type ViewMode = 'grid' | 'row'
 
 const TerritorialesBoard: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
@@ -78,6 +79,14 @@ const TerritorialesBoard: React.FC = () => {
         <div className="flex-1">
           <IndicadoresFilterBar showYear showProvince showMunicipio />
         </div>
+                  <BoardInfo
+            title="Territoriales"
+            sections={[
+              { heading: '¿Qué mide?', content: 'Distribución de participantes por municipio, centro de formación y curso. Permite identificar concentraciones geográficas y apoyar la planificación de intervenciones.' },
+              { heading: 'Fórmula', content: 'Los cálculos se realizan en tiempo real sobre los datos filtrados. Cada indicador incluye su fórmula en la descripción.' },
+              { heading: 'Filtros', content: 'Usa los filtros globales (año, provincia, municipio, sexo) para segmentar la población. Los datos se actualizan automáticamente.' },
+            ]}
+          />
         <div className="flex bg-gray-100 rounded-lg p-1 flex-shrink-0">
           <button onClick={() => setViewMode('grid')}
             className={`p-1.5 rounded ${viewMode === 'grid' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}

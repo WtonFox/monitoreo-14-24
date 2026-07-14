@@ -1,17 +1,17 @@
-import React, { useState, useMemo } from 'react';
-import { formatNumber, formatPercentage } from '../../utils/formatters';
+import React, { useState, useMemo } from 'react'
+import { formatNumber, formatPercentage } from '../../utils/formatters'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-} from 'recharts';
-import { TrendingDown, Building2, Users, AlertTriangle, MapPin, Grid3X3, List } from 'lucide-react';
-import BoardShell from '../../components/BoardShell';
-import BoardInfo from '../../components/BoardInfo';
-import { tickShort, chartClass, chartH } from '../../utils/indicadores-helpers';
-import { useIndicadoresFilters } from '../../contexts/IndicadoresFiltersContext';
-import { IndicadoresFilterBar } from '../../components/IndicadoresFilterBar';
-import { DOMINICAN_PROVINCES } from '../../constants';
+} from 'recharts'
+import { TrendingDown, Building2, Users, AlertTriangle, MapPin, Grid3X3, List } from 'lucide-react'
+import BoardShell from '../../components/BoardShell'
+import BoardInfo from '../../components/BoardInfo'
+import { tickShort, chartClass, chartH } from '../../utils/indicadores-helpers'
+import { useIndicadoresFilters } from '../../contexts/IndicadoresFiltersContext'
+import { IndicadoresFilterBar } from '../../components/IndicadoresFilterBar'
+import { DOMINICAN_PROVINCES } from '../../constants'
 
-type ViewMode = 'general' | 'provincia';
+type ViewMode = 'general' | 'provincia'
 
 interface CentroDesercion {
   centro: string;

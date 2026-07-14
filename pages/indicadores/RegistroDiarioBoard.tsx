@@ -1,15 +1,15 @@
-import React, { useMemo, useState } from 'react';
-import { formatNumber, formatPercentage } from '../../utils/formatters';
+import React, { useMemo, useState } from 'react'
+import { formatNumber, formatPercentage } from '../../utils/formatters'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   Line, ComposedChart,
-} from 'recharts';
-import { CalendarDays, TrendingUp, Calendar, Clock, Building2, Grid3X3, List } from 'lucide-react';
-import BoardShell from '../../components/BoardShell';
-import BoardInfo from '../../components/BoardInfo';
-import { chartClass, chartH } from '../../utils/indicadores-helpers';
-import { useIndicadoresFilters } from '../../contexts/IndicadoresFiltersContext';
-import { IndicadoresFilterBar } from '../../components/IndicadoresFilterBar';
+} from 'recharts'
+import { CalendarDays, TrendingUp, Calendar, Clock, Building2, Grid3X3, List } from 'lucide-react'
+import BoardShell from '../../components/BoardShell'
+import BoardInfo from '../../components/BoardInfo'
+import { chartClass, chartH } from '../../utils/indicadores-helpers'
+import { useIndicadoresFilters } from '../../contexts/IndicadoresFiltersContext'
+import { IndicadoresFilterBar } from '../../components/IndicadoresFilterBar'
 
 // ── Local types ──
 

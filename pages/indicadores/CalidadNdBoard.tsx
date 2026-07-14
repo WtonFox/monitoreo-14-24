@@ -1,21 +1,21 @@
-import React, { useState, useMemo } from 'react';
-import { formatNumber, formatPercentage } from '../../utils/formatters';
+import React, { useState, useMemo } from 'react'
+import { formatNumber, formatPercentage } from '../../utils/formatters'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
   PieChart, Pie,
-} from 'recharts';
-import { FileWarning, AlertTriangle, BarChart3, Table as TableIcon, Grid3X3, List, Circle, CheckCircle2 } from 'lucide-react';
-import BoardShell from '../../components/BoardShell';
-import BoardInfo from '../../components/BoardInfo';
-import { tickShort, chartClass } from '../../utils/indicadores-helpers';
-import { useIndicadoresFilters } from '../../contexts/IndicadoresFiltersContext';
-import { IndicadoresFilterBar } from '../../components/IndicadoresFilterBar';
-import type { Participant } from '../../types';
+} from 'recharts'
+import { FileWarning, AlertTriangle, BarChart3, Table as TableIcon, Grid3X3, List, Circle, CheckCircle2 } from 'lucide-react'
+import BoardShell from '../../components/BoardShell'
+import BoardInfo from '../../components/BoardInfo'
+import { tickShort, chartClass } from '../../utils/indicadores-helpers'
+import { useIndicadoresFilters } from '../../contexts/IndicadoresFiltersContext'
+import { IndicadoresFilterBar } from '../../components/IndicadoresFilterBar'
+import type { Participant } from '../../types'
 
 // ── Local helper — not exported ──
 const hasNdValue = (val: string | null | undefined): boolean =>
   val === null || val === undefined || val.trim() === '' ||
-  val.toLowerCase() === 'nd' || val === 'N/D' || val.toLowerCase() === 'no disponible';
+  val.toLowerCase() === 'nd' || val === 'N/D' || val.toLowerCase() === 'no disponible'
 
 // ── Field definitions (reconciled against real Participant type) ──
 // Spec listed 15 fields including sector, nombreTutor, apellidoTutor which don't exist in type.
@@ -55,14 +55,14 @@ interface ComputedMetrics {
   fieldRanking: FieldQuality[];
 }
 
-type ViewMode = 'general' | 'provincia';
+type ViewMode = 'general' | 'provincia'
 
 // ── Bar color gradient: red (>50%) → amber (>30%) → yellow (>15%) → green (≤15%) ──
 const barColor = (pct: number): string => {
-  if (pct > 50) return '#dc2626';
-  if (pct > 30) return '#f59e0b';
-  if (pct > 15) return '#eab308';
-  return '#22c55e';
+  if (pct > 50) return '#dc2626'
+  if (pct > 30) return '#f59e0b'
+  if (pct > 15) return '#eab308'
+  return '#22c55e'
 };
 
 const CalidadNdBoard: React.FC = () => {
@@ -120,7 +120,7 @@ const CalidadNdBoard: React.FC = () => {
 
     const provinceMap = new Map<string, Participant[]>();
     for (const p of filteredData) {
-      const prov = p.provincia || 'Sin provincia';
+      const prov = p.provincia || 'Sin provincia'
       if (!provinceMap.has(prov)) provinceMap.set(prov, []);
       provinceMap.get(prov)!.push(p);
     }

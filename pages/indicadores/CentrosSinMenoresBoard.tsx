@@ -1,10 +1,10 @@
-import React, { useMemo } from 'react';
-import { formatNumber, formatPercentage } from '../../utils/formatters';
-import { Users, Building2, Percent, AlertTriangle } from 'lucide-react';
-import BoardShell from '../../components/BoardShell';
-import BoardInfo from '../../components/BoardInfo';
-import { useIndicadoresFilters } from '../../contexts/IndicadoresFiltersContext';
-import { IndicadoresFilterBar } from '../../components/IndicadoresFilterBar';
+import React, { useMemo } from 'react'
+import { formatNumber, formatPercentage } from '../../utils/formatters'
+import { Users, Building2, Percent, AlertTriangle } from 'lucide-react'
+import BoardShell from '../../components/BoardShell'
+import BoardInfo from '../../components/BoardInfo'
+import { useIndicadoresFilters } from '../../contexts/IndicadoresFiltersContext'
+import { IndicadoresFilterBar } from '../../components/IndicadoresFilterBar'
 
 interface CentroSinMenores {
   centro: string;

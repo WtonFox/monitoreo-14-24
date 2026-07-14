@@ -1,15 +1,16 @@
-import React, { useState } from 'react';
-import { formatNumber, formatPercentage } from '../../utils/formatters';
+import React, { useState } from 'react'
+import { formatNumber, formatPercentage } from '../../utils/formatters'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-} from 'recharts';
-import { Phone, MapPin, Grid3X3, List } from 'lucide-react';
-import BoardShell from '../../components/BoardShell';
-import { tickShort, chartClass, chartH } from '../../utils/indicadores-helpers';
-import { useIndicadoresFilters } from '../../contexts/IndicadoresFiltersContext';
-import { IndicadoresFilterBar } from '../../components/IndicadoresFilterBar';
+} from 'recharts'
+import { Phone, MapPin, Grid3X3, List } from 'lucide-react'
+import BoardShell from '../../components/BoardShell'
+import { tickShort, chartClass, chartH } from '../../utils/indicadores-helpers'
+import { useIndicadoresFilters } from '../../contexts/IndicadoresFiltersContext'
+import { IndicadoresFilterBar } from '../../components/IndicadoresFilterBar'
+import BoardInfo from '../../components/BoardInfo';
 
-type ViewMode = 'grid' | 'row';
+type ViewMode = 'grid' | 'row'
 
 const SocialesBoard: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
@@ -85,6 +86,14 @@ const SocialesBoard: React.FC = () => {
         <div className="flex-1">
           <IndicadoresFilterBar showYear showProvince showMunicipio />
         </div>
+                  <BoardInfo
+            title="Sociales"
+            sections={[
+              { heading: '¿Qué mide?', content: 'Completitud de datos de contacto (teléfono y dirección) y distribución por sexo y grupo etario en centros y cursos.' },
+              { heading: 'Fórmula', content: 'Los cálculos se realizan en tiempo real sobre los datos filtrados. Cada indicador incluye su fórmula en la descripción.' },
+              { heading: 'Filtros', content: 'Usa los filtros globales (año, provincia, municipio, sexo) para segmentar la población. Los datos se actualizan automáticamente.' },
+            ]}
+          />
         <div className="flex bg-gray-100 rounded-lg p-1 flex-shrink-0">
           <button onClick={() => setViewMode('grid')}
             className={`p-1.5 rounded ${viewMode === 'grid' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500'}`} title="Cuadrícula"><Grid3X3 size={16} /></button>
