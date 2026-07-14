@@ -121,7 +121,7 @@ export const sanitizeParticipant = (p: any, index: number): Participant => {
         sexo: getValue(p, 'sexo') || 'N/D',
         provincia: getValue(p, 'provincia') || 'Sin Provincia',
         municipio: getValue(p, 'municipio'),
-        centro: getValue(p, 'centro') || getValue(p, 'rutaFormativa') || 'Sin Centro',
+        centro: getValue(p, 'centro'),
         direccion: getValue(p, 'direccion'),
         rutaFormativa: getValue(p, 'rutaFormativa'),
         telefonos: getValue(p, 'telefonos'),
