@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Users, MapPin, Activity, Heart, CheckCircle, AlertTriangle, Calendar, GraduationCap, Building2, CheckCircle2, XCircle } from 'lucide-react';
 import type { IndicatorGroup, Indicator, IndicatorCategory } from '../hooks/useIndicators';
+import { formatNumber } from '../utils/formatters';
 import { useIndicadoresFilters } from '../contexts/IndicadoresFiltersContext';
 import { IndicatorModal } from './IndicatorModal';
 
@@ -173,18 +174,34 @@ const IndicatorTile: React.FC<{
         </div>
 
         {/* Name */}
-        <p className="text-sm font-semibold text-gray-700 pr-20 mb-3 leading-snug">
+        <p className="text-sm font-semibold text-gray-700 pr-24 mb-3 leading-snug overflow-hidden text-ellipsis whitespace-nowrap">
           {indicator.name}
         </p>
 
-        {/* Value with subtle category-tinted background */}
-        <div
-          className={`inline-block px-2.5 py-0.5 rounded-lg text-base font-bold text-gray-900 mb-3 ${
-            isPending ? 'bg-gray-50' : isNotViable ? 'bg-gray-50' : styles.accent
-          }`}
-        >
-          {indicator.value}
-        </div>
+        {/* Value or structured top-items list */}
+        {indicator.topItems && indicator.topItems.length > 0 ? (
+          <div className="space-y-1.5 mb-3 w-full pr-8">
+            {indicator.topItems.map((item, i) => (
+              <div key={i} className="flex justify-between items-center gap-2 text-xs">
+                <span className="text-gray-600 truncate min-w-0">
+                  {i + 1}. {item.name}
+                </span>
+                <span className="font-semibold text-gray-800 tabular-nums whitespace-nowrap flex-shrink-0">
+                  {formatNumber(item.value)}
+                  {item.pct !== undefined ? ` (${item.pct.toFixed(1)}%)` : ''}
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div
+            className={`inline-block px-2.5 py-0.5 rounded-lg text-base font-bold text-gray-900 mb-3 ${
+              isPending ? 'bg-gray-50' : isNotViable ? 'bg-gray-50' : styles.accent
+            }`}
+          >
+            {indicator.value}
+          </div>
+        )}
 
         {/* Formula */}
         <p className="text-[11px] text-gray-400 font-mono mb-1.5">{indicator.formula}</p>
