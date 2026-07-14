@@ -174,7 +174,7 @@ const IndicatorTile: React.FC<{
         </div>
 
         {/* Name */}
-        <p className="text-sm font-semibold text-gray-700 pr-24 mb-3 leading-snug overflow-hidden text-ellipsis whitespace-nowrap">
+        <p className="text-sm font-semibold text-gray-700 pr-24 mb-3 leading-snug">
           {indicator.name}
         </p>
 
