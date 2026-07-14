@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { formatNumber, formatPercentage } from '../../utils/formatters'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
@@ -89,6 +89,13 @@ const RegistroDiarioBoard: React.FC = () => {
   const { filteredData } = useIndicadoresFilters();
   const [viewMode, setViewMode] = useState<'grid' | 'row'>('grid');
   const [localProvincia, setLocalProvincia] = useState<string>('todos');
+  const [now, setNow] = useState(() => new Date());
+
+  // Self-recomputing clock tick — recompute boundaries at midnight without data change
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 60000);
+    return () => clearInterval(timer);
+  }, []);
 
   // ── Available provinces for local filter ──
   const availableProvinces = useMemo(() => {
@@ -106,7 +113,7 @@ const RegistroDiarioBoard: React.FC = () => {
       data = data.filter(p => p.provincia === localProvincia);
     }
 
-    const today = new Date();
+    const today = now;
     const todayStr = toDateStr(today);
 
     // Group by date and centro
@@ -229,7 +236,7 @@ const RegistroDiarioBoard: React.FC = () => {
       dayOfWeek,
       centrosTop5,
     };
-  }, [filteredData, localProvincia]);
+  }, [filteredData, localProvincia, now]);
 
   // ── Empty state ──
   if (filteredData.length === 0) {
