@@ -17,6 +17,12 @@ interface ComputedMetrics {
   pctSinCobertura: number;
   totalMenores: number;
   centrosData: CentroSinMenores[];
+  centrosSinMenoresActual: number;
+  centrosDataActual: CentroSinMenores[];
+  totalMenoresActual: number;
+  centrosSinMenoresRegistro: number;
+  centrosDataRegistro: CentroSinMenores[];
+  totalMenoresRegistro: number;
 }
 
 const CentrosSinMenoresBoard: React.FC = () => {
@@ -28,7 +34,13 @@ const CentrosSinMenoresBoard: React.FC = () => {
     pctSinCobertura,
     totalMenores,
     centrosData,
-  }: ComputedMetrics = useMemo(() => {
+    centrosSinMenoresActual,
+    centrosDataActual,
+    totalMenoresActual,
+    centrosSinMenoresRegistro,
+    centrosDataRegistro,
+    totalMenoresRegistro,
+  } = useMemo(() => {
     // Gather all unique centros and their totals
     const centrosSet = new Set<string>();
     const centroProvincia = new Map<string, string | null>();
@@ -43,41 +55,51 @@ const CentrosSinMenoresBoard: React.FC = () => {
       }
     }
 
-    // Identify centros that HAVE registered 14-17yo participants
-    // Usamos edadRegistro (edad al momento del registro) porque la edad actual
-    // puede ser mayor — un participante registrado a los 16 hoy puede tener 20.
-    const centrosConMenores = new Set<string>();
-    let totalMenoresCount = 0;
+    const allCentros = Array.from(centrosSet);
 
+    // ── LÓGICA A: Edad ACTUAL (p.edad) — la original ──
+    const centrosConMenoresActual = new Set<string>();
+    let totalMenoresActualCount = 0;
     for (const p of filteredData) {
-      if (p.centro && p.edadRegistro >= 14 && p.edadRegistro <= 17) {
-        centrosConMenores.add(p.centro);
-        totalMenoresCount++;
+      if (p.centro && p.edad >= 14 && p.edad <= 17) {
+        centrosConMenoresActual.add(p.centro);
+        totalMenoresActualCount++;
       }
     }
-
-    // Diff -> centros without minors
-    const allCentros = Array.from(centrosSet);
-    const sinMenores = allCentros.filter(c => !centrosConMenores.has(c));
-
-    // Build table data sorted by total desc
-    const centrosDataArr: CentroSinMenores[] = sinMenores
-      .map(c => ({
-        centro: c,
-        provincia: centroProvincia.get(c) ?? null,
-        total: centroTotal.get(c) ?? 0,
-      }))
+    const sinMenoresActual = allCentros.filter(c => !centrosConMenoresActual.has(c));
+    const centrosDataActualArr: CentroSinMenores[] = sinMenoresActual
+      .map(c => ({ centro: c, provincia: centroProvincia.get(c) ?? null, total: centroTotal.get(c) ?? 0 }))
       .sort((a, b) => b.total - a.total);
 
+    // ── LÓGICA B: Edad al REGISTRO (p.edadRegistro) — la nueva ──
+    const centrosConMenoresRegistro = new Set<string>();
+    let totalMenoresRegistroCount = 0;
+    for (const p of filteredData) {
+      if (p.centro && p.edadRegistro >= 14 && p.edadRegistro <= 17) {
+        centrosConMenoresRegistro.add(p.centro);
+        totalMenoresRegistroCount++;
+      }
+    }
+    const sinMenoresRegistro = allCentros.filter(c => !centrosConMenoresRegistro.has(c));
+    const centrosDataRegistroArr: CentroSinMenores[] = sinMenoresRegistro
+      .map(c => ({ centro: c, provincia: centroProvincia.get(c) ?? null, total: centroTotal.get(c) ?? 0 }))
+      .sort((a, b) => b.total - a.total);
+
+    // ── KPIs con la lógica de Registro (la principal del board) ──
     return {
       totalCentros: allCentros.length,
-      centrosSinMenores: sinMenores.length,
-      pctSinCobertura:
-        allCentros.length > 0
-          ? (sinMenores.length / allCentros.length) * 100
-          : 0,
-      totalMenores: totalMenoresCount,
-      centrosData: centrosDataArr,
+      centrosSinMenores: sinMenoresRegistro.length,
+      pctSinCobertura: allCentros.length > 0 ? (sinMenoresRegistro.length / allCentros.length) * 100 : 0,
+      totalMenores: totalMenoresRegistroCount,
+      centrosData: centrosDataRegistroArr,
+      // Datos para la tabla comparativa (lógica actual)
+      centrosSinMenoresActual: sinMenoresActual.length,
+      centrosDataActual: centrosDataActualArr,
+      totalMenoresActual: totalMenoresActualCount,
+      // Datos para la tabla comparativa (lógica registro)
+      centrosSinMenoresRegistro: sinMenoresRegistro.length,
+      centrosDataRegistro: centrosDataRegistroArr,
+      totalMenoresRegistro: totalMenoresRegistroCount,
     };
   }, [filteredData]);
 
@@ -150,54 +172,75 @@ const CentrosSinMenoresBoard: React.FC = () => {
         </div>
       </div>
 
-      {/* Centros Table */}
-      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-        <h3 className="text-lg font-bold text-gray-800 mb-4">
-          Centros sin Cobertura de Menores
-        </h3>
-
-        {centrosData.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="text-left py-3 px-4 font-medium text-gray-500">
-                    Centro
-                  </th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-500">
-                    Provincia
-                  </th>
-                  <th className="text-right py-3 px-4 font-medium text-gray-500">
-                    Total Participantes
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {centrosData.map(row => (
-                  <tr
-                    key={row.centro}
-                    className="border-b border-gray-100 hover:bg-gray-50"
-                  >
-                    <td className="py-3 px-4 text-gray-800 font-medium">
-                      {row.centro}
-                    </td>
-                    <td className="py-3 px-4 text-gray-500">
-                      {row.provincia || '—'}
-                    </td>
-                    <td className="py-3 px-4 text-right text-gray-800">
-                      {formatNumber(row.total)}
-                    </td>
+      {/* ── Comparison tables ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Table A: Edad ACTUAL */}
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+          <h3 className="text-lg font-bold text-gray-800 mb-1">
+            Sin cobertura (edad actual)
+          </h3>
+          <p className="text-xs text-gray-400 mb-4">
+            Usa <code className="text-xs bg-gray-100 px-1 rounded">p.edad</code> — {formatNumber(centrosSinMenoresActual)} centros, {formatNumber(totalMenoresActual)} menores 14-17
+          </p>
+          {centrosDataActual.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-200">
+                    <th className="text-left py-2 px-3 font-medium text-gray-500">Centro</th>
+                    <th className="text-left py-2 px-3 font-medium text-gray-500">Provincia</th>
+                    <th className="text-right py-2 px-3 font-medium text-gray-500">Total</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="h-32 flex flex-col items-center justify-center text-gray-400">
-            <Users size={32} className="mb-2 text-gray-300" />
-            <p>Sin datos</p>
-          </div>
-        )}
+                </thead>
+                <tbody>
+                  {centrosDataActual.map(row => (
+                    <tr key={row.centro} className="border-b border-gray-100 hover:bg-gray-50">
+                      <td className="py-2 px-3 text-gray-800 font-medium text-sm">{row.centro}</td>
+                      <td className="py-2 px-3 text-gray-500 text-sm">{row.provincia || '—'}</td>
+                      <td className="py-2 px-3 text-right text-gray-800 text-sm">{formatNumber(row.total)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="h-24 flex items-center justify-center text-gray-400 text-sm">Todos los centros tienen menores</div>
+          )}
+        </div>
+
+        {/* Table B: Edad al REGISTRO */}
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+          <h3 className="text-lg font-bold text-gray-800 mb-1">
+            Sin cobertura (edad registro)
+          </h3>
+          <p className="text-xs text-gray-400 mb-4">
+            Usa <code className="text-xs bg-gray-100 px-1 rounded">p.edadRegistro</code> — {formatNumber(centrosSinMenoresRegistro)} centros, {formatNumber(totalMenoresRegistro)} menores 14-17
+          </p>
+          {centrosDataRegistro.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-200">
+                    <th className="text-left py-2 px-3 font-medium text-gray-500">Centro</th>
+                    <th className="text-left py-2 px-3 font-medium text-gray-500">Provincia</th>
+                    <th className="text-right py-2 px-3 font-medium text-gray-500">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {centrosDataRegistro.map(row => (
+                    <tr key={row.centro} className="border-b border-gray-100 hover:bg-gray-50">
+                      <td className="py-2 px-3 text-gray-800 font-medium text-sm">{row.centro}</td>
+                      <td className="py-2 px-3 text-gray-500 text-sm">{row.provincia || '—'}</td>
+                      <td className="py-2 px-3 text-right text-gray-800 text-sm">{formatNumber(row.total)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="h-24 flex items-center justify-center text-gray-400 text-sm">Todos los centros tienen menores</div>
+          )}
+        </div>
       </div>
     </BoardShell>
   );
