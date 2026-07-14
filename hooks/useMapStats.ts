@@ -42,7 +42,7 @@ export const useMapStats = (
         return counts;
     }, [data, level]);
 
-    // Calcular estadísticas detalladas
+    // Calcular estadísticas detalladas — SINGLE PASS (R-perf-3)
     const locationStats = useMemo(() => {
         const stats: Record<string, {
             total: number;
@@ -50,8 +50,13 @@ export const useMapStats = (
             statusBreakdown: Record<string, number>;
             ageRanges: { min: number; max: number; avg: number };
             topCenters: { name: string; count: number }[];
+            // Accumulator fields (not in final output shape)
+            ageSum: number;
+            ageCount: number;
+            centers: Record<string, number>;
         }> = {};
 
+        // ── Single pass: O(records) ──
         data.forEach(p => {
             let key = 'Desconocido';
             if (level === 'province') {
@@ -68,69 +73,71 @@ export const useMapStats = (
                     genderBreakdown: { M: 0, F: 0, other: 0 },
                     statusBreakdown: {},
                     ageRanges: { min: Infinity, max: 0, avg: 0 },
-                    topCenters: []
+                    topCenters: [],
+                    ageSum: 0,
+                    ageCount: 0,
+                    centers: {},
                 };
             }
 
-            stats[key].total++;
+            const s = stats[key];
+            s.total++;
 
             // Gender
             const sex = p.sexo?.toUpperCase();
-            if (sex === 'M') stats[key].genderBreakdown.M++;
-            else if (sex === 'F') stats[key].genderBreakdown.F++;
-            else stats[key].genderBreakdown.other++;
+            if (sex === 'M') s.genderBreakdown.M++;
+            else if (sex === 'F') s.genderBreakdown.F++;
+            else s.genderBreakdown.other++;
 
             // Status
             const status = p.estado || 'Sin estado';
-            stats[key].statusBreakdown[status] = (stats[key].statusBreakdown[status] || 0) + 1;
+            s.statusBreakdown[status] = (s.statusBreakdown[status] || 0) + 1;
 
-            // Age
+            // Age (min/max + accumulator for avg)
             if (p.edad) {
-                stats[key].ageRanges.min = Math.min(stats[key].ageRanges.min, p.edad);
-                stats[key].ageRanges.max = Math.max(stats[key].ageRanges.max, p.edad);
+                s.ageRanges.min = Math.min(s.ageRanges.min, p.edad);
+                s.ageRanges.max = Math.max(s.ageRanges.max, p.edad);
             }
+            if (p.edad > 0) {
+                s.ageSum += p.edad;
+                s.ageCount++;
+            }
+
+            // Centers (accumulated in first pass instead of filtering)
+            const center = p.centro || 'Sin asignar';
+            s.centers[center] = (s.centers[center] || 0) + 1;
         });
 
-        // Calculate averages and top centers
+        // ── Post-process: compute avg age and topCenters from accumulators ──
         Object.keys(stats).forEach(loc => {
-            // NOTA: Este filtro interno puede ser costoso para conjuntos grandes de datos
-            // Se pueden aplicar optimizaciones aquí si es necesario
-            const locData = data.filter(p => {
-                let pLoc = 'Desconocido';
-                if (level === 'province') {
-                    pLoc = normalizeProvinceName(p.provincia || 'Desconocido');
-                } else if (level === 'municipality') {
-                    pLoc = normalizeLocationName(p.municipio || 'Desconocido');
-                } else if (level === 'region') {
-                    pLoc = findRegion(p.provincia || '');
-                }
-                return pLoc === loc;
-            });
-
-            // Average age — only valid ages (> 0) in denominator
-            const validAges = locData.filter(p => p.edad > 0);
-            const totalAge = validAges.reduce((sum, p) => sum + p.edad, 0);
-            stats[loc].ageRanges.avg = validAges.length > 0 ? Math.round(totalAge / validAges.length) : 0;
-
-            // Top centers
-            const centerCounts: Record<string, number> = {};
-            locData.forEach(p => {
-                const center = p.centro || 'Sin asignar';
-                centerCounts[center] = (centerCounts[center] || 0) + 1;
-            });
-
-            stats[loc].topCenters = Object.entries(centerCounts)
+            const s = stats[loc];
+            s.ageRanges.avg = s.ageCount > 0 ? Math.round(s.ageSum / s.ageCount) : 0;
+            s.topCenters = Object.entries(s.centers)
                 .map(([name, count]) => ({ name, count }))
                 .sort((a, b) => b.count - a.count)
                 .slice(0, 3);
 
-            // Fix infinity if no ages
-            if (stats[loc].ageRanges.min === Infinity) {
-                stats[loc].ageRanges.min = 0;
+            // Fix infinity if no ages at this location
+            if (s.ageRanges.min === Infinity) {
+                s.ageRanges.min = 0;
             }
         });
 
-        return stats;
+        // Strip accumulator fields before returning
+        const result: Record<string, {
+            total: number;
+            genderBreakdown: { M: number; F: number; other: number };
+            statusBreakdown: Record<string, number>;
+            ageRanges: { min: number; max: number; avg: number };
+            topCenters: { name: string; count: number }[];
+        }> = {};
+
+        Object.keys(stats).forEach(loc => {
+            const { ageSum, ageCount, centers: _centers, ...clean } = stats[loc];
+            result[loc] = clean;
+        });
+
+        return result;
     }, [data, level]);
 
     // Encontrar máximos y mínimos para escala de colores

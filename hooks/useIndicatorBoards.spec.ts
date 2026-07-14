@@ -1,12 +1,13 @@
 /**
- * Characterization spec for useIndicatorBoards (M5 — demographic denominators).
+ * Characterization spec for useIndicatorBoards — Worker scheduling (M11).
  *
- * Tests the M5 contract: unknown sex bucket, unknown age bucket, stable center
- * keys, valid-age averages, and minor exclusion.
+ * Tests: M5 contract, active-slice (WU3), Worker fallback path, and
+ * useBoardDataWorker synchronous fallback.
  */
-import { describe, it, expect } from 'vitest';
-import { renderHook } from '@testing-library/react';
-import { useIndicatorBoards } from './useIndicatorBoards';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { renderHook, waitFor } from '@testing-library/react';
+import { useIndicatorBoards, computeBoardData } from './useIndicatorBoards';
+import { useBoardDataWorker } from './useBoardDataWorker';
 import { validParticipant } from '../tests/helpers/participants';
 import type { Participant } from '../types';
 
@@ -163,5 +164,138 @@ describe('useIndicatorBoards — M5 demographic denominators', () => {
       expect(result.current.demographicData.women).toBe(0);
       expect(result.current.demographicData.men).toBe(0);
     });
+  });
+});
+
+// ── WU3: Active-slice aggregation tests ──
+
+describe('computeBoardData — active-slice (WU3)', () => {
+  const data: Participant[] = [
+    makeParticipant({ id: 1, sexo: 'F', edad: 15, provincia: 'Santo Domingo', centro: 'Centro A', municipio: 'SDE', rutaFormativa: 'Ruta A', estado: 'Activo', nivelEstudio: 'Bachiller' }),
+    makeParticipant({ id: 2, sexo: 'M', edad: 25, provincia: 'Santiago', centro: 'Centro B', municipio: 'Santiago Centro', rutaFormativa: 'Ruta B', estado: 'Egresado', tutor: 'Si' }),
+    makeParticipant({ id: 3, sexo: 'F', edad: 30, provincia: 'Santo Domingo', centro: 'Centro A', municipio: 'SDE', rutaFormativa: 'Ruta A', estado: 'Activo' }),
+    makeParticipant({ id: 4, sexo: null, edad: 0, provincia: 'La Vega', centro: 'Centro C', municipio: 'La Vega Centro', rutaFormativa: 'Ruta C', estado: 'Identificado' }),
+  ];
+
+  it('computeBoardData with all computes all slices', () => {
+    const result = computeBoardData(data, 'all');
+    // Demographic populated
+    expect(result.demographicData.women).toBe(2);
+    expect(result.demographicData.men).toBe(1);
+    expect(result.demographicData.unknown).toBe(1);
+    // Territorial populated
+    expect(result.territorialData.municipioCount).toBe(3);
+    // Program populated
+    expect(result.programData.statusDistribution.length).toBeGreaterThan(0);
+    // Social populated
+    expect(result.socialData.phoneCompletenessPct).toBeDefined();
+    // Quality populated
+    expect(result.qualityData.fieldBreakdown).toBeDefined();
+    // Vulnerability populated
+    expect(result.vulnerabilityData.disabilitiesPct).toBe(0);
+    // Temporal populated
+    expect(result.temporalData.registrationsByYear).toBeDefined();
+    // Education populated
+    expect(result.educationData.educationDistribution).toBeDefined();
+    // Center populated
+    expect(result.centerData.totalCenters).toBe(3);
+  });
+
+  it('computeBoardData with demographic populates only demographic fields', () => {
+    const result = computeBoardData(data, 'demographic');
+    // Demographic: populated
+    expect(result.demographicData.women).toBe(2);
+    expect(result.demographicData.ageBuckets.length).toBeGreaterThan(0);
+    expect(result.demographicData.maritalStatus).toBeDefined();
+    // Other slices: empty
+    expect(result.territorialData.topMunicipios).toEqual([]);
+    expect(result.territorialData.topCentros).toEqual([]);
+    expect(result.programData.statusDistribution).toEqual([]);
+    expect(result.programData.minorsWithTutorPct).toBe(0);
+    expect(result.socialData.genderByCentro).toEqual([]);
+    expect(result.qualityData.fieldBreakdown).toEqual([]);
+    expect(result.vulnerabilityData.topDisabilities).toEqual([]);
+    expect(result.temporalData.registrationsByYear).toEqual([]);
+    expect(result.educationData.educationDistribution).toEqual([]);
+    expect(result.centerData.topCenters).toEqual([]);
+  });
+
+  it('computeBoardData with territorial populates only territorial data', () => {
+    const result = computeBoardData(data, 'territorial');
+    // Territorial counts populated
+    expect(result.territorialData.municipioCount).toBe(3);
+    expect(result.territorialData.topMunicipios.length).toBeGreaterThan(0);
+    // Demographic slice is empty (only total preserved)
+    expect(result.demographicData.total).toBe(4);
+    expect(result.demographicData.women).toBe(0);
+    expect(result.demographicData.ageBuckets).toEqual([]);
+    // Non-territorial derived data empty
+    expect(result.programData.statusDistribution).toEqual([]);
+    expect(result.socialData.genderByCentro).toEqual([]);
+    expect(result.centerData.topCenters).toEqual([]);
+  });
+
+  it('computeBoardData with all matches useIndicatorBoards output', () => {
+    const { result } = renderHook(() => useIndicatorBoards(data));
+    const direct = computeBoardData(data, 'all');
+    expect(result.current).toEqual(direct);
+  });
+
+  it('computeBoardData with single slice matches hook with same arg', () => {
+    const { result } = renderHook(() => useIndicatorBoards(data, 'demographic'));
+    const direct = computeBoardData(data, 'demographic');
+    expect(result.current.demographicData).toEqual(direct.demographicData);
+    // Non-demographic slices should be empty in both
+    expect(result.current.territorialData.topCentros).toEqual([]);
+    expect(direct.territorialData.topCentros).toEqual([]);
+  });
+});
+
+// ── M11: Worker fallback path tests ──
+
+describe('useBoardDataWorker — fallback path (M11)', () => {
+  const data: Participant[] = [
+    makeParticipant({ id: 1, sexo: 'F', edad: 15 }),
+    makeParticipant({ id: 2, sexo: 'M', edad: 25 }),
+  ];
+
+  beforeEach(() => {
+    // jsdom doesn't have Worker — fallback is always used
+  });
+
+  it('falls back to synchronous computeBoardData when Worker is undefined', () => {
+    const { result } = renderHook(() => useBoardDataWorker(data, 'all'));
+    expect(result.current.loading).toBe(false);
+    expect(result.current.error).toBeNull();
+    expect(result.current.data).not.toBeNull();
+    expect(result.current.data!.demographicData.women).toBe(1);
+    expect(result.current.data!.demographicData.men).toBe(1);
+  });
+
+  it('computes correct data via fallback for single slice', () => {
+    const { result } = renderHook(() => useBoardDataWorker(data, 'demographic'));
+    expect(result.current.loading).toBe(false);
+    expect(result.current.data!.demographicData.women).toBe(1);
+    // Non-demographic slices should be present but empty
+    expect(result.current.data!.territorialData.topMunicipios).toEqual([]);
+  });
+
+  it('handles empty data via fallback', () => {
+    const { result } = renderHook(() => useBoardDataWorker([]));
+    expect(result.current.loading).toBe(false);
+    expect(result.current.data!.demographicData.total).toBe(0);
+    expect(result.current.data!.demographicData.women).toBe(0);
+  });
+
+  it('fallback result matches computeBoardData directly', () => {
+    const { result } = renderHook(() => useBoardDataWorker(data, 'all'));
+    const direct = computeBoardData(data, 'all');
+    expect(result.current.data).toEqual(direct);
+  });
+
+  it('useIndicatorBoards returns data (delegates to useBoardDataWorker)', () => {
+    const { result } = renderHook(() => useIndicatorBoards(data));
+    const direct = computeBoardData(data, 'all');
+    expect(result.current).toEqual(direct);
   });
 });

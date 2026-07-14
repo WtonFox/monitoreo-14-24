@@ -32,11 +32,12 @@ export default defineConfig({
         passWithNoTests: true,
         clearMocks: true,
         restoreMocks: true,
+        exclude: ['tests/benchmark/**'],
         projects: [
             defineProject({
                 test: {
                     name: 'unit',
-                    include: ['utils/**/*.spec.ts', 'utils/**/*.char.test.ts'],
+                    include: ['utils/**/*.spec.ts', 'utils/**/*.char.test.ts', 'tests/fixtures/*.spec.ts'],
                     environment: 'node'
                 }
             }),

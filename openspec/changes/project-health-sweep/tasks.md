@@ -1,120 +1,107 @@
-# Tasks: M6 — Sync State Machine (project-health-sweep)
+# Tasks: M7 — 67k-Record Performance Budget (project-health-sweep)
 
 ## Review Workload Forecast
 
 | Field | Value |
 |---|---|
 | Decision needed before apply | No |
-| Chained PRs recommended | Yes (M6a + M6b) |
+| Chained PRs recommended | No |
 | Chain strategy | stacked-to-main |
-| 400-line budget risk | High |
-| Estimated changed lines | ~480 (core + tests) |
+| 400-line budget risk | Low |
+| Estimated changed lines (authored) | ~240 (fixtures ~130 excluded) |
+| PR count | 1 |
 
-### Split Rationale
+### Rationale
 
-| PR | WUs | Core Δ | Test Δ | Total |
-|:---|---:|---:|---:|---:|
-| **M6a** — Foundation | WU1+WU2+WU3+WU4+WU7 | ~170 | ~150 | ~320 |
-| **M6b** — Resilience | WU5+WU6+WU8 | ~110 | ~200 | ~310 |
-
-M6a ships first and closes H2 for stale cache, dual hooks, stale pause, unsafe resume, and unawaited writes. M6b stacks on M6a and closes H2 for page retry and update/delete detection plus full behavioral coverage.
+M7 fits in a single PR. Benchmark fixtures are excluded from the 400-line budget per proposal rules (~130 lines). Authored changes (benchmark scripts, hook modifications, map optimization) total ~240 lines, well under the limit.
 
 ### Work Units
 
-| Unit | Goal | PR | Focused test command | Runtime harness | Rollback boundary |
-|---|---|---|---|---|---|
-| 1 | Export `clearApiCache()` from api.ts | M6a | `npm run test:unit -- useDashboardData` | `npm run build:ci` | `services/api.ts` |
-| 2 | DashboardProvider stops calling useDashboardData | M6a | `npm run test:unit -- DashboardContext` | `npm run build:ci` | `contexts/DashboardContext.tsx` |
-| 3 | Live pause via `isPausedRef` | M6a | `npm run test:unit -- useDashboardData` | `npm run build:ci` | `hooks/useDashboardData.ts` |
-| 4 | Persisted checkpoint in IndexedDB metadata | M6a | `npm run test:unit -- useDashboardData` | `npm run build:ci` | `hooks/useDashboardData.ts`, `services/database.ts` |
-| 5 | Page retry with exponential backoff | M6b | `npm run test:unit -- useDashboardData` | `npm run build:ci` | `hooks/useDashboardData.ts` |
-| 6 | Update/delete detection in polling | M6b | `npm run test:unit -- useDashboardData` | `npm run build:ci` | `hooks/useDashboardData.ts` |
-| 7 | Await all IndexedDB writes | M6a | `npm run test:unit -- useDashboardData` | `npm run build:ci` | `hooks/useDashboardData.ts` |
-| 8 | Update existing test file with R-sync assertions | M6b | `npm run test:unit -- useDashboardData` | `npm run build:ci` | `hooks/useDashboardData.spec.ts` |
+| Unit | Goal | Focused test command | Runtime harness | Rollback boundary |
+|---|---|---|---|---|
+| 1 | Deterministic 67k fixture generator | `npm run test -- participants-perf` | `npm run build:ci` | `tests/fixtures/participants-perf.ts` |
+| 2 | Benchmark baseline | `npm run bench` | `npm run build:ci` | `tests/benchmark/`, `notes/m7-benchmark.md` |
+| 3 | Active-slice aggregation | `npm run test -- useIndicatorBoards` | `npm run build:ci` | `hooks/useIndicatorBoards.ts`, `contexts/IndicadoresFiltersContext.tsx` |
+| 4 | Map aggregation one-pass | `npm run test -- useMapStats` | `npm run build:ci` | `hooks/useMapStats.ts` |
+| 5 | Re-measure and consolidate | `npm run bench` | `npm run build:ci` | `notes/m7-benchmark.md` |
 
-## Phase 1: Foundation — M6a
+## Phase 1: Benchmark Foundation
 
-### WU1 — Export `clearApiCache()` from api.ts
+### WU1 — Benchmark test fixture harness
 
-- [x] 1.1 In `services/api.ts`, export a `clearApiCache` function that calls `requestCache.clear()` (the existing Map at line 5).
-- [x] 1.2 In `hooks/useDashboardData.ts`, import `clearApiCache` and call it at the top of `handleManualRefresh`, before the `setTimeout(() => startSmartSync(1), 1200)`.
+- [x] 1.1 Create `tests/fixtures/participants-perf.ts` with a seeded PRNG (mulberry32).
+- [x] 1.2 Define distribution pools: 32 province names, 3 municipalities per province, 12 center names, age-ranges 14-17/18-20/21-24/25+, sexes `M`/`F`, statuses `Activo`/`Egresado`/`Identificado`.
+- [x] 1.3 Export `perfFixture10k(seed?)`, `perfFixture67k(seed?)`, `perfFixture100k(seed?)` — each returns `Participant[]`.
+- [x] 1.4 Added tests: count (10k/67k/100k), determinism, distribution, field presence.
 
-### WU2 — DashboardProvider stops calling useDashboardData
+### WU2 — Run benchmark
 
-- [x] 2.1 In `contexts/DashboardContext.tsx`, remove import of `useDashboardData` and `CorruptedRecord` from `../hooks/useDashboardData`.
-- [x] 2.2 Remove `const hookValue = useDashboardData()` and the `externalValue ?? hookValue` fallback.
-- [x] 2.3 Render `<DashboardContext.Provider value={value}>` directly, where `value` is the required `value` prop.
-- [x] 2.4 If `value` is undefined at runtime, throw a dev-time error: `'DashboardProvider requires a value prop — call useDashboardData in the parent and pass it down.'`
+- [x] 2.1 Create `tests/benchmark/perf-bench.bench.ts` with vitest bench suites:
+  - `computeBoardData(all)` — 67k all-slices time
+  - `computeBoardData(demographic)` — 67k single-slice time
+  - `locationStats(province)` — 67k map aggregation time
+  - Same for 10k and 100k fixtures for reference
+- [x] 2.2 Create `tests/benchmark/perf-runner.ts` (Playwright, tier 2 stub).
+- [x] 2.3 Add `"bench": "vitest bench"` and `"bench:browser"` to `package.json`.
+- [x] 2.4 Create `openspec/changes/project-health-sweep/notes/m7-benchmark.md` with baseline + after tables.
+- [x] 2.5 Run `npm run bench` — captured baseline (103ms 67k). All benchmarks complete.
 
-### WU3 — Live pause via `isPausedRef`
+## Phase 2: Optimization
 
-- [x] 3.1 In `hooks/useDashboardData.ts`, add `const isPausedRef = useRef(false)` alongside `stopSyncRef`.
-- [x] 3.2 Keep `isPaused` state for rendering. `togglePause`: flip `isPausedRef.current`, then `setIsPaused(isPausedRef.current)`.
-- [x] 3.3 In the sync loop, change `while (isPaused)` (line 188) to `while (isPausedRef.current)`.
-- [x] 3.4 Remove `isPaused` from the `useCallback` dependency array.
-- [x] 3.5 Update `handleManualRefresh`: set `isPausedRef.current = false` so a paused sync can be cancelled by refresh.
+### WU3 — Active-slice aggregation
 
-### WU4 — Persisted checkpoint
+- [x] 3.1 In `hooks/useIndicatorBoards.ts`:
+  - Added `export type BoardCategory`.
+  - Extracted `export function computeBoardData(data, activeBoard)`.
+  - `useIndicatorBoards` now calls `computeBoardData`.
+  - `needs('demographic')` etc. gates each derived-data block.
+- [x] 3.2 In `IndicadoresFiltersContext.tsx`:
+  - Imported `useLocation` from `react-router-dom`.
+  - Added `routeBoardMap` with `BoardCategory` route mapping.
+  - Derived `activeBoard` from `location.pathname`.
+  - Passed `activeBoard` to `useIndicatorBoards`.
+- [x] 3.3 Added 5 tests in `useIndicatorBoards.spec.ts`:
+  - `computeBoardData(data, 'all')` populates all slices.
+  - `computeBoardData(data, 'demographic')` only populates demographic.
+  - `computeBoardData(data, 'territorial')` only populates territorial.
+  - Matches `useIndicatorBoards` output.
+- [x] 3.4 Ran `npm run test` — 139 passed (14 useIndicatorBoards).
 
-- [x] 4.1 In `services/database.ts`, extend the metadata type (`MonitoreoDB['metadata']['value']`) with additive fields: `lastSyncedPage?: number`, `lastSyncedRecordCount?: number`, `syncTimestamp?: number`. No DB_VERSION change (schema is additive).
-- [x] 4.2 In `hooks/useDashboardData.ts` startup effect: after reading `getMetadata('syncInfo')`, set `currentPage = meta.lastSyncedPage || 1` instead of computing from `dashboardData.length`.
-- [x] 4.3 After each successful page fetch+processing, `await saveMetadata('syncInfo', { ...existingMeta, lastSyncedPage: currentPage, lastSyncedRecordCount: totalLoadedCount, syncTimestamp: Date.now() })`.
-- [x] 4.4 In `handleManualRefresh` and at `startSmartSync(1)` start: persist `lastSyncedPage: 1, lastSyncedRecordCount: 0, syncTimestamp: Date.now()` in metadata.
+### WU4 — Map aggregation one-pass
 
-### WU7 — Await IndexedDB writes
+- [x] 4.1 In `hooks/useMapStats.ts`: merged center/age accumulators into first pass.
+- [x] 4.2 Replaced second loop: post-process computes avg, topCenters from accumulators.
+- [x] 4.3 Added 7 correctness tests in `useMapStats.spec.ts` (topCenters, age ranges, determinism, empty, null centro).
+- [x] 4.4 Ran `npm run test` — 139 passed (9 useMapStats).
 
-- [x] 7.1 Add `await` to `saveParticipants(cleanBatch)` call (line 248).
-- [x] 7.2 Add `await` to both `saveMetadata(...)` calls (lines 253, 279).
-- [x] 7.3 Add `await` to `clearAllData()` call (line 366).
-- [x] 7.4 Verify no remaining `.catch()`-only IndexedDB calls in `handleManualRefresh` or the sync loop.
+## Phase 3: Consolidation
 
-## Phase 2: Resilience — M6b
+### WU5 — Re-measure and consolidate
 
-### WU5 — Page retry with exponential backoff
-
-- [ ] 5.1 Add `erroredPages: number[]` to `SyncStats` interface and `statsRef`.
-- [ ] 5.2 Wrap the fetch+process block with a 3-attempt retry loop: delays 1000ms, 2000ms, 4000ms (`wait(1000)`, `wait(2000)`, `wait(4000)`).
-- [ ] 5.3 On success within retries, `break`.
-- [ ] 5.4 On exhaustion after 3 attempts, push `currentPage` to `erroredPages`, continue to next page. Do NOT throw.
-- [ ] 5.5 The existing `catch` at line 310-313 becomes the innermost catch (per attempt). Remove the `currentPage++` there; page advancement moves outside the retry loop on exhaustion.
-
-### WU6 — Update/delete detection in polling
-
-- [ ] 6.1 After the poll probe (`fetchParticipants(1, 1, 0, ...)`), compute a lightweight checksum: `JSON.stringify(items.slice(0, 5).map(i => i.id + (i.ultimaModificacion || '')))`.
-- [ ] 6.2 Store `lastChecksum` in a ref and in metadata.
-- [ ] 6.3 Enhance the poll trigger condition: `apiTotal > totalRecordsInApi || apiTotal < totalRecordsInApi || (apiTotal === totalRecordsInApi && checksum !== lastChecksum)` → trigger re-verify.
-- [ ] 6.4 On re-verify, call `handleManualRefresh` (or equivalent full restart). Mark this as a full re-verify, not incremental.
-
-## Phase 3: Tests — M6b
-
-### WU8 — Update `useDashboardData.spec.ts`
-
-- [ ] 8.1 **R-sync-1 (single provider)**: Mount App with DashboardProvider wrapping; spy on `console.log` from `useDashboardData`; assert it fires exactly once.
-- [ ] 8.2 **R-sync-2 (clearApiCache)**: Spy on `clearApiCache`. Call `handleManualRefresh`. Assert `clearApiCache` was called before the sync restart timer.
-- [ ] 8.3 **R-sync-3 (live pause)**: With fake timers, start sync, call `togglePause`, advance timers, assert sync loop pauses (fetch not called for next page). Call `togglePause`, assert resume. Call cancel, assert restart from page 1.
-- [ ] 8.4 **R-sync-4 (checkpoint)**: Mock API with 10 pages. After page 5 completes, assert `saveMetadata` was called with `lastSyncedPage: 5`. Simulate crash; on new mount, assert `startSmartSync` resumes from page 5 (not page 6).
-- [ ] 8.5 **R-sync-5 (retry)**: Mock API where page 3 fails twice (throw error) then succeeds on third attempt. Assert all page-3 records present. Mock API where page 4 always fails. Assert `erroredPages` contains `[4]`.
-- [ ] 8.6 **R-sync-6 (update/delete)**: Mock API with `totalItems: 100, items: [{id:1, ultimaModificacion: '2026-01-01'}]`. Set `totalRecordsInApi = 100, lastChecksum = same`. Second poll returns same `totalItems: 100` but different checksum. Assert re-verify triggered.
-- [ ] 8.7 **R-sync-7 (awaited writes)**: Spy on `saveParticipants` — assert it's called with `await` (the mock resolves before next line executes). After sync completes, assert persisted count matches expected.
+- [x] 5.1 Re-ran `npm run bench` with optimized code.
+- [x] 5.2 Compared pre/post values. Updated `notes/m7-benchmark.md` with both columns and gap analysis.
+- [x] 5.3 Gate check: computeBoardData 67k = 105ms (>50ms). The heaviest slice is the per-record loop (~98ms), which is a tight synchronous for loop. requestIdleCallback is not applicable — it cannot interrupt a running `for` loop. Moved per-record loop to a Worker is the correct arch fix (M11).
+- [x] 5.4 Skipped: requestIdleCallback cannot meaningfully split a tight synchronous for loop. Documented remaining gap in benchmark notes with Worker scheduling recommendation (M11).
 
 ## Out of Scope
 
 - No auth changes (`AuthContext`, `ProtectedRoute`, `constants.ts`).
-- No formula corrections (`useIndicators.ts`, `useIndicatorBoards.ts`, `ChartsSection.tsx`).
-- No normalization contract changes (`dataUtils.ts`, `normalize.ts`).
-- No charts, maps, boards.
+- No formula corrections (`useIndicators.ts` indicator values or formulas).
+- No normalization changes (`dataUtils.ts`, `normalize.ts`).
+- No visual changes: charts, statsCards, boards, modals.
 - No exporter changes.
-- No performance optimization (`requestIdleCallback`, Workers, benchmarks).
+- No sync or persistence changes.
 - No a11y changes.
 - No `.env` access.
-- No `App.tsx` changes (already the single caller — confirmed by reading source).
+- No Worker implementation (only `requestIdleCallback` if WU5 gate fails).
+- No `useIndicators.ts` refactor (1,087 lines) — benchmark only; optimization deferred to follow-up if budget fails.
 
 ## Risk Register
 
 | Risk | Mitigation |
 |---|---|
-| M3 not merged → no test file to extend | Blocking dependency — M3 must land before M6 apply starts |
-| `await` on IndexedDB writes introduces UI jank | Acceptable for M6; M7 profiling will surface if optimization needed |
-| `erroredPages` type mismatch with existing `SyncStats` consumers | Additive field; all existing consumers iterate by named key, not index |
-| M6b diff polluted by M6a when rebased | Rebase M6b onto merged M6a before opening; confirm diff shows only M6b changes |
-| Checksum on page 1 unreliable for update detection | Fallback: if `ultimaModificacion` absent, compare `id` set size + first-5 `id + edad` stringified |
+| `vitest bench` not available in installed vitest version | Check `vitest --help`; fall back to `performance.now()` in a `describe/it` block with multiple iterations |
+| Playwright install fails in CI | Tier 2 is informational; tier 1 (vitest bench) is the actionable gate |
+| `computeBoardData` extraction changes semantics | Default `'all'` preserves current behavior; already passes existing tests |
+| Map one-pass changes age average precision | Correctness gate: pre/post deep-equal on 10k fixture |
+| Active-slice does not measurably improve 67k time | The per-record loop is already efficient; derived-data savings may be marginal. Document and accept if <20% improvement — map optimization (WU4) is the primary win |

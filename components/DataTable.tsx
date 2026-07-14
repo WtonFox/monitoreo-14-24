@@ -3,6 +3,7 @@ import { Participant } from '../types';
 import { Download, Search, ChevronLeft, ChevronRight, ChevronDown, FileJson, FileSpreadsheet, FileText, XCircle, Settings } from 'lucide-react';
 import { ColumnSelector, ColumnConfig } from './ColumnSelector';
 import { formatNumber } from '../utils/formatters';
+import * as XLSX from 'xlsx';
 
 interface DataTableProps {
   data: Participant[];
@@ -177,6 +178,65 @@ export const DataTable: React.FC<DataTableProps> = ({
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
     link.setAttribute('download', `oportunidad1424_vista_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleLocalXLSX = () => {
+    const exportData = allFilteredData || data;
+    if (exportData.length === 0) return;
+
+    const excelData = exportData.map(item => ({
+      'ID': item.id,
+      'Nombres': item.nombres || '',
+      'Apellidos': item.apellidos || '',
+      'Cédula': item.cedula || '',
+      'Edad': item.edad,
+      'Edad Registro': item.edadRegistro || '',
+      'Fecha Nacimiento': item.fechaNacimiento || '',
+      'Fecha Registro': item.fechaRegistro || '',
+      'Fecha Inclusión': item.fechaInclusion || '',
+      'Tutor': item.tutor || '',
+      'Cédula Tutor': item.cedulaTutor || '',
+      'Teléfono Responsable': item.telefonosResponsable || '',
+      'Vulnerabilidades': item.vulnerabilidades || '',
+      'Alergias': item.alergias || '',
+      'Discapacidades': item.discapacidades || '',
+      'Enfermedades': item.enfermedades || '',
+      'Programas Sociales': item.programasSociales || '',
+      'Estado': item.estado || '',
+      'Sexo': item.sexo || '',
+      'Estado Civil': item.estadoCivil || '',
+      'Nivel Estudio': item.nivelEstudio || '',
+      'Provincia': item.provincia || '',
+      'Municipio': item.municipio || '',
+      'Centro': item.centro || '',
+      'Dirección': item.direccion || '',
+      'Ruta Formativa': item.rutaFormativa || '',
+    }));
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(excelData);
+    ws['!cols'] = [
+      { wch: 8 }, { wch: 20 }, { wch: 20 }, { wch: 15 },
+      { wch: 6 }, { wch: 10 }, { wch: 12 }, { wch: 12 },
+      { wch: 12 }, { wch: 20 }, { wch: 15 }, { wch: 15 },
+      { wch: 25 }, { wch: 20 }, { wch: 20 }, { wch: 25 },
+      { wch: 25 }, { wch: 15 }, { wch: 8 }, { wch: 15 },
+      { wch: 20 }, { wch: 20 }, { wch: 20 }, { wch: 25 },
+      { wch: 30 }, { wch: 20 },
+    ];
+    XLSX.utils.book_append_sheet(wb, ws, 'Participantes');
+    const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([excelBuffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `oportunidad1424_vista_${new Date().toISOString().slice(0, 10)}.xlsx`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
@@ -423,7 +483,7 @@ export const DataTable: React.FC<DataTableProps> = ({
                           CSV (Vista actual)
                         </button>
                         <button
-                          onClick={() => { setShowFormatDropdown(false); handleLocalExport(); }}
+                          onClick={() => { setShowFormatDropdown(false); handleLocalXLSX(); }}
                           className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
                         >
                           <FileSpreadsheet size={16} className="text-blue-600" />

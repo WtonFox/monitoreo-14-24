@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { Participant } from '../types';
+import { Participant, PaginationResult } from '../types';
 import { fetchParticipants, clearApiCache } from '../services/api';
 import { sanitizeParticipant } from '../utils/dataUtils';
 import {
@@ -16,6 +16,7 @@ interface SyncStats {
     corrupted: number;
     duplicated: number;
     progress: number;
+    erroredPages: number[];
 }
 
 export interface CorruptedRecord {
@@ -53,7 +54,7 @@ export const useDashboardData = (): UseDashboardDataResult => {
     const [totalRecordsInApi, setTotalRecordsInApi] = useState<number>(0);
     const [isSyncing, setIsSyncing] = useState<boolean>(false);
     const [isPaused, setIsPaused] = useState<boolean>(false);
-    const [syncStats, setSyncStats] = useState<SyncStats>({ loaded: 0, errors: 0, corrupted: 0, duplicated: 0, progress: 0 });
+    const [syncStats, setSyncStats] = useState<SyncStats>({ loaded: 0, errors: 0, corrupted: 0, duplicated: 0, progress: 0, erroredPages: [] });
     const [corruptedItems, setCorruptedItems] = useState<CorruptedRecord[]>([]);
 
     // Estados de error
@@ -65,8 +66,9 @@ export const useDashboardData = (): UseDashboardDataResult => {
     const stopSyncRef = useRef<boolean>(false);
     const isSyncingRef = useRef<boolean>(false);
     const existingIdsRef = useRef<Set<number>>(new Set());
-    const statsRef = useRef<SyncStats>({ loaded: 0, errors: 0, corrupted: 0, duplicated: 0, progress: 0 });
+    const statsRef = useRef<SyncStats>({ loaded: 0, errors: 0, corrupted: 0, duplicated: 0, progress: 0, erroredPages: [] });
     const isPausedRef = useRef<boolean>(false);
+    const lastChecksumRef = useRef<string>('');
 
     // Cargar datos desde IndexedDB al iniciar
     useEffect(() => {
@@ -109,12 +111,17 @@ export const useDashboardData = (): UseDashboardDataResult => {
                         setTotalRecordsInApi(meta.totalRecords);
                     }
 
+                    if (meta && meta.lastChecksum) {
+                        lastChecksumRef.current = meta.lastChecksum as string;
+                    }
+
                     const restoredStats = {
                         loaded: storedData.length,
                         errors: 0,
                         corrupted: meta?.corrupted || 0,
                         duplicated: meta?.duplicated || 0,
-                        progress: 100
+                        progress: 100,
+                        erroredPages: []
                     };
 
                     setSyncStats(restoredStats);
@@ -166,7 +173,8 @@ export const useDashboardData = (): UseDashboardDataResult => {
                         corrupted: 0,
                         lastSyncedPage: 1,
                         lastSyncedRecordCount: 0,
-                        syncTimestamp: Date.now()
+                        syncTimestamp: Date.now(),
+                        lastChecksum: ''
                     });
                 }
             } else {
@@ -200,8 +208,31 @@ export const useDashboardData = (): UseDashboardDataResult => {
                     if (stopSyncRef.current) break;
                 }
 
-                try {
-                    const result = await fetchParticipants(currentPage, BATCH_SIZE, 0, customToken || undefined);
+                let fetchResult: PaginationResult | null = null;
+
+                for (let attempt = 0; attempt < 3 && !fetchResult && !stopSyncRef.current; attempt++) {
+                    if (attempt > 0) {
+                        const backoffDelay = [1000, 2000, 4000][attempt - 1];
+                        await new Promise(r => setTimeout(r, backoffDelay));
+                    }
+
+                    try {
+                        fetchResult = await fetchParticipants(currentPage, BATCH_SIZE, 0, customToken || undefined);
+                    } catch (err) {
+                        console.warn(`Error en lote ${currentPage}, intento ${attempt + 1}/3:`, err);
+                    }
+                }
+
+                if (!fetchResult && !stopSyncRef.current) {
+                    // All 3 retries exhausted — record and skip this page
+                    const failedPage = currentPage;
+                    console.warn(`Página ${failedPage} falló después de 3 intentos. Omitiendo.`);
+                    statsRef.current.erroredPages = [...statsRef.current.erroredPages, failedPage];
+                    setSyncStats(prev => ({ ...prev, errors: prev.errors + 1, erroredPages: [...prev.erroredPages, failedPage] }));
+                }
+
+                if (fetchResult && !stopSyncRef.current) {
+                    const result = fetchResult;
 
                     // Actualizar total dinámicamente
                     if (result.totalItems && result.totalItems > totalRecordsInApi) {
@@ -212,72 +243,72 @@ export const useDashboardData = (): UseDashboardDataResult => {
 
                     if (!items || !Array.isArray(items) || items.length === 0) {
                         hasMoreData = false;
-                        break;
                     }
 
-                    // Procesar lote
-                    let localCorruptedCount = 0;
-                    let localDuplicatedCount = 0;
-                    const cleanBatch: Participant[] = [];
-                    const newCorrupted: CorruptedRecord[] = [];
+                    if (items && Array.isArray(items) && items.length > 0) {
+                        // Procesar lote
+                        let localCorruptedCount = 0;
+                        let localDuplicatedCount = 0;
+                        const cleanBatch: Participant[] = [];
+                        const newCorrupted: CorruptedRecord[] = [];
 
-                    for (let i = 0; i < items.length; i++) {
-                        const item = items[i];
-                        const clean = sanitizeParticipant(item, i);
+                        for (let i = 0; i < items.length; i++) {
+                            const item = items[i];
+                            const clean = sanitizeParticipant(item, i);
 
-                        // Quarantine corrupt records — exclude from dashboardData
-                        if (clean.estado === 'CRITICALLY_CORRUPT' || clean.estado === 'GENERIC_ERROR') {
-                            localCorruptedCount++;
-                            newCorrupted.push({
-                                id: clean.id,
-                                raw: item,
-                                reason: clean.estado === 'CRITICALLY_CORRUPT'
-                                    ? 'Estructura inválida o datos ilegibles'
-                                    : 'Datos corruptos (fechas inválidas)'
+                            // Quarantine corrupt records — exclude from dashboardData
+                            if (clean.estado === 'CRITICALLY_CORRUPT' || clean.estado === 'GENERIC_ERROR') {
+                                localCorruptedCount++;
+                                newCorrupted.push({
+                                    id: clean.id,
+                                    raw: item,
+                                    reason: clean.estado === 'CRITICALLY_CORRUPT'
+                                        ? 'Estructura inválida o datos ilegibles'
+                                        : 'Datos corruptos (fechas inválidas)'
+                                });
+                                continue;
+                            }
+
+                            // Check duplicados O(1)
+                            if (!existingIdsRef.current.has(clean.id)) {
+                                existingIdsRef.current.add(clean.id);
+                                cleanBatch.push(clean);
+                            } else {
+                                localDuplicatedCount++;
+                            }
+                        }
+
+                        if (newCorrupted.length > 0) {
+                            setCorruptedItems(prev => [...prev, ...newCorrupted]);
+                        }
+
+                        pendingBatch.push(...cleanBatch);
+
+                        // Guardar en DB asíncronamente (no bloqueante)
+                        if (cleanBatch.length > 0) {
+                            await saveParticipants(cleanBatch).catch(err => {
+                                console.error('Failed to save batch to IndexedDB:', err);
                             });
-                            continue;
                         }
 
-                        // Check duplicados O(1)
-                        if (!existingIdsRef.current.has(clean.id)) {
-                            existingIdsRef.current.add(clean.id);
-                            cleanBatch.push(clean);
-                        } else {
-                            localDuplicatedCount++;
-                        }
-                    }
+                        // Actualizar contador local
+                        totalLoadedCount += cleanBatch.length; // Solo los nuevos reales
 
-                    if (newCorrupted.length > 0) {
-                        setCorruptedItems(prev => [...prev, ...newCorrupted]);
-                    }
+                        const currentTotal = result.totalItems || totalRecordsInApi || 1;
+                        // Usar contador local en lugar de syncStats.loaded
+                        const estimatedProgress = Math.min(100, Math.round((existingIdsRef.current.size / currentTotal) * 100));
 
-                    pendingBatch.push(...cleanBatch);
+                        // Actualizar Refs y guardarlos
+                        statsRef.current.loaded = existingIdsRef.current.size;
+                        statsRef.current.corrupted += localCorruptedCount;
+                        statsRef.current.duplicated += localDuplicatedCount;
+                        statsRef.current.progress = estimatedProgress;
 
-                    // Guardar en DB asíncronamente (no bloqueante)
-                    if (cleanBatch.length > 0) {
-                        await saveParticipants(cleanBatch).catch(err => {
-                            console.error('Failed to save batch to IndexedDB:', err);
-                        });
-                    }
+                        // Update UI
+                        setSyncStats({ ...statsRef.current });
 
-                    // Actualizar contador local
-                    totalLoadedCount += cleanBatch.length; // Solo los nuevos reales
-
-                    const currentTotal = result.totalItems || totalRecordsInApi || 1;
-                    // Usar contador local en lugar de syncStats.loaded
-                    const estimatedProgress = Math.min(100, Math.round((existingIdsRef.current.size / currentTotal) * 100));
-
-                    // Actualizar Refs y guardarlos
-                    statsRef.current.loaded = existingIdsRef.current.size;
-                    statsRef.current.corrupted += localCorruptedCount;
-                    statsRef.current.duplicated += localDuplicatedCount;
-                    statsRef.current.progress = estimatedProgress;
-
-                    // Update UI
-                    setSyncStats({ ...statsRef.current });
-
-                    // Persistir metadata actualizada con checkpoint (WU4)
-                    if (cleanBatch.length > 0) {
+                        // Persistir metadata actualizada con checkpoint (WU4)
+                        if (cleanBatch.length > 0) {
                         await saveMetadata('syncInfo', {
                             lastSync: Date.now(),
                             totalRecords: result.totalItems || totalRecordsInApi,
@@ -285,38 +316,35 @@ export const useDashboardData = (): UseDashboardDataResult => {
                             corrupted: statsRef.current.corrupted,
                             lastSyncedPage: currentPage,
                             lastSyncedRecordCount: existingIdsRef.current.size,
-                            syncTimestamp: Date.now()
+                            syncTimestamp: Date.now(),
+                            lastChecksum: lastChecksumRef.current || ''
                         }).catch(err => {
                             console.error('Failed to save metadata:', err);
                         });
+                        }
+
+                        if (items.length < BATCH_SIZE) {
+                            hasMoreData = false;
+                        }
+
+                        // Estrategia de Actualización Diferida
+                        const timeSinceLastUpdate = Date.now() - lastStateUpdate;
+
+                        if (pendingBatch.length >= 1000 || timeSinceLastUpdate > 3000 || !hasMoreData) {
+                            const batchToProcess = pendingBatch;
+
+                            setDashboardData(prev => {
+                                // Ya hemos filtrado duplicados antes de meter en pendingBatch usando el Ref
+                                return [...prev, ...batchToProcess];
+                            });
+
+                            pendingBatch = [];
+                            lastStateUpdate = Date.now();
+                        }
                     }
+                }
 
-                    if (items.length < BATCH_SIZE) {
-                        hasMoreData = false;
-                    }
-
-                    // Estrategia de Actualización Diferida
-                    const timeSinceLastUpdate = Date.now() - lastStateUpdate;
-
-                    if (pendingBatch.length >= 1000 || timeSinceLastUpdate > 3000 || !hasMoreData) {
-                        const batchToProcess = pendingBatch;
-
-                        setDashboardData(prev => {
-                            // Ya hemos filtrado duplicados antes de meter en pendingBatch usando el Ref
-                            return [...prev, ...batchToProcess];
-                        });
-
-                        pendingBatch = [];
-                        lastStateUpdate = Date.now();
-                    }
-
-                    if (hasMoreData) {
-                        currentPage++;
-                    }
-
-                } catch (err) {
-                    console.warn(`Error en lote ${currentPage}:`, err);
-                    setSyncStats(prev => ({ ...prev, errors: prev.errors + 1 }));
+                if (hasMoreData) {
                     currentPage++;
                 }
 
@@ -347,10 +375,38 @@ export const useDashboardData = (): UseDashboardDataResult => {
         try {
             const probe = await fetchParticipants(1, 1, 0, customToken || undefined);
             const apiTotal = probe.totalItems;
+            const items = probe.items || [];
 
-            if (apiTotal > totalRecordsInApi) {
-                console.log(`[AutoSync] New records detected: ${apiTotal} vs ${totalRecordsInApi}. Resuming sync...`);
-                await startSmartSync();
+            // Lightweight checksum: first few record IDs + edad as change discriminator
+            const checksum = JSON.stringify(
+                items.slice(0, 5).map(i => `${i.id}:${i.edad}`)
+            );
+
+            const hasExistingData = totalRecordsInApi > 0;
+            const checksumInitialized = lastChecksumRef.current !== '';
+            const checksumChanged = checksumInitialized && checksum !== lastChecksumRef.current;
+
+            if (
+                apiTotal > totalRecordsInApi ||
+                (apiTotal < totalRecordsInApi && hasExistingData) ||
+                (apiTotal === totalRecordsInApi && hasExistingData && checksumChanged)
+            ) {
+                console.log(`[AutoSync] Data change detected (totalItems: ${apiTotal}). Full re-sync from page 1...`);
+                lastChecksumRef.current = checksum;
+
+                // Full re-verify: stop current state, clear persistence, restart fresh
+                stopSyncRef.current = true;
+                setDashboardData([]);
+                setCorruptedItems([]);
+                setSyncStats({ loaded: 0, errors: 0, corrupted: 0, duplicated: 0, progress: 0, erroredPages: [] });
+                statsRef.current = { loaded: 0, errors: 0, corrupted: 0, duplicated: 0, progress: 0, erroredPages: [] };
+                existingIdsRef.current.clear();
+                setTotalRecordsInApi(apiTotal);
+                await clearAllData();
+                await startSmartSync(1);
+            } else {
+                // Store checksum even when no change detected
+                lastChecksumRef.current = checksum;
             }
         } catch (err) {
             console.warn('[AutoSync] Poll failed:', err);
@@ -364,8 +420,8 @@ export const useDashboardData = (): UseDashboardDataResult => {
 
         setDashboardData([]);
         setCorruptedItems([]);
-        setSyncStats({ loaded: 0, errors: 0, corrupted: 0, duplicated: 0, progress: 0 });
-        statsRef.current = { loaded: 0, errors: 0, corrupted: 0, duplicated: 0, progress: 0 };
+        setSyncStats({ loaded: 0, errors: 0, corrupted: 0, duplicated: 0, progress: 0, erroredPages: [] });
+        statsRef.current = { loaded: 0, errors: 0, corrupted: 0, duplicated: 0, progress: 0, erroredPages: [] };
         setCriticalConnectionError(false);
         setConnectionErrorMessage('');
         setTotalRecordsInApi(0);
@@ -379,7 +435,8 @@ export const useDashboardData = (): UseDashboardDataResult => {
             corrupted: 0,
             lastSyncedPage: 1,
             lastSyncedRecordCount: 0,
-            syncTimestamp: Date.now()
+            syncTimestamp: Date.now(),
+            lastChecksum: ''
         }).catch(err => {
             console.error('Failed to reset checkpoint:', err);
         });
