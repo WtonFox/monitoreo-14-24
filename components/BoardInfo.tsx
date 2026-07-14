@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { HelpCircle, X } from 'lucide-react';
 
 interface InfoSection {
@@ -13,10 +13,33 @@ interface BoardInfoProps {
 
 const BoardInfo: React.FC<BoardInfoProps> = ({ title, sections }) => {
   const [open, setOpen] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  const handleClose = () => {
+    setOpen(false);
+    triggerRef.current?.focus();
+  };
+
+  useEffect(() => {
+    if (open) {
+      closeRef.current?.focus();
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') {
+          e.stopPropagation();
+          handleClose();
+        }
+      };
+      document.addEventListener('keydown', handleKeyDown);
+      return () => document.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [open]);
 
   return (
     <>
       <button
+        ref={triggerRef}
         onClick={() => setOpen(true)}
         className="flex items-center gap-1.5 text-xs font-medium text-gray-400 hover:text-blue-600 transition-colors px-2 py-1 rounded-lg hover:bg-blue-50"
         title="Ver información del tablero"
@@ -26,7 +49,14 @@ const BoardInfo: React.FC<BoardInfoProps> = ({ title, sections }) => {
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setOpen(false)}>
+        <div
+          ref={dialogRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label={title}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+          onClick={handleClose}
+        >
           <div
             className="bg-white rounded-2xl shadow-2xl max-w-lg w-full mx-4 max-h-[80vh] overflow-y-auto"
             onClick={e => e.stopPropagation()}
@@ -38,7 +68,8 @@ const BoardInfo: React.FC<BoardInfoProps> = ({ title, sections }) => {
                 <h2 className="text-lg font-bold text-gray-900">{title}</h2>
               </div>
               <button
-                onClick={() => setOpen(false)}
+                ref={closeRef}
+                onClick={handleClose}
                 className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-600"
               >
                 <X size={18} />
@@ -59,7 +90,7 @@ const BoardInfo: React.FC<BoardInfoProps> = ({ title, sections }) => {
             <div className="px-6 py-3 bg-gray-50 rounded-b-2xl flex items-center justify-between">
               <span className="text-xs text-gray-400">Fuente: datos del programa Oportunidad 14-24</span>
               <button
-                onClick={() => setOpen(false)}
+                onClick={handleClose}
                 className="text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors"
               >
                 Cerrar <span className="text-gray-400">(ESC)</span>
