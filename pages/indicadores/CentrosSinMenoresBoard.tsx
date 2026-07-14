@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { formatNumber, formatPercentage } from '../../utils/formatters';
 import { Users, Building2, Percent, AlertTriangle } from 'lucide-react';
 import BoardShell from '../../components/BoardShell';
+import BoardInfo from '../../components/BoardInfo';
 import { useIndicadoresFilters } from '../../contexts/IndicadoresFiltersContext';
 import { IndicadoresFilterBar } from '../../components/IndicadoresFilterBar';
 
@@ -165,10 +166,22 @@ const CentrosSinMenoresBoard: React.FC = () => {
         </div>
       </div>
 
-      {/* Filter Bar */}
+      {/* Filter Bar + Info */}
       <div className="flex items-center justify-between gap-4">
         <div className="flex-1">
           <IndicadoresFilterBar showYear showProvince showMunicipio />
+        </div>
+        <div className="flex-shrink-0">
+          <BoardInfo
+            title="Centros sin Cobertura de Menores"
+            sections={[
+              { heading: '¿Qué mide?', content: 'Identifica los centros de formación que no tienen participantes en el rango de edad objetivo del programa (14-17 años).' },
+              { heading: 'Lógica: Edad Actual', content: 'Usa la edad actual del participante (p.edad). Muestra los centros sin participantes menores de edad en el momento actual. Es la métrica principal del tablero.' },
+              { heading: 'Lógica: Edad al Registro', content: 'Usa la edad que tenía el participante al momento de inscribirse (p.edadRegistro). Muestra centros que nunca registraron un menor, incluso si ese menor hoy ya es mayor. Se muestra en la tabla derecha para comparación.' },
+              { heading: 'Fórmula', content: 'Centro sin cobertura = centro donde COUNT(participantes 14-17) = 0 sobre el total de participantes del centro.' },
+              { heading: 'Cómo leerlo', content: 'La tabla izquierda (Edad Actual) te dice qué centros hoy no atienden menores. La tabla derecha (Edad Registro) te dice qué centros nunca atendieron menores. La diferencia entre ambas revela centros donde los menores se inscribieron pero ya crecieron.' },
+            ]}
+          />
         </div>
       </div>
 

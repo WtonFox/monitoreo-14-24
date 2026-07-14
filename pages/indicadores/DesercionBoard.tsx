@@ -5,6 +5,7 @@ import {
 } from 'recharts';
 import { TrendingDown, Building2, Users, AlertTriangle, MapPin, Grid3X3, List } from 'lucide-react';
 import BoardShell from '../../components/BoardShell';
+import BoardInfo from '../../components/BoardInfo';
 import { tickShort, chartClass, chartH } from '../../utils/indicadores-helpers';
 import { useIndicadoresFilters } from '../../contexts/IndicadoresFiltersContext';
 import { IndicadoresFilterBar } from '../../components/IndicadoresFilterBar';
@@ -169,12 +170,22 @@ const DesercionBoard: React.FC = () => {
         </div>
       </div>
 
-      {/* ── Filters + View Toggles ── */}
+      {/* ── Filters + View Toggles + Info ── */}
       <div className="flex items-center justify-between gap-4">
         <div className="flex-1">
           <IndicadoresFilterBar showYear showProvince showMunicipio />
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
+          <BoardInfo
+            title="Tablero de Deserción"
+            sections={[
+              { heading: '¿Qué mide?', content: 'Identifica los centros con mayor tasa de deserción, calculada como el porcentaje de participantes que abandonaron el programa respecto al total de participantes de cada centro.' },
+              { heading: 'Fórmula', content: 'Tasa de deserción = (Desertores del centro / Total participantes del centro) × 100' },
+              { heading: '¿Quiénes cuentan como desertores?', content: 'Se considera desertor a todo participante cuyo estado sea:\n• Retirado\n• Desertor\n• Baja\n• Cancelado\n• Inactivo\n• No admitido\n• Abandonó\n\nLa comparación es insensible a mayúsculas ("Retirado", "retirado" y "RETIRADO" cuentan igual).' },
+              { heading: 'Cómo leerlo', content: 'Un centro con tasa alta indica que proporcionalmente más participantes abandonaron. Útil para identificar centros que necesitan intervención en retención.' },
+              { heading: 'Filtros', content: 'Los filtros globales (año, provincia, municipio) aplican sobre todos los datos. El toggle General/Por provincia permite segmentar el ranking.' },
+            ]}
+          />
           <div className="flex bg-gray-100 rounded-lg p-1">
             <button
               onClick={() => { setViewMode('general'); setLocalProvince('todos'); }}

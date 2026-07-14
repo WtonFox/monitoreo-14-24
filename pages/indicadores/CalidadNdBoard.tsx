@@ -6,6 +6,7 @@ import {
 } from 'recharts';
 import { FileWarning, AlertTriangle, BarChart3, Table as TableIcon, Grid3X3, List, Circle, CheckCircle2 } from 'lucide-react';
 import BoardShell from '../../components/BoardShell';
+import BoardInfo from '../../components/BoardInfo';
 import { tickShort, chartClass } from '../../utils/indicadores-helpers';
 import { useIndicadoresFilters } from '../../contexts/IndicadoresFiltersContext';
 import { IndicadoresFilterBar } from '../../components/IndicadoresFilterBar';
@@ -228,12 +229,23 @@ const CalidadNdBoard: React.FC = () => {
         </div>
       </div>
 
-      {/* Filter Bar + View Toggles */}
+      {/* Filter Bar + View Toggles + Info */}
       <div className="flex items-center justify-between gap-4">
         <div className="flex-1">
           <IndicadoresFilterBar showYear showProvince showMunicipio />
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
+          <BoardInfo
+            title="Calidad del Dato (ND)"
+            sections={[
+              { heading: '¿Qué mide?', content: 'Evalúa la calidad de los datos registrados calculando el porcentaje de valores "No Disponible" (ND) en los campos más importantes del formulario de cada participante.' },
+              { heading: '¿Qué se considera ND?', content: 'Un campo se marca como ND si su valor es:\n• null / undefined\n• Vacío ("")\n• "N/A"\n• "N/D"\n• "No Disponible" (case-insensitive)\n\nCualquier otro valor (incluyendo "Ninguna") se considera como un dato válido.' },
+              { heading: 'Fórmula', content: '% ND global = (Total celdas ND / Total celdas analizadas) × 100\n\nTotal celdas = Cantidad de registros × 11 campos analizados\n\n% ND por campo = (Registros con ND en ese campo / Total registros) × 100' },
+              { heading: 'Campos analizados', content: '11 campos: Teléfonos, Tel. Responsable, Cédula Tutor, Nombre Tutor, Alergias, Discapacidades, Enfermedades, Programas Sociales, Nivel de Estudio, Estado Civil, Dirección.' },
+              { heading: 'Cómo leerlo', content: 'Los campos con mayor % ND son los que tienen peor calidad de dato. El código de colores del gráfico indica gravedad: rojo >50%, ámbar >30%, amarillo >15%, verde ≤15%.' },
+              { heading: 'Vista por provincia', content: 'Cambia a "Por Provincia" para ver el desglose de % ND de cada campo por provincia. Útil para detectar patrones geográficos en la calidad del dato.' },
+            ]}
+          />
           <div className="flex bg-gray-100 rounded-lg p-1">
             <button
               onClick={() => setViewMode('general')}

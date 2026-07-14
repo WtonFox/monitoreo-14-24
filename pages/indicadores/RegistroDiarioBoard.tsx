@@ -6,6 +6,7 @@ import {
 } from 'recharts';
 import { CalendarDays, TrendingUp, Calendar, Clock, Building2, Grid3X3, List } from 'lucide-react';
 import BoardShell from '../../components/BoardShell';
+import BoardInfo from '../../components/BoardInfo';
 import { chartClass, chartH } from '../../utils/indicadores-helpers';
 import { useIndicadoresFilters } from '../../contexts/IndicadoresFiltersContext';
 import { IndicadoresFilterBar } from '../../components/IndicadoresFilterBar';
@@ -298,12 +299,23 @@ const RegistroDiarioBoard: React.FC = () => {
         </div>
       </div>
 
-      {/* ── Filter Bar + Local Province Filter ── */}
+      {/* ── Filter Bar + Local Province Filter + Info ── */}
       <div className="flex items-center justify-between gap-4">
         <div className="flex-1">
           <IndicadoresFilterBar showYear showProvince showMunicipio />
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
+          <BoardInfo
+            title="Registro Diario de Fichas"
+            sections={[
+              { heading: '¿Qué mide?', content: 'Monitorea el registro diario de participantes en el programa. Muestra cuántas fichas se registran por día, su evolución en el tiempo y qué centros registran más.' },
+              { heading: 'KPIs principales', content: '• Fichas Hoy: registros del día actual\n• Esta Semana: registros de lunes a domingo\n• Este Mes: registros del mes en curso\n• Promedio Diario (30d): media móvil de los últimos 30 días' },
+              { heading: 'Timeline', content: 'El gráfico principal muestra barras diarias de los últimos 30 días con una línea de media móvil de 7 días (promedio semanal) para suavizar la tendencia.' },
+              { heading: 'Día de la Semana', content: 'El gráfico de distribución semanal permite identificar patrones: ¿se registran más los lunes? ¿los fines de semana hay menos actividad?' },
+              { heading: 'Ranking de Centros', content: 'Los centros se ordenan por cantidad total de fichas registradas. El Top 5 también tiene representación visual.' },
+              { heading: 'Filtros', content: 'El filtro local de provincia se suma a los filtros globales. Permite segmentar el análisis por zona geográfica.' },
+            ]}
+          />
           <label className="text-sm text-gray-500 font-medium">Provincia:</label>
           <select
             value={localProvincia}
