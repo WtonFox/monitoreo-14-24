@@ -42,16 +42,10 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ data, totalItems }) => {
   const enfermos = withEnfermedadesData.filter(p => p.enfermedades !== 'Ninguna');
   const enfermosCount = enfermos.length;
 
-  // 4. Programas Sociales — más común entre quienes tienen dato
-  const programasCounts: Record<string, number> = {};
-  data.forEach(p => {
-    if (p.programasSociales && p.programasSociales !== 'N/A' && p.programasSociales !== 'Ninguna') {
-      programasCounts[p.programasSociales] = (programasCounts[p.programasSociales] || 0) + 1;
-    }
-  });
-  const topPrograma = Object.keys(programasCounts).length > 0
-    ? Object.keys(programasCounts).sort((a, b) => programasCounts[b] - programasCounts[a])[0]
-    : 'N/A';
+  // 4. Programa Social — estudiantes con algún programa registrado
+  const withPrograma = data.filter(p =>
+    p.programasSociales !== null && p.programasSociales !== 'N/A' && p.programasSociales !== 'N/D' && p.programasSociales !== 'Ninguna'
+  ).length;
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-6">
@@ -141,8 +135,8 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ data, totalItems }) => {
           <Award size={24} />
         </div>
         <div>
-          <p className="text-sm text-gray-500 font-medium">Programa Social Común</p>
-          <h3 className="text-2xl font-bold text-gray-800">{topPrograma}</h3>
+          <p className="text-sm text-gray-500 font-medium">En Programa Social</p>
+          <h3 className="text-2xl font-bold text-gray-800">{formatNumber(withPrograma)}</h3>
         </div>
       </div>
 
