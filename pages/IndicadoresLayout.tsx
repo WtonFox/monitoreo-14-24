@@ -86,7 +86,7 @@ const IndicadoresLayout: React.FC = () => {
 
           {/* Active More Tab pill — reactive to route changes via useLocation */}
           {(() => {
-            const currentPath = location.hash.replace('#', '').split('?')[0];
+            const currentPath = location.pathname;
             const activeTab = MORE_TABS.find(t => t.to === currentPath);
             if (!activeTab) return null;
             const Icon = activeTab.icon;
@@ -103,7 +103,7 @@ const IndicadoresLayout: React.FC = () => {
             <button
               onClick={() => setShowMore(prev => !prev)}
               className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-                MORE_TABS.some(t => t.to === location.hash.replace('#', '').split('?')[0])
+                MORE_TABS.some(t => t.to === location.pathname)
                   ? 'border-blue-600 text-blue-700'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
