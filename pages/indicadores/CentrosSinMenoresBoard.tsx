@@ -85,13 +85,13 @@ const CentrosSinMenoresBoard: React.FC = () => {
       .map(c => ({ centro: c, provincia: centroProvincia.get(c) ?? null, total: centroTotal.get(c) ?? 0 }))
       .sort((a, b) => b.total - a.total);
 
-    // ── KPIs con la lógica de Registro (la principal del board) ──
+    // ── KPIs con la lógica de Edad Actual (la medición directa) ──
     return {
       totalCentros: allCentros.length,
-      centrosSinMenores: sinMenoresRegistro.length,
-      pctSinCobertura: allCentros.length > 0 ? (sinMenoresRegistro.length / allCentros.length) * 100 : 0,
-      totalMenores: totalMenoresRegistroCount,
-      centrosData: centrosDataRegistroArr,
+      centrosSinMenores: sinMenoresActual.length,
+      pctSinCobertura: allCentros.length > 0 ? (sinMenoresActual.length / allCentros.length) * 100 : 0,
+      totalMenores: totalMenoresActualCount,
+      centrosData: centrosDataActualArr,
       // Datos para la tabla comparativa (lógica actual)
       centrosSinMenoresActual: sinMenoresActual.length,
       centrosDataActual: centrosDataActualArr,
