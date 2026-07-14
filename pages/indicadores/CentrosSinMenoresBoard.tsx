@@ -43,12 +43,14 @@ const CentrosSinMenoresBoard: React.FC = () => {
       }
     }
 
-    // Identify centros that HAVE 14-17yo participants
+    // Identify centros that HAVE registered 14-17yo participants
+    // Usamos edadRegistro (edad al momento del registro) porque la edad actual
+    // puede ser mayor — un participante registrado a los 16 hoy puede tener 20.
     const centrosConMenores = new Set<string>();
     let totalMenoresCount = 0;
 
     for (const p of filteredData) {
-      if (p.centro && p.edad >= 14 && p.edad <= 17) {
+      if (p.centro && p.edadRegistro >= 14 && p.edadRegistro <= 17) {
         centrosConMenores.add(p.centro);
         totalMenoresCount++;
       }
@@ -132,7 +134,7 @@ const CentrosSinMenoresBoard: React.FC = () => {
           </div>
           <div>
             <p className="text-sm text-gray-500 font-medium">
-              Total Participantes 14-17
+              Participantes registrados 14-17
             </p>
             <h3 className="text-2xl font-bold text-gray-800">
               {formatNumber(totalMenores)}
