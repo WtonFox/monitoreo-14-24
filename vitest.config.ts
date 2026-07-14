@@ -36,7 +36,7 @@ export default defineConfig({
             defineProject({
                 test: {
                     name: 'unit',
-                    include: ['utils/**/*.char.test.ts'],
+                    include: ['utils/**/*.spec.ts', 'utils/**/*.char.test.ts'],
                     environment: 'node'
                 }
             }),
