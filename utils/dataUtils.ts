@@ -35,6 +35,29 @@ const getNumericValue = (p: any, key: string): number => {
 };
 
 /**
+ * Deterministic hash (DJB2) for fallback participant IDs.
+ * Same input always produces the same output.
+ */
+function stableHash(input: string): number {
+    let hash = 5381;
+    for (let i = 0; i < input.length; i++) {
+        hash = ((hash << 5) + hash) + input.charCodeAt(i);
+        hash = hash & hash; // Convert to 32-bit integer
+    }
+    return Math.abs(hash);
+}
+
+/**
+ * Checks whether a string value represents a valid ISO date.
+ * Returns true for null/undefined (missing dates are valid — they stay null).
+ */
+function isValidDate(value: string | null | undefined): boolean {
+    if (value === null || value === undefined) return true;
+    const d = new Date(value);
+    return !isNaN(d.getTime());
+}
+
+/**
  * Sanitiza y normaliza un participante desde la respuesta de la API
  * Maneja múltiples convenciones de nombres y datos inválidos
  */
@@ -43,18 +66,18 @@ export const sanitizeParticipant = (p: any, index: number): Participant => {
     if (!p || typeof p !== 'object') {
         console.warn('Registro con estructura inválida:', p);
         return {
-            id: Math.floor(Math.random() * 1000000) + index,
+            id: stableHash(String(index) + ':' + String(p)),
             nombres: 'REGISTRO',
             apellidos: 'DAÑADO',
             cedula: 'N/D',
             edad: 0,
-            fechaNacimiento: new Date().toISOString(),
-            fechaRegistro: new Date().toISOString(),
+            fechaNacimiento: null,
+            fechaRegistro: null,
             fechaInclusion: null,
             tutor: null,
             cedulaTutor: null,
             vulnerabilidades: null,
-            estado: 'DATA_CORRUPTA',
+            estado: 'CRITICALLY_CORRUPT',
             sexo: 'N/D',
             provincia: null,
             municipio: null,
@@ -74,19 +97,27 @@ export const sanitizeParticipant = (p: any, index: number): Participant => {
     }
 
     // Mapeo directo - la API incluye todos los campos necesarios
+    const fechaNacimiento = getValue(p, 'fechaNacimiento') || null;
+    const fechaRegistro = getValue(p, 'fechaRegistro') || null;
+
+    // Detect logical corruption: dates that are present but unparseable
+    const hasCorruptDates =
+        (fechaNacimiento !== null && !isValidDate(fechaNacimiento)) ||
+        (fechaRegistro !== null && !isValidDate(fechaRegistro));
+
     return {
-        id: p.id || p.Id || index,
+        id: p.id || p.Id || stableHash(String(index) + ':' + JSON.stringify(p)),
         nombres: getValue(p, 'nombres') || 'N/A',
         apellidos: getValue(p, 'apellidos') || 'N/A',
         cedula: getValue(p, 'cedula') || 'N/D',
         edad: getNumericValue(p, 'edad'),
-        fechaNacimiento: getValue(p, 'fechaNacimiento') || new Date().toISOString(),
-        fechaRegistro: getValue(p, 'fechaRegistro') || new Date().toISOString(),
+        fechaNacimiento,
+        fechaRegistro,
         fechaInclusion: getValue(p, 'fechaInclusion'),
         tutor: getValue(p, 'tutor'),
         cedulaTutor: getValue(p, 'cedulaTutor'),
         vulnerabilidades: getValue(p, 'vulnerabilidades'),
-        estado: getValue(p, 'estado') || 'Sin Estado',
+        estado: hasCorruptDates ? 'GENERIC_ERROR' : (getValue(p, 'estado') || 'Sin Estado'),
         sexo: getValue(p, 'sexo') || 'N/D',
         provincia: getValue(p, 'provincia') || 'Sin Provincia',
         municipio: getValue(p, 'municipio'),
