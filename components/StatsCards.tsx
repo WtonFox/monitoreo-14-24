@@ -47,6 +47,11 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ data, totalItems }) => {
     p.programasSociales !== null && p.programasSociales !== 'N/A' && p.programasSociales !== 'N/D' && p.programasSociales !== 'Ninguna'
   ).length;
 
+  // 5. Vulnerabilidad — estudiantes con vulnerabilidad registrada
+  const withVulnerabilidad = data.filter(p =>
+    p.vulnerabilidades !== null && p.vulnerabilidades !== 'N/A' && p.vulnerabilidades !== 'N/D' && p.vulnerabilidades !== 'Ninguna'
+  ).length;
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-6">
       <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center">
@@ -137,6 +142,16 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ data, totalItems }) => {
         <div>
           <p className="text-sm text-gray-500 font-medium">En Programa Social</p>
           <h3 className="text-2xl font-bold text-gray-800">{formatNumber(withPrograma)}</h3>
+        </div>
+      </div>
+
+      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center">
+        <div className="p-3 bg-red-50 rounded-lg text-red-600 mr-4">
+          <AlertCircle size={24} />
+        </div>
+        <div>
+          <p className="text-sm text-gray-500 font-medium">Registrados con Vulnerabilidad</p>
+          <h3 className="text-2xl font-bold text-gray-800">{formatNumber(withVulnerabilidad)}</h3>
         </div>
       </div>
 
