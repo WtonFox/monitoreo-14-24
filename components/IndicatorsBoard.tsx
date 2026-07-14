@@ -117,6 +117,13 @@ interface IndicatorsBoardProps {
 // Single indicator tile
 // ---------------------------------------------------------------------------
 
+const handleKeyDown = (e: React.KeyboardEvent, action: () => void) => {
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault();
+    action();
+  }
+};
+
 const IndicatorTile: React.FC<{
   indicator: Indicator;
   styles: (typeof CATEGORY_STYLES)[IndicatorCategory];
@@ -128,6 +135,10 @@ const IndicatorTile: React.FC<{
   return (
     <div
       onClick={onClick}
+      onKeyDown={(e) => handleKeyDown(e, onClick)}
+      tabIndex={0}
+      role="button"
+      aria-label={indicator.name}
       className={`
         relative flex bg-white rounded-xl shadow-sm border cursor-pointer
         transition-all hover:shadow-md hover:-translate-y-0.5 active:scale-[0.99]
