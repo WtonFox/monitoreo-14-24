@@ -5,6 +5,15 @@ import { ColumnSelector, ColumnConfig } from './ColumnSelector';
 import { formatNumber } from '../utils/formatters';
 import * as XLSX from 'xlsx';
 
+interface ExportProgressDisplay {
+  current: number;
+  total: number;
+  errors: number;
+  warning?: string;
+  failedPages?: number[];
+  partialFailure?: boolean;
+}
+
 interface DataTableProps {
   data: Participant[];
   currentPage: number;
@@ -13,7 +22,7 @@ interface DataTableProps {
   pageSize: number;
   loading: boolean;
   isExporting: boolean;
-  exportProgress?: { current: number; total: number; errors: number };
+  exportProgress?: ExportProgressDisplay;
   onPageChange: (page: number) => void;
   onPageSizeChange: (size: number) => void;
   onExport: (format: 'csv' | 'json') => void;
@@ -341,8 +350,16 @@ export const DataTable: React.FC<DataTableProps> = ({
               <span>Lote {exportProgress.current} de {exportProgress.total}</span>
             </div>
             {exportProgress.errors > 0 && (
-              <div className="mb-4 text-xs bg-yellow-50 text-yellow-700 p-2 rounded border border-yellow-200 flex items-center gap-2">
-                <span className="font-bold">{exportProgress.errors}</span> lotes omitidos por error en API (Data Nula).
+              <div className="mb-4 text-xs bg-yellow-50 text-yellow-700 p-2 rounded border border-yellow-200">
+                <div className="flex items-center gap-2">
+                  <span className="font-bold">{exportProgress.errors}</span> lote(s) omitido(s) por error en API (Data Nula).
+                </div>
+                {exportProgress.warning && (
+                  <div className="mt-1 text-yellow-800">{exportProgress.warning}</div>
+                )}
+                {exportProgress.partialFailure && (
+                  <div className="mt-1 font-semibold">La exportación generada contiene datos incompletos.</div>
+                )}
               </div>
             )}
             <button

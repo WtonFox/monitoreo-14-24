@@ -4,6 +4,13 @@ import { Participant } from '../types';
 import { fetchParticipants } from './api';
 import { sanitizeParticipant } from '../utils/dataUtils';
 
+export interface ExportReceipt {
+  totalRecordsExpected: number;
+  totalRecordsDownloaded: number;
+  failedPages: number[];
+  partialFailure: boolean;
+}
+
 export interface ExportProgress {
   currentPage: number;
   totalPages: number;
@@ -12,6 +19,11 @@ export interface ExportProgress {
   percentage: number;
   isComplete: boolean;
   error?: string;
+  failedPages?: number[];
+  totalRecordsExpected?: number;
+  totalRecordsDownloaded?: number;
+  partialFailure?: boolean;
+  warning?: string;
 }
 
 export type ExportFormat = 'csv' | 'xlsx' | 'json';
@@ -22,12 +34,13 @@ export type ExportFormat = 'csv' | 'xlsx' | 'json';
 async function fetchAllData(
   onProgress?: (progress: ExportProgress) => void,
   signal?: AbortSignal
-): Promise<Participant[]> {
+): Promise<{ data: Participant[]; receipt: ExportReceipt }> {
   const allData: Participant[] = [];
   const BATCH_SIZE = 1000;
   let currentPage = 1;
   let hasMore = true;
   let totalRecords = 0;
+  const failedPages: number[] = [];
 
   // Primera petición para obtener el total
   const firstBatch = await fetchParticipants(1, BATCH_SIZE);
@@ -86,22 +99,35 @@ async function fetchAllData(
 
     } catch (error) {
       console.error(`Error fetching page ${currentPage}:`, error);
-      // Continuar con la siguiente página en caso de error
+      failedPages.push(currentPage);
       currentPage++;
     }
   }
 
-  // Progreso completado
+  const partialFailure = failedPages.length > 0;
+  const totalRecordsDownloaded = allData.length;
+
+  // Progreso completado con receipt
   onProgress?.({
     currentPage: totalPages,
     totalPages,
-    recordsProcessed: allData.length,
-    totalRecords: allData.length,
-    percentage: 100,
-    isComplete: true
+    recordsProcessed: totalRecordsDownloaded,
+    totalRecords,
+    percentage: partialFailure ? Math.round((totalRecordsDownloaded / totalRecords) * 100) : 100,
+    isComplete: true,
+    failedPages,
+    totalRecordsExpected: totalRecords,
+    totalRecordsDownloaded,
+    partialFailure,
+    warning: partialFailure
+      ? `Exportación incompleta: se esperaban ${totalRecords} registros, se descargaron ${totalRecordsDownloaded}. Páginas con error: ${failedPages.join(', ')}.`
+      : undefined
   });
 
-  return allData;
+  return {
+    data: allData,
+    receipt: { totalRecordsExpected: totalRecords, totalRecordsDownloaded, failedPages, partialFailure }
+  };
 }
 
 /**
@@ -113,7 +139,7 @@ export async function exportToCSV(
 ): Promise<void> {
   try {
     // Descargar todos los datos
-    const data = await fetchAllData(onProgress, signal);
+    const { data, receipt } = await fetchAllData(onProgress, signal);
 
     // Sanitizar cada registro antes de exportar
     const csvData = data.map((item, idx) => {
@@ -155,8 +181,15 @@ export async function exportToCSV(
       header: true
     });
 
+    // Agregar advertencia si la exportación fue parcial
+    let content = csv;
+    if (receipt.partialFailure) {
+      const warn = `# ADVERTENCIA: Exportación incompleta. Se esperaban ${receipt.totalRecordsExpected} registros, se descargaron ${receipt.totalRecordsDownloaded}. Páginas con error: ${receipt.failedPages.join(', ')}.\n`;
+      content = warn + content;
+    }
+
     // Agregar BOM para Excel UTF-8
-    const csvWithBOM = '\uFEFF' + csv;
+    const csvWithBOM = '\uFEFF' + content;
 
     // Crear blob y descargar
     const blob = new Blob([csvWithBOM], { type: 'text/csv;charset=utf-8;' });
@@ -177,7 +210,7 @@ export async function exportToExcel(
 ): Promise<void> {
   try {
     // Descargar todos los datos
-    const data = await fetchAllData(onProgress, signal);
+    const { data, receipt } = await fetchAllData(onProgress, signal);
 
     // Sanitizar cada registro antes de exportar
     const excelData = data.map((item, idx) => {
@@ -215,7 +248,22 @@ export async function exportToExcel(
 
     // Crear workbook
     const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.json_to_sheet(excelData);
+
+    // Crear hoja con o sin advertencia de exportación parcial
+    let ws: XLSX.WorkSheet;
+    if (receipt.partialFailure) {
+      const headers = Object.keys(excelData[0]);
+      const warnText = `ADVERTENCIA: Exportación incompleta. Se esperaban ${receipt.totalRecordsExpected} registros, se descargaron ${receipt.totalRecordsDownloaded}. Páginas con error: ${receipt.failedPages.join(', ')}.`;
+      const aoa = [
+        [warnText],
+        headers,
+        ...excelData.map(row => headers.map(h => (row as any)[h]))
+      ];
+      ws = XLSX.utils.aoa_to_sheet(aoa);
+      ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: headers.length - 1 } }];
+    } else {
+      ws = XLSX.utils.json_to_sheet(excelData);
+    }
 
     // Ajustar ancho de columnas
     const colWidths = [
@@ -275,7 +323,7 @@ export async function exportToJSON(
 ): Promise<void> {
   try {
     // Descargar todos los datos
-    const data = await fetchAllData(onProgress, signal);
+    const { data, receipt } = await fetchAllData(onProgress, signal);
 
     // Sanitizar cada registro antes de exportar
     const sanitizedData = data.map((item, idx) => sanitizeParticipant(item, idx));
@@ -285,7 +333,14 @@ export async function exportToJSON(
       metadata: {
         exportDate: new Date().toISOString(),
         totalRecords: sanitizedData.length,
-        version: '1.0'
+        version: '1.0',
+        ...(receipt.partialFailure ? {
+          warning: `Exportación incompleta: se esperaban ${receipt.totalRecordsExpected} registros, se descargaron ${receipt.totalRecordsDownloaded}. Páginas con error: ${receipt.failedPages.join(', ')}.`,
+          totalRecordsExpected: receipt.totalRecordsExpected,
+          totalRecordsDownloaded: receipt.totalRecordsDownloaded,
+          failedPages: receipt.failedPages,
+          partialFailure: true
+        } : {})
       },
       participants: sanitizedData
     };
