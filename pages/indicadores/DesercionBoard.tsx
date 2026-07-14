@@ -28,7 +28,12 @@ interface ComputedMetrics {
   topCenters: CentroDesercion[];
 }
 
-const DESERTION_STATUSES = ['Retirado', 'Desertor', 'Baja'];
+/** Estados que indican deserción (case-insensitive) */
+const isDesertionStatus = (estado: string | null | undefined): boolean => {
+  if (!estado) return false;
+  const s = estado.trim().toLowerCase();
+  return ['retirado', 'desertor', 'baja', 'cancelado', 'inactivo', 'no admitido', 'abandonó', 'abandono'].includes(s);
+};
 
 const DesercionBoard: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('general');
@@ -58,7 +63,7 @@ const DesercionBoard: React.FC = () => {
       if (!p.centro) continue;
       const entry = centroMap.get(p.centro) ?? { total: 0, desertores: 0 };
       entry.total++;
-      if (p.estado && DESERTION_STATUSES.includes(p.estado)) {
+      if (isDesertionStatus(p.estado)) {
         entry.desertores++;
       }
       centroMap.set(p.centro, entry);
