@@ -107,9 +107,10 @@ export const useMapStats = (
                 return pLoc === loc;
             });
 
-            // Average age
-            const totalAge = locData.reduce((sum, p) => sum + (p.edad || 0), 0);
-            stats[loc].ageRanges.avg = locData.length > 0 ? Math.round(totalAge / locData.length) : 0;
+            // Average age — only valid ages (> 0) in denominator
+            const validAges = locData.filter(p => p.edad > 0);
+            const totalAge = validAges.reduce((sum, p) => sum + p.edad, 0);
+            stats[loc].ageRanges.avg = validAges.length > 0 ? Math.round(totalAge / validAges.length) : 0;
 
             // Top centers
             const centerCounts: Record<string, number> = {};

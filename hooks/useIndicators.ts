@@ -148,8 +148,9 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
     const totalAgeReg = data.reduce((sum, p) => sum + (p.edadRegistro || 0), 0);
     const totalAgeNow = data.reduce((sum, p) => sum + (p.edad || 0), 0);
     const countAgeReg = data.filter(p => p.edadRegistro > 0).length;
+    const countAgeNow = data.filter(p => p.edad > 0).length;
     const avgAgeReg = countAgeReg > 0 ? (totalAgeReg / countAgeReg).toFixed(1) : 'N/A';
-    const avgAgeNow = total > 0 ? (totalAgeNow / total).toFixed(1) : 'N/A';
+    const avgAgeNow = countAgeNow > 0 ? (totalAgeNow / countAgeNow).toFixed(1) : 'N/A';
 
     const age14_17 = count(data, p => p.edad >= 14 && p.edad <= 17);
     const age18_24 = count(data, p => p.edad >= 18 && p.edad <= 24);
