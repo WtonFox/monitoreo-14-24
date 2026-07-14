@@ -83,6 +83,20 @@ const IndicadoresLayout: React.FC = () => {
             <div className="w-px h-6 bg-gray-200 mx-1 flex-shrink-0" />
           </div>
 
+          {/* Active More Tab pill — shows between divider and Más indicadores when a MORE_TAB is active */}
+          {(() => {
+            const currentPath = window.location.hash.replace('#', '').split('?')[0];
+            const activeTab = MORE_TABS.find(t => t.to === currentPath);
+            if (!activeTab) return null;
+            const Icon = activeTab.icon;
+            return (
+              <div className="flex items-center gap-1.5 px-3 py-3 border-b-2 border-blue-600 text-blue-700 text-sm font-medium flex-shrink-0 whitespace-nowrap">
+                <Icon size={16} />
+                <span>{activeTab.label}</span>
+              </div>
+            );
+          })()}
+
           {/* More dropdown trigger — OUTSIDE overflow container */}
           <div className="relative flex-shrink-0">
             <button
@@ -99,20 +113,6 @@ const IndicadoresLayout: React.FC = () => {
                 {MORE_TABS.length}
               </span>
             </button>
-
-            {/* Active More Tab label — visible only when a MORE_TAB is selected */}
-            {(() => {
-              const currentPath = window.location.hash.replace('#', '').split('?')[0];
-              const activeTab = MORE_TABS.find(t => t.to === currentPath);
-              if (!activeTab) return null;
-              const Icon = activeTab.icon;
-              return (
-                <div className="hidden lg:flex items-center gap-1.5 mt-1 text-[11px] font-medium text-blue-600 justify-end">
-                  <Icon size={12} />
-                  <span>{activeTab.label}</span>
-                </div>
-              );
-            })()}
 
             {showMore && (
               <>
