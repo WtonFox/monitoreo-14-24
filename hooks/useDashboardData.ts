@@ -159,10 +159,19 @@ export const useDashboardData = (): UseDashboardDataResult => {
                 // Si forzamos reinicio, limpiamos el set de IDs
                 if (forceStartPage === 1) {
                     existingIdsRef.current.clear();
+                    await saveMetadata('syncInfo', {
+                        lastSync: Date.now(),
+                        totalRecords: 0,
+                        duplicated: 0,
+                        corrupted: 0,
+                        lastSyncedPage: 1,
+                        lastSyncedRecordCount: 0,
+                        syncTimestamp: Date.now()
+                    });
                 }
             } else {
-                const alreadyLoadedCount = dashboardData.length;
-                currentPage = Math.floor(alreadyLoadedCount / BATCH_SIZE) + 1;
+                const meta = await getMetadata('syncInfo');
+                currentPage = meta?.lastSyncedPage || 1;
 
                 // Reconstruir Set si es necesario (solo al inicio de una reanudación)
                 if (existingIdsRef.current.size === 0 && dashboardData.length > 0) {
@@ -249,14 +258,6 @@ export const useDashboardData = (): UseDashboardDataResult => {
                         saveParticipants(cleanBatch).catch(err =>
                             console.error('Failed to save batch to IndexedDB:', err)
                         );
-
-                        // Guardar progreso en metadata
-                        saveMetadata('syncInfo', {
-                            lastSync: Date.now(),
-                            totalRecords: result.totalItems || totalRecordsInApi,
-                            duplicated: statsRef.current.duplicated,
-                            corrupted: statsRef.current.corrupted
-                        }).catch(console.error);
                     }
 
                     // Actualizar contador local
@@ -275,14 +276,19 @@ export const useDashboardData = (): UseDashboardDataResult => {
                     // Update UI
                     setSyncStats({ ...statsRef.current });
 
-                    // Persistir metadata actualizada
+                    // Persistir metadata actualizada con checkpoint (WU4)
                     if (cleanBatch.length > 0) {
-                        saveMetadata('syncInfo', {
+                        await saveMetadata('syncInfo', {
                             lastSync: Date.now(),
                             totalRecords: result.totalItems || totalRecordsInApi,
                             duplicated: statsRef.current.duplicated,
-                            corrupted: statsRef.current.corrupted
-                        }).catch(console.error);
+                            corrupted: statsRef.current.corrupted,
+                            lastSyncedPage: currentPage,
+                            lastSyncedRecordCount: existingIdsRef.current.size,
+                            syncTimestamp: Date.now()
+                        }).catch(err => {
+                            console.error('Failed to save metadata:', err);
+                        });
                     }
 
                     if (items.length < BATCH_SIZE) {
@@ -351,7 +357,7 @@ export const useDashboardData = (): UseDashboardDataResult => {
         }
     }, [customToken, totalRecordsInApi, startSmartSync]);
 
-    const handleManualRefresh = useCallback(() => {
+    const handleManualRefresh = useCallback(async () => {
         clearApiCache();
         stopSyncRef.current = true;
         isPausedRef.current = false;
@@ -365,8 +371,23 @@ export const useDashboardData = (): UseDashboardDataResult => {
         setTotalRecordsInApi(0);
         existingIdsRef.current.clear(); // Limpiar cache de IDs
 
-        // Limpiar BD
-        clearAllData().catch(console.error);
+        // Reset checkpoint before clearing
+        await saveMetadata('syncInfo', {
+            lastSync: Date.now(),
+            totalRecords: 0,
+            duplicated: 0,
+            corrupted: 0,
+            lastSyncedPage: 1,
+            lastSyncedRecordCount: 0,
+            syncTimestamp: Date.now()
+        }).catch(err => {
+            console.error('Failed to reset checkpoint:', err);
+        });
+
+        // Clear DB before restart
+        clearAllData().catch(err => {
+            console.error('Failed to clear database:', err);
+        });
 
         setTimeout(() => {
             isSyncingRef.current = false;
