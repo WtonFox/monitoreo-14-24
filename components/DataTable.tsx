@@ -120,6 +120,11 @@ export const DataTable: React.FC<DataTableProps> = ({
     saveColumns(DEFAULT_COLUMNS);
   };
 
+  const sanitizeVal = (v: unknown): unknown => {
+    if (typeof v !== 'string' || v.length === 0) return v;
+    return '=+-@'.includes(v[0]) ? `'${v}` : v;
+  };
+
   const generateLocalCSV = (items: Participant[]) => {
     const headers = [
       'ID', 'Nombres', 'Apellidos', 'Cédula', 'Edad', 'Edad Registro',
@@ -133,31 +138,31 @@ export const DataTable: React.FC<DataTableProps> = ({
 
     const rows = items.map(item => [
       item.id,
-      `"${item.nombres || ''}"`,
-      `"${item.apellidos || ''}"`,
-      `"${item.cedula || ''}"`,
+      `"${sanitizeVal(item.nombres || '')}"`,
+      `"${sanitizeVal(item.apellidos || '')}"`,
+      `"${sanitizeVal(item.cedula || '')}"`,
       item.edad,
       item.edadRegistro || '',
       item.fechaNacimiento,
       item.fechaRegistro,
       item.fechaInclusion || '',
-      `"${item.tutor || ''}"`,
-      `"${item.cedulaTutor || ''}"`,
-      `"${item.telefonosResponsable || ''}"`,
-      `"${item.vulnerabilidades || ''}"`,
-      `"${item.alergias || ''}"`,
-      `"${item.discapacidades || ''}"`,
-      `"${item.enfermedades || ''}"`,
-      `"${item.programasSociales || ''}"`,
+      `"${sanitizeVal(item.tutor || '')}"`,
+      `"${sanitizeVal(item.cedulaTutor || '')}"`,
+      `"${sanitizeVal(item.telefonosResponsable || '')}"`,
+      `"${sanitizeVal(item.vulnerabilidades || '')}"`,
+      `"${sanitizeVal(item.alergias || '')}"`,
+      `"${sanitizeVal(item.discapacidades || '')}"`,
+      `"${sanitizeVal(item.enfermedades || '')}"`,
+      `"${sanitizeVal(item.programasSociales || '')}"`,
       item.estado,
       item.sexo,
-      `"${item.estadoCivil || ''}"`,
-      `"${item.nivelEstudio || ''}"`,
-      `"${item.provincia || ''}"`,
-      `"${item.municipio || ''}"`,
-      `"${item.centro || ''}"`,
-      `"${item.direccion || ''}"`,
-      `"${item.rutaFormativa || ''}"`
+      `"${sanitizeVal(item.estadoCivil || '')}"`,
+      `"${sanitizeVal(item.nivelEstudio || '')}"`,
+      `"${sanitizeVal(item.provincia || '')}"`,
+      `"${sanitizeVal(item.municipio || '')}"`,
+      `"${sanitizeVal(item.centro || '')}"`,
+      `"${sanitizeVal(item.direccion || '')}"`,
+      `"${sanitizeVal(item.rutaFormativa || '')}"`
     ].join(';'));
 
     return '\uFEFF' + [headers.join(';'), ...rows].join('\n');
@@ -197,34 +202,36 @@ export const DataTable: React.FC<DataTableProps> = ({
     const exportData = allFilteredData || data;
     if (exportData.length === 0) return;
 
-    const excelData = exportData.map(item => ({
+    const excelRow = (item: Participant) => ({
       'ID': item.id,
-      'Nombres': item.nombres || '',
-      'Apellidos': item.apellidos || '',
-      'Cédula': item.cedula || '',
+      'Nombres': sanitizeVal(item.nombres || ''),
+      'Apellidos': sanitizeVal(item.apellidos || ''),
+      'Cédula': sanitizeVal(item.cedula || ''),
       'Edad': item.edad,
       'Edad Registro': item.edadRegistro || '',
       'Fecha Nacimiento': item.fechaNacimiento || '',
       'Fecha Registro': item.fechaRegistro || '',
       'Fecha Inclusión': item.fechaInclusion || '',
-      'Tutor': item.tutor || '',
-      'Cédula Tutor': item.cedulaTutor || '',
-      'Teléfono Responsable': item.telefonosResponsable || '',
-      'Vulnerabilidades': item.vulnerabilidades || '',
-      'Alergias': item.alergias || '',
-      'Discapacidades': item.discapacidades || '',
-      'Enfermedades': item.enfermedades || '',
-      'Programas Sociales': item.programasSociales || '',
-      'Estado': item.estado || '',
-      'Sexo': item.sexo || '',
-      'Estado Civil': item.estadoCivil || '',
-      'Nivel Estudio': item.nivelEstudio || '',
-      'Provincia': item.provincia || '',
-      'Municipio': item.municipio || '',
-      'Centro': item.centro || '',
-      'Dirección': item.direccion || '',
-      'Ruta Formativa': item.rutaFormativa || '',
-    }));
+      'Tutor': sanitizeVal(item.tutor || ''),
+      'Cédula Tutor': sanitizeVal(item.cedulaTutor || ''),
+      'Teléfono Responsable': sanitizeVal(item.telefonosResponsable || ''),
+      'Vulnerabilidades': sanitizeVal(item.vulnerabilidades || ''),
+      'Alergias': sanitizeVal(item.alergias || ''),
+      'Discapacidades': sanitizeVal(item.discapacidades || ''),
+      'Enfermedades': sanitizeVal(item.enfermedades || ''),
+      'Programas Sociales': sanitizeVal(item.programasSociales || ''),
+      'Estado': sanitizeVal(item.estado || ''),
+      'Sexo': sanitizeVal(item.sexo || ''),
+      'Estado Civil': sanitizeVal(item.estadoCivil || ''),
+      'Nivel Estudio': sanitizeVal(item.nivelEstudio || ''),
+      'Provincia': sanitizeVal(item.provincia || ''),
+      'Municipio': sanitizeVal(item.municipio || ''),
+      'Centro': sanitizeVal(item.centro || ''),
+      'Dirección': sanitizeVal(item.direccion || ''),
+      'Ruta Formativa': sanitizeVal(item.rutaFormativa || ''),
+    });
+
+    const excelData = exportData.map(excelRow);
 
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.json_to_sheet(excelData);

@@ -11,6 +11,13 @@ export interface ExportReceipt {
   partialFailure: boolean;
 }
 
+const FORMULA_DANGER_CHARS = new Set(['=', '+', '-', '@']);
+
+export function sanitizeFormula(value: unknown): unknown {
+  if (typeof value !== 'string' || value.length === 0) return value;
+  return FORMULA_DANGER_CHARS.has(value[0]) ? `'${value}` : value;
+}
+
 export interface ExportProgress {
   currentPage: number;
   totalPages: number;
@@ -175,8 +182,17 @@ export async function exportToCSV(
       };
     });
 
+    // Neutralizar fórmula injection en valores de texto
+    const csvRows = csvData.map(row => {
+      const sanitized: Record<string, unknown> = {};
+      for (const [k, v] of Object.entries(row)) {
+        sanitized[k] = sanitizeFormula(v);
+      }
+      return sanitized;
+    });
+
     // Generar CSV con papaparse
-    const csv = Papa.unparse(csvData, {
+    const csv = Papa.unparse(csvRows, {
       delimiter: ';',
       header: true
     });
@@ -246,23 +262,32 @@ export async function exportToExcel(
       };
     });
 
+    // Neutralizar fórmula injection en valores de texto
+    const excelRows = excelData.map(row => {
+      const sanitized: Record<string, unknown> = {};
+      for (const [k, v] of Object.entries(row)) {
+        sanitized[k] = sanitizeFormula(v);
+      }
+      return sanitized;
+    });
+
     // Crear workbook
     const wb = XLSX.utils.book_new();
 
     // Crear hoja con o sin advertencia de exportación parcial
     let ws: XLSX.WorkSheet;
     if (receipt.partialFailure) {
-      const headers = Object.keys(excelData[0]);
+      const headers = Object.keys(excelRows[0]);
       const warnText = `ADVERTENCIA: Exportación incompleta. Se esperaban ${receipt.totalRecordsExpected} registros, se descargaron ${receipt.totalRecordsDownloaded}. Páginas con error: ${receipt.failedPages.join(', ')}.`;
       const aoa = [
         [warnText],
         headers,
-        ...excelData.map(row => headers.map(h => (row as any)[h]))
+        ...excelRows.map(row => headers.map(h => (row as any)[h]))
       ];
       ws = XLSX.utils.aoa_to_sheet(aoa);
       ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: headers.length - 1 } }];
     } else {
-      ws = XLSX.utils.json_to_sheet(excelData);
+      ws = XLSX.utils.json_to_sheet(excelRows);
     }
 
     // Ajustar ancho de columnas
