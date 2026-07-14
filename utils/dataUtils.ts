@@ -7,19 +7,19 @@ import { Participant } from '../types';
 const getValue = (p: any, key: string): string | null => {
     // 1. Intento exacto (prioridad al esquema)
     if (p[key] !== undefined && p[key] !== null && p[key] !== '') {
-        return String(p[key]).trim();
+        return String(p[key]).trim().replace(/\r/g, '');
     }
 
     // 2. Intento PascalCase (convención .NET común)
     const pascal = key.charAt(0).toUpperCase() + key.slice(1);
     if (p[pascal] !== undefined && p[pascal] !== null && p[pascal] !== '') {
-        return String(p[pascal]).trim();
+        return String(p[pascal]).trim().replace(/\r/g, '');
     }
 
     // 3. Intento camelCase
     const camel = key.charAt(0).toLowerCase() + key.slice(1);
     if (p[camel] !== undefined && p[camel] !== null && p[camel] !== '') {
-        return String(p[camel]).trim();
+        return String(p[camel]).trim().replace(/\r/g, '');
     }
 
     return null;
