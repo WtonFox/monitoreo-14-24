@@ -66,6 +66,7 @@ export const useDashboardData = (): UseDashboardDataResult => {
     const isSyncingRef = useRef<boolean>(false);
     const existingIdsRef = useRef<Set<number>>(new Set());
     const statsRef = useRef<SyncStats>({ loaded: 0, errors: 0, corrupted: 0, duplicated: 0, progress: 0 });
+    const isPausedRef = useRef<boolean>(false);
 
     // Cargar datos desde IndexedDB al iniciar
     useEffect(() => {
@@ -185,7 +186,7 @@ export const useDashboardData = (): UseDashboardDataResult => {
 
             while (hasMoreData && !stopSyncRef.current) {
                 // Manejo de Pausa interactiva
-                while (isPaused) {
+                while (isPausedRef.current) {
                     await new Promise(r => setTimeout(r, 500));
                     if (stopSyncRef.current) break;
                 }
@@ -332,7 +333,7 @@ export const useDashboardData = (): UseDashboardDataResult => {
             setIsSyncing(false);
             isSyncingRef.current = false;
         }
-    }, [isPaused, dashboardData.length, totalRecordsInApi, customToken]);
+    }, [dashboardData.length, totalRecordsInApi, customToken]);
 
     const pollForNewData = useCallback(async () => {
         if (isSyncingRef.current) return;
@@ -353,6 +354,7 @@ export const useDashboardData = (): UseDashboardDataResult => {
     const handleManualRefresh = useCallback(() => {
         clearApiCache();
         stopSyncRef.current = true;
+        isPausedRef.current = false;
 
         setDashboardData([]);
         setCorruptedItems([]);
@@ -374,7 +376,8 @@ export const useDashboardData = (): UseDashboardDataResult => {
     }, [startSmartSync]);
 
     const togglePause = () => {
-        setIsPaused(!isPaused);
+        isPausedRef.current = !isPausedRef.current;
+        setIsPaused(isPausedRef.current);
     };
 
     return {
