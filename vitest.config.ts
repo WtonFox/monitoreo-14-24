@@ -43,7 +43,7 @@ export default defineConfig({
             defineProject({
                 test: {
                     name: 'integration',
-                    include: ['hooks/**/*.char.test.ts'],
+                    include: ['hooks/**/*.char.test.ts', 'hooks/**/*.spec.ts', 'components/**/*.spec.tsx', 'pages/**/*.spec.tsx'],
                     environment: 'jsdom'
                 }
             })
