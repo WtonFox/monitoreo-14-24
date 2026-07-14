@@ -85,22 +85,25 @@ export const ChartsSection: React.FC<ChartsSectionProps> = ({ data, selectedProv
 
 
   const ageData = useMemo(() => {
-    const ranges = {
+    const ranges: Record<string, number> = {
       '14-17': 0,
       '18-20': 0,
       '21-24': 0,
       '25-29': 0,
-      '30+': 0
+      '30+': 0,
+      Unknown: 0,
     };
     data.forEach(p => {
-      const age = p.edad || 0;
-      if (age >= 14 && age <= 17) ranges['14-17']++;
+      const age = p.edad;
+      if (age === null || age === undefined || age <= 0 || age > 120) {
+        ranges['Unknown']++;
+      } else if (age >= 14 && age <= 17) ranges['14-17']++;
       else if (age >= 18 && age <= 20) ranges['18-20']++;
       else if (age >= 21 && age <= 24) ranges['21-24']++;
       else if (age >= 25 && age <= 29) ranges['25-29']++;
       else ranges['30+']++;
     });
-    return Object.keys(ranges).map(key => ({ name: key, Cantidad: ranges[key as keyof typeof ranges] }));
+    return Object.keys(ranges).map(key => ({ name: key, Cantidad: ranges[key] }));
   }, [data]);
 
   const statusData = useMemo(() => {

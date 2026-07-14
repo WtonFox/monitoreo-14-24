@@ -137,9 +137,9 @@ export function useIndicatorBoards(data: Participant[]): BoardData {
       ? ageRegData.reduce((s, p) => s + p.edadRegistro, 0) / ageRegData.length
       : 0;
 
-    const buckets: Record<string, number> = { '14-17': 0, '18-20': 0, '21-24': 0, '25+': 0 };
-    const womenBucket: Record<string, number> = { '14-17': 0, '18-20': 0, '21-24': 0, '25+': 0 };
-    const menBucket: Record<string, number> = { '14-17': 0, '18-20': 0, '21-24': 0, '25+': 0 };
+    const buckets: Record<string, number> = { '14-17': 0, '18-20': 0, '21-24': 0, '25+': 0, Unknown: 0 };
+    const womenBucket: Record<string, number> = { '14-17': 0, '18-20': 0, '21-24': 0, '25+': 0, Unknown: 0 };
+    const menBucket: Record<string, number> = { '14-17': 0, '18-20': 0, '21-24': 0, '25+': 0, Unknown: 0 };
     const maritalCount: Record<string, number> = {};
     const municipioCount: Record<string, number> = {};
     const centroCount: Record<string, number> = {};
@@ -194,15 +194,23 @@ export function useIndicatorBoards(data: Participant[]): BoardData {
     const centroAgeCount: Record<string, number> = {};
 
     for (const p of data) {
-      const age = p.edad || 0;
+      const age = p.edad;
       const esMujer = isWomen(p.sexo);
       const esHombre = isMen(p.sexo);
 
-      // Age buckets
-      let bucketKey = '25+';
-      if (age >= 14 && age <= 17) bucketKey = '14-17';
-      else if (age >= 18 && age <= 20) bucketKey = '18-20';
-      else if (age >= 21 && age <= 24) bucketKey = '21-24';
+      // Age buckets — route 0/null/undefined/outlier to Unknown
+      let bucketKey: string;
+      if (age === null || age === undefined || age <= 0 || age > 120) {
+        bucketKey = 'Unknown';
+      } else if (age >= 14 && age <= 17) {
+        bucketKey = '14-17';
+      } else if (age >= 18 && age <= 20) {
+        bucketKey = '18-20';
+      } else if (age >= 21 && age <= 24) {
+        bucketKey = '21-24';
+      } else {
+        bucketKey = '25+';
+      }
       buckets[bucketKey]++;
       if (esMujer) womenBucket[bucketKey]++;
       if (esHombre) menBucket[bucketKey]++;
@@ -253,8 +261,8 @@ export function useIndicatorBoards(data: Participant[]): BoardData {
         }
       }
 
-      // Minors tracking
-      if (age < 18) minors.push(p.edad);
+      // Minors tracking — exclude 0/null/undefined
+      if (age !== null && age !== undefined && age > 0 && age < 18) minors.push(p.edad);
 
       // Calidad del Dato
       if (hasValue(p.cedula)) qualityCedula++;

@@ -343,7 +343,7 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
 
     /* --- derived values --- */
 
-    const minors = data.filter(p => p.edad < 18);
+    const minors = data.filter(p => p.edad > 0 && p.edad < 18);
     const minorsWithTutor = minors.filter(p => p.tutor && !isEmptyValue(p.tutor));
     const tutorsTotal = data.filter(p => p.tutor && !isEmptyValue(p.tutor));
     const tutorsWithPhone = tutorsTotal.filter(p => p.telefonosResponsable && !isEmptyValue(p.telefonosResponsable));
