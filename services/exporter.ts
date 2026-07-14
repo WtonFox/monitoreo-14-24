@@ -1,7 +1,8 @@
 import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
-import { Participant, PaginationResult } from '../types';
+import { Participant } from '../types';
 import { fetchParticipants } from './api';
+import { sanitizeParticipant } from '../utils/dataUtils';
 
 export interface ExportProgress {
   currentPage: number;
@@ -114,36 +115,39 @@ export async function exportToCSV(
     // Descargar todos los datos
     const data = await fetchAllData(onProgress, signal);
 
-    // Preparar datos para CSV (campos planos)
-    const csvData = data.map(item => ({
-      ID: item.id,
-      'Cédula': item.cedula || '',
-      Nombres: item.nombres || '',
-      Apellidos: item.apellidos || '',
-      Edad: item.edad,
-      'Fecha Nacimiento': item.fechaNacimiento,
-      'Fecha Registro': item.fechaRegistro,
-      'Fecha Inclusión': item.fechaInclusion || '',
-      Tutor: item.tutor || '',
-      'Cédula Tutor': item.cedulaTutor || '',
-      Vulnerabilidades: item.vulnerabilidades || '',
-      Estado: item.estado || '',
-      Sexo: item.sexo || '',
-      Provincia: item.provincia || '',
-      Municipio: item.municipio || '',
-      Centro: item.centro || '',
-      'Dirección': item.direccion || '',
-      'Ruta Formativa': item.rutaFormativa || '',
-      'Teléfonos': item.telefonos || '',
-      'Teléfonos Responsable': item.telefonosResponsable || '',
-      'Edad Registro': item.edadRegistro,
-      'Estado Civil': item.estadoCivil || '',
-      'Nivel Estudio': item.nivelEstudio || '',
-      'Alergias': item.alergias || '',
-      'Discapacidades': item.discapacidades || '',
-      'Enfermedades': item.enfermedades || '',
-      'Programas Sociales': item.programasSociales || ''
-    }));
+    // Sanitizar cada registro antes de exportar
+    const csvData = data.map((item, idx) => {
+      const clean = sanitizeParticipant(item, idx);
+      return {
+        ID: clean.id,
+        'Cédula': clean.cedula || '',
+        Nombres: clean.nombres || '',
+        Apellidos: clean.apellidos || '',
+        Edad: clean.edad,
+        'Fecha Nacimiento': clean.fechaNacimiento || '',
+        'Fecha Registro': clean.fechaRegistro || '',
+        'Fecha Inclusión': clean.fechaInclusion || '',
+        Tutor: clean.tutor || '',
+        'Cédula Tutor': clean.cedulaTutor || '',
+        Vulnerabilidades: clean.vulnerabilidades || '',
+        Estado: clean.estado || '',
+        Sexo: clean.sexo || '',
+        Provincia: clean.provincia || '',
+        Municipio: clean.municipio || '',
+        Centro: clean.centro || '',
+        'Dirección': clean.direccion || '',
+        'Ruta Formativa': clean.rutaFormativa || '',
+        'Teléfonos': clean.telefonos || '',
+        'Teléfonos Responsable': clean.telefonosResponsable || '',
+        'Edad Registro': clean.edadRegistro,
+        'Estado Civil': clean.estadoCivil || '',
+        'Nivel Estudio': clean.nivelEstudio || '',
+        'Alergias': clean.alergias || '',
+        'Discapacidades': clean.discapacidades || '',
+        'Enfermedades': clean.enfermedades || '',
+        'Programas Sociales': clean.programasSociales || ''
+      };
+    });
 
     // Generar CSV con papaparse
     const csv = Papa.unparse(csvData, {
@@ -175,36 +179,39 @@ export async function exportToExcel(
     // Descargar todos los datos
     const data = await fetchAllData(onProgress, signal);
 
-    // Preparar datos para Excel
-    const excelData = data.map(item => ({
-      'ID': item.id,
-      'Cédula': item.cedula || '',
-      'Nombres': item.nombres || '',
-      'Apellidos': item.apellidos || '',
-      'Edad': item.edad,
-      'Fecha Nacimiento': item.fechaNacimiento,
-      'Fecha Registro': item.fechaRegistro,
-      'Fecha Inclusión': item.fechaInclusion || '',
-      'Tutor': item.tutor || '',
-      'Cédula Tutor': item.cedulaTutor || '',
-      'Vulnerabilidades': item.vulnerabilidades || '',
-      'Estado': item.estado || '',
-      'Sexo': item.sexo || '',
-      'Provincia': item.provincia || '',
-      'Municipio': item.municipio || '',
-      'Centro': item.centro || '',
-      'Dirección': item.direccion || '',
-      'Ruta Formativa': item.rutaFormativa || '',
-      'Teléfonos': item.telefonos || '',
-      'Teléfonos Responsable': item.telefonosResponsable || '',
-      'Edad Registro': item.edadRegistro,
-      'Estado Civil': item.estadoCivil || '',
-      'Nivel Estudio': item.nivelEstudio || '',
-      'Alergias': item.alergias || '',
-      'Discapacidades': item.discapacidades || '',
-      'Enfermedades': item.enfermedades || '',
-      'Programas Sociales': item.programasSociales || ''
-    }));
+    // Sanitizar cada registro antes de exportar
+    const excelData = data.map((item, idx) => {
+      const clean = sanitizeParticipant(item, idx);
+      return {
+        'ID': clean.id,
+        'Cédula': clean.cedula || '',
+        'Nombres': clean.nombres || '',
+        'Apellidos': clean.apellidos || '',
+        'Edad': clean.edad,
+        'Fecha Nacimiento': clean.fechaNacimiento || '',
+        'Fecha Registro': clean.fechaRegistro || '',
+        'Fecha Inclusión': clean.fechaInclusion || '',
+        'Tutor': clean.tutor || '',
+        'Cédula Tutor': clean.cedulaTutor || '',
+        'Vulnerabilidades': clean.vulnerabilidades || '',
+        'Estado': clean.estado || '',
+        'Sexo': clean.sexo || '',
+        'Provincia': clean.provincia || '',
+        'Municipio': clean.municipio || '',
+        'Centro': clean.centro || '',
+        'Dirección': clean.direccion || '',
+        'Ruta Formativa': clean.rutaFormativa || '',
+        'Teléfonos': clean.telefonos || '',
+        'Teléfonos Responsable': clean.telefonosResponsable || '',
+        'Edad Registro': clean.edadRegistro,
+        'Estado Civil': clean.estadoCivil || '',
+        'Nivel Estudio': clean.nivelEstudio || '',
+        'Alergias': clean.alergias || '',
+        'Discapacidades': clean.discapacidades || '',
+        'Enfermedades': clean.enfermedades || '',
+        'Programas Sociales': clean.programasSociales || ''
+      };
+    });
 
     // Crear workbook
     const wb = XLSX.utils.book_new();
@@ -270,14 +277,17 @@ export async function exportToJSON(
     // Descargar todos los datos
     const data = await fetchAllData(onProgress, signal);
 
+    // Sanitizar cada registro antes de exportar
+    const sanitizedData = data.map((item, idx) => sanitizeParticipant(item, idx));
+
     // Crear estructura JSON con metadata
     const jsonData = {
       metadata: {
         exportDate: new Date().toISOString(),
-        totalRecords: data.length,
+        totalRecords: sanitizedData.length,
         version: '1.0'
       },
-      participants: data
+      participants: sanitizedData
     };
 
     // Convertir a JSON con formato
