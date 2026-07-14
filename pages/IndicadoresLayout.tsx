@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { ROUTES } from '../types/routes';
 import {
@@ -49,6 +49,27 @@ const IndicadoresLayout: React.FC = () => {
   const [showMore, setShowMore] = useState(false);
   const { dashboardData } = useDashboard();
   const location = useLocation();
+  const moreTriggerRef = useRef<HTMLButtonElement>(null);
+  const moreDropdownRef = useRef<HTMLDivElement>(null);
+
+  const handleCloseMore = useCallback(() => {
+    setShowMore(false);
+    moreTriggerRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    if (!showMore) return;
+    const firstLink = moreDropdownRef.current?.querySelector<HTMLElement>('a');
+    firstLink?.focus();
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        handleCloseMore();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [showMore, handleCloseMore]);
 
   const allYears = useMemo(() => {
     const years = new Set<number>();
@@ -101,7 +122,10 @@ const IndicadoresLayout: React.FC = () => {
           {/* More dropdown trigger — OUTSIDE overflow container */}
           <div className="relative flex-shrink-0">
             <button
+              ref={moreTriggerRef}
               onClick={() => setShowMore(prev => !prev)}
+              aria-haspopup="true"
+              aria-expanded={showMore}
               className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                 MORE_TABS.some(t => t.to === location.pathname)
                   ? 'border-blue-600 text-blue-700'
@@ -117,14 +141,17 @@ const IndicadoresLayout: React.FC = () => {
 
             {showMore && (
               <>
-                <div className="fixed inset-0 z-10" onClick={() => setShowMore(false)} />
-                <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-20 py-1 min-w-[220px]">
+                <div className="fixed inset-0 z-10" onClick={handleCloseMore} />
+                <div
+                  ref={moreDropdownRef}
+                  className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-20 py-1 min-w-[220px]"
+                >
                   {MORE_TABS.map(tab => (
                     <NavLink
                       key={tab.to}
                       to={tab.to}
                       end={false}
-                      onClick={() => setShowMore(false)}
+                      onClick={handleCloseMore}
                       className={({ isActive }) =>
                         `flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors ${
                           isActive
