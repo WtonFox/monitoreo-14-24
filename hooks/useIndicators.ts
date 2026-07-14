@@ -142,6 +142,7 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
 
     const women = count(data, p => isWomen(p.sexo));
     const men = count(data, p => isMen(p.sexo));
+    const knownSexTotal = women + men;
 
     // #4: Usar edadRegistro para medir edad AL MOMENTO DEL REGISTRO (más relevante)
     const totalAgeReg = data.reduce((sum, p) => sum + (p.edadRegistro || 0), 0);
@@ -378,18 +379,18 @@ export function useIndicators(data: Participant[]): UseIndicatorsResult {
       id: 2,
       name: 'Porcentaje de mujeres inscritas',
       category: 'demograficos',
-      value: pct(women, total),
-      formula: '(Mujeres / Total) × 100',
-      description: 'Participación femenina en el programa. Indicador clave de equidad de género.',
+      value: pct(women, knownSexTotal),
+      formula: '(Mujeres / Con sexo conocido) × 100',
+      description: 'Participación femenina en el programa sobre registros con sexo conocido.',
       status: 'viable',
     });
     all.push({
       id: 3,
       name: 'Porcentaje de hombres inscritos',
       category: 'demograficos',
-      value: pct(men, total),
-      formula: '(Hombres / Total) × 100',
-      description: 'Participación masculina en el programa. Permite analizar composición por sexo.',
+      value: pct(men, knownSexTotal),
+      formula: '(Hombres / Con sexo conocido) × 100',
+      description: 'Participación masculina en el programa sobre registros con sexo conocido.',
       status: 'viable',
     });
     all.push({
