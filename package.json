@@ -7,7 +7,18 @@
     "dev": "vite",
     "dev:full": "vite --host 0.0.0.0",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:unit": "vitest run --project unit",
+    "test:int": "vitest run --project integration",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage --reporter=default",
+    "typecheck": "tsc --noEmit",
+    "lint": "oxlint --config oxlint.config.json . && prettier --check .",
+    "lint:fix": "oxlint --config oxlint.config.json --fix . && prettier --write .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "build:ci": "vite build --mode ci"
   },
   "dependencies": {
     "idb": "^8.0.3",
