@@ -2,8 +2,9 @@ import React, { useState, useMemo } from 'react';
 import { formatNumber, formatPercentage } from '../../utils/formatters';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
+  PieChart, Pie,
 } from 'recharts';
-import { FileWarning, AlertTriangle, BarChart3, Table as TableIcon, Grid3X3, List } from 'lucide-react';
+import { FileWarning, AlertTriangle, BarChart3, Table as TableIcon, Grid3X3, List, Circle, CheckCircle2 } from 'lucide-react';
 import BoardShell from '../../components/BoardShell';
 import { tickShort, chartClass } from '../../utils/indicadores-helpers';
 import { useIndicadoresFilters } from '../../contexts/IndicadoresFiltersContext';
@@ -160,6 +161,15 @@ const CalidadNdBoard: React.FC = () => {
     total: f.total,
   }));
 
+  // Donut data: overall ND vs non-ND
+  const totalCells = filteredData.length * FIELDS.length;
+  const totalNd = fieldRanking.reduce((s, f) => s + f.ndCount, 0);
+  const totalOk = totalCells - totalNd;
+  const donutData = [
+    { name: 'Completos', value: totalOk, color: '#22c55e' },
+    { name: 'No disponibles', value: totalNd, color: '#dc2626' },
+  ];
+
   return (
     <BoardShell>
       {/* KPI Cards */}
@@ -261,17 +271,57 @@ const CalidadNdBoard: React.FC = () => {
 
       {viewMode === 'general' ? (
         <div className={chartClass(layoutMode)}>
+          {/* Overview Donut Chart */}
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+            <h3 className="text-lg font-bold text-gray-800 mb-4">
+              Vista general de calidad de dato
+            </h3>
+            <div className="flex items-center justify-center gap-8">
+              <div className="h-48 w-48">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={donutData}
+                      cx="50%" cy="50%"
+                      innerRadius={50}
+                      outerRadius={80}
+                      dataKey="value"
+                      startAngle={90}
+                      endAngle={-270}
+                    >
+                      {donutData.map((entry, idx) => (
+                        <Cell key={idx} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(v: unknown) => formatNumber(Number(v))} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="space-y-3">
+                {donutData.map(entry => (
+                  <div key={entry.name} className="flex items-center gap-2">
+                    <Circle size={10} fill={entry.color} stroke={entry.color} />
+                    <span className="text-sm text-gray-600">{entry.name}: <strong>{formatNumber(entry.value)}</strong></span>
+                  </div>
+                ))}
+                <div className="text-xs text-gray-400 mt-2">
+                  {formatNumber(totalCells)} celdas totales ({formatNumber(FIELDS.length)} campos × {formatNumber(filteredData.length)} registros)
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Horizontal BarChart with color gradient */}
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
             <h3 className="text-lg font-bold text-gray-800 mb-4">
               Campos con peor calidad de dato
             </h3>
-            <div className="h-80 w-full">
+            <div className="h-[300px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={chartData}
                   layout="vertical"
-                  margin={{ left: 110, right: 40, top: 8, bottom: 8 }}
+                  margin={{ left: 20, right: 40, top: 4, bottom: 4 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                   <XAxis type="number" tickFormatter={v => `${v}%`} domain={[0, 100]} />
@@ -279,7 +329,8 @@ const CalidadNdBoard: React.FC = () => {
                     type="category"
                     dataKey="name"
                     tickFormatter={tickShort}
-                    width={100}
+                    width={90}
+                    style={{ fontSize: '11px' }}
                   />
                   <Tooltip
                     formatter={(v: unknown) => formatPercentage(Number(v))}

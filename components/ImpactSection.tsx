@@ -140,9 +140,21 @@ export const ImpactSection: React.FC<ImpactSectionProps> = ({ data }) => {
           </div>
           <div>
             <p className="text-sm text-gray-500 font-medium">Responsables</p>
-            <h3 className="text-2xl font-bold text-gray-800">
-              {formatPercentage(impactData.tutorAnalysis.pctWithTutor, 1)}
-            </h3>
+            <div className="flex items-baseline gap-3">
+              <div>
+                <span className="text-2xl font-bold text-gray-800">
+                  {formatPercentage(impactData.tutorAnalysis.pctWithTutor, 0)}
+                </span>
+                <span className="text-xs text-gray-400 ml-1">con tutor</span>
+              </div>
+              <div className="text-gray-300 text-lg font-thin">|</div>
+              <div>
+                <span className="text-2xl font-bold text-gray-800">
+                  {formatPercentage(impactData.tutorAnalysis.pctTutorsWithPhone, 0)}
+                </span>
+                <span className="text-xs text-gray-400 ml-1">con teléfono</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>

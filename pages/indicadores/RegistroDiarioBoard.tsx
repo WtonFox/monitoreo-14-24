@@ -4,7 +4,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   Line, ComposedChart,
 } from 'recharts';
-import { CalendarDays, TrendingUp, Calendar, Clock, Grid3X3, List } from 'lucide-react';
+import { CalendarDays, TrendingUp, Calendar, Clock, Building2, Grid3X3, List } from 'lucide-react';
 import BoardShell from '../../components/BoardShell';
 import { chartClass, chartH } from '../../utils/indicadores-helpers';
 import { useIndicadoresFilters } from '../../contexts/IndicadoresFiltersContext';
@@ -32,6 +32,8 @@ interface ComputedMetrics {
   weekGrowth: number;
   timeline: DailyCount[];
   centrosRanking: CentroCount[];
+  dayOfWeek: { name: string; value: number }[];
+  centrosTop5: { name: string; value: number }[];
 }
 
 // ── Helpers ──
@@ -195,10 +197,25 @@ const RegistroDiarioBoard: React.FC = () => {
       .sort((a, b) => b.count - a.count)
       .slice(0, 10);
 
+    // ── Day-of-week distribution ──
+    const DAYS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    const dowCounts = new Array(7).fill(0);
+    for (const [dateStr, count] of dailyCounts) {
+      const d = parseLocalDate(dateStr);
+      dowCounts[d.getDay()] += count;
+    }
+    const dayOfWeek = DAYS.map((name, i) => ({ name, value: dowCounts[i] }));
+
     // ── KPI: Daily average (last 30 days) ──
     const total30d = timeline.reduce((s, e) => s + e.count, 0);
     const promedioDiario =
       timeline.length > 0 ? Math.round((total30d / timeline.length) * 10) / 10 : 0;
+
+    // ── Top 5 centers for bar chart ──
+    const centrosTop5 = Array.from(centroCounts.entries())
+      .sort(([, a], [, b]) => b.count - a.count)
+      .slice(0, 5)
+      .map(([name, info]) => ({ name, value: info.count }));
 
     return {
       hoy,
@@ -208,6 +225,8 @@ const RegistroDiarioBoard: React.FC = () => {
       weekGrowth,
       timeline: timelineWithMA,
       centrosRanking,
+      dayOfWeek,
+      centrosTop5,
     };
   }, [filteredData, localProvincia]);
 
@@ -357,6 +376,47 @@ const RegistroDiarioBoard: React.FC = () => {
             <div className="flex h-full items-center justify-center text-gray-400">
               Sin datos
             </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── Day-of-Week Distribution ── */}
+      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+        <h3 className="text-lg font-bold text-gray-800 mb-4">
+          Fichas por Día de la Semana
+        </h3>
+        <div className="h-48 w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={metrics.dayOfWeek}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} />
+              <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+              <YAxis tickFormatter={formatNumber} />
+              <Tooltip formatter={(v: unknown) => formatNumber(Number(v))} />
+              <Bar dataKey="value" fill="#06b6d4" radius={[4, 4, 0, 0]} name="Fichas" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* ── Top 5 Centers Bar Chart ── */}
+      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+        <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+          <Building2 size={18} className="text-cyan-600" />
+          Top 5 Centros por Fichas
+        </h3>
+        <div className="h-56 w-full">
+          {metrics.centrosTop5.length > 0 ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={metrics.centrosTop5} layout="vertical" margin={{ left: 10, right: 30 }}>
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                <XAxis type="number" tickFormatter={formatNumber} />
+                <YAxis dataKey="name" type="category" width={150} tick={{ fontSize: 10 }} />
+                <Tooltip formatter={(v: unknown) => formatNumber(Number(v))} />
+                <Bar dataKey="value" fill="#06b6d4" radius={[0, 4, 4, 0]} name="Fichas" />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex h-full items-center justify-center text-gray-400">Sin datos</div>
           )}
         </div>
       </div>
