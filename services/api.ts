@@ -130,3 +130,10 @@ export const fetchParticipants = async (
       'Network Error: Failed to connect to API via any strategy.',
   );
 };
+
+/**
+ * Clear the in-memory API cache so the next fetch reaches the real API.
+ */
+export function clearApiCache(): void {
+  requestCache.clear();
+}

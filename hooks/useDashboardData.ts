@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { Participant } from '../types';
-import { fetchParticipants } from '../services/api';
+import { fetchParticipants, clearApiCache } from '../services/api';
 import { sanitizeParticipant } from '../utils/dataUtils';
 import {
     getAllParticipants,
@@ -351,6 +351,7 @@ export const useDashboardData = (): UseDashboardDataResult => {
     }, [customToken, totalRecordsInApi, startSmartSync]);
 
     const handleManualRefresh = useCallback(() => {
+        clearApiCache();
         stopSyncRef.current = true;
 
         setDashboardData([]);
