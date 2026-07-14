@@ -38,6 +38,7 @@ export const Header: React.FC<HeaderProps> = ({
                     <button
                         onClick={onToggleSidebar}
                         className="md:hidden p-2 -ml-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                        aria-label="Abrir menú"
                     >
                         <Menu size={24} />
                     </button>
@@ -57,6 +58,7 @@ export const Header: React.FC<HeaderProps> = ({
                         disabled={isSyncing && !isPaused}
                         className="p-2 bg-white hover:bg-gray-100 border border-gray-200 rounded-lg md:rounded-full text-gray-600 transition-colors shadow-sm disabled:opacity-50"
                         title="Recargar Todo"
+                        aria-label="Recargar datos"
                     >
                         <RefreshCw size={20} className={isSyncing && !isPaused ? 'animate-spin' : ''} />
                     </button>
