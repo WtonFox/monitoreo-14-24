@@ -21,8 +21,10 @@ export interface DemographicSlice {
   total: number;
   women: number;
   men: number;
+  unknown: number;
   womenPct: number;
   menPct: number;
+  unknownPct: number;
   avgAgeReg: number;
   ageBuckets: { name: string; value: number }[];
   maritalStatus: { name: string; value: number }[];
@@ -123,9 +125,12 @@ export function useIndicatorBoards(data: Participant[]): BoardData {
 
     // ── Demographics ──
     const women = count(data, p => isWomen(p.sexo));
-    const men = total - women;
-    const womenPct = safeDiv(women, total) * 100;
-    const menPct = safeDiv(men, total) * 100;
+    const men = count(data, p => isMen(p.sexo));
+    const unknownSex = count(data, p => !isWomen(p.sexo) && !isMen(p.sexo));
+    const knownSexTotal = women + men;
+    const womenPct = safeDiv(women, knownSexTotal) * 100;
+    const menPct = safeDiv(men, knownSexTotal) * 100;
+    const unknownSexPct = safeDiv(unknownSex, knownSexTotal) * 100;
 
     const ageRegData = data.filter(p => p.edadRegistro > 0);
     const avgAgeReg = ageRegData.length > 0
@@ -455,6 +460,7 @@ export function useIndicatorBoards(data: Participant[]): BoardData {
     // ── Center Data ──
     const topCenters = Object.entries(centroCount)
       .map(([name, totalVal]) => ({
+        key: name,
         name: name.length > 20 ? name.substring(0, 18) + '…' : name,
         total: totalVal,
         activos: activeByCentro[name] || 0,
@@ -465,14 +471,8 @@ export function useIndicatorBoards(data: Participant[]): BoardData {
 
     const genderByCenter = topCenters.map(c => ({
       name: c.name,
-      Mujeres: womenByCentro[c.name] || (() => {
-        const orig = Object.entries(centroCount).find(([k]) => (k.length > 20 ? k.substring(0, 18) + '…' : k) === c.name)?.[0];
-        return orig ? (womenByCentro[orig] || 0) : 0;
-      })(),
-      Hombres: menByCentro[c.name] || (() => {
-        const orig = Object.entries(centroCount).find(([k]) => (k.length > 20 ? k.substring(0, 18) + '…' : k) === c.name)?.[0];
-        return orig ? (menByCentro[orig] || 0) : 0;
-      })(),
+      Mujeres: womenByCentro[c.key] || 0,
+      Hombres: menByCentro[c.key] || 0,
     }));
 
     const avgAgeByCenter = Object.entries(centroCount)
@@ -489,7 +489,7 @@ export function useIndicatorBoards(data: Participant[]): BoardData {
 
     return {
       demographicData: {
-        total, women, men, womenPct, menPct, avgAgeReg,
+        total, women, men, unknown: unknownSex, womenPct, menPct, unknownPct: unknownSexPct, avgAgeReg,
         ageBuckets, maritalStatus, genderAgeCross,
       },
       territorialData: {
@@ -545,7 +545,7 @@ export function useIndicatorBoards(data: Participant[]): BoardData {
       },
       centerData: {
         totalCenters: Object.keys(centroCount).length,
-        topCenters,
+        topCenters: topCenters.map(({ key: _key, ...rest }) => rest),
         genderByCenter,
         avgAgeByCenter,
       },
