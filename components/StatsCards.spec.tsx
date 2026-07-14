@@ -11,7 +11,7 @@ const makeParticipant = (overrides: Partial<Participant>): Participant =>
   validParticipant(overrides);
 
 describe('StatsCards — M5 denominator context', () => {
-  it('shows discapacidad prevalence as n/universe', () => {
+  it('shows discapacidad count without universe/percentage', () => {
     const data: Participant[] = [
       // 3 with valid discapacidad data: 1 with real disability, 2 with 'Ninguna'
       makeParticipant({ id: 1, discapacidades: 'Visual' }),
@@ -26,13 +26,12 @@ describe('StatsCards — M5 denominator context', () => {
       <StatsCards data={data} totalItems={5} />
     );
 
-    // Should show "1 / 3 (33%)"
+    // Should show just "1" (count, no universe or percentage)
     expect(container.textContent).toContain('Discapacidad');
-    expect(container.textContent).toContain('/ 3');
-    expect(container.textContent).toContain('33%');
+    expect(container.textContent).toContain('Discapacidad1');
   });
 
-  it('shows enfermedad prevalence as n/universe', () => {
+  it('shows enfermedad count without universe/percentage', () => {
     const data: Participant[] = [
       makeParticipant({ id: 1, enfermedades: 'Asma' }),
       makeParticipant({ id: 2, enfermedades: 'Ninguna' }),
@@ -43,8 +42,8 @@ describe('StatsCards — M5 denominator context', () => {
       <StatsCards data={data} totalItems={3} />
     );
 
-    // 2 in universe (id 1 + id 2), 1 with real value
+    // 2 in universe (id 1 + id 2), 1 with real value → shows just the count
     expect(container.textContent).toContain('Enfermedad');
-    expect(container.textContent).toContain('/ 2');
+    expect(container.textContent).toContain('Enfermedad1');
   });
 });

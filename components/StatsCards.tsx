@@ -52,13 +52,6 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ data, totalItems }) => {
   );
   const withVulnerabilidad = withVulnerabilidadData.filter(p => p.vulnerabilidades !== 'Ninguna').length;
 
-  // Helper para mostrar conteo con universo
-  const universeLabel = (count: number, universe: number): string => {
-    if (universe === 0) return '0 / 0';
-    const pct = ((count / universe) * 100).toFixed(0);
-    return `${formatNumber(count)} / ${formatNumber(universe)} (${pct}%)`;
-  };
-
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-6">
       <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center">
@@ -128,7 +121,7 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ data, totalItems }) => {
         </div>
         <div>
           <p className="text-sm text-gray-500 font-medium">Registrados con Discapacidad</p>
-          <h3 className="text-2xl font-bold text-gray-800">{universeLabel(discapacitadosCount, withDiscapacidadData.length)}</h3>
+          <h3 className="text-2xl font-bold text-gray-800">{formatNumber(discapacitadosCount)}</h3>
         </div>
       </div>
 
@@ -138,7 +131,7 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ data, totalItems }) => {
         </div>
         <div>
           <p className="text-sm text-gray-500 font-medium">Registrados con Enfermedad</p>
-          <h3 className="text-2xl font-bold text-gray-800">{universeLabel(enfermosCount, withEnfermedadesData.length)}</h3>
+          <h3 className="text-2xl font-bold text-gray-800">{formatNumber(enfermosCount)}</h3>
         </div>
       </div>
 
@@ -148,7 +141,7 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ data, totalItems }) => {
         </div>
         <div>
           <p className="text-sm text-gray-500 font-medium">En Programa Social</p>
-          <h3 className="text-2xl font-bold text-gray-800">{universeLabel(withPrograma, withProgramaData.length)}</h3>
+          <h3 className="text-2xl font-bold text-gray-800">{formatNumber(withPrograma)}</h3>
         </div>
       </div>
 
@@ -158,7 +151,7 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ data, totalItems }) => {
         </div>
         <div>
           <p className="text-sm text-gray-500 font-medium">Registrados con Vulnerabilidad</p>
-          <h3 className="text-2xl font-bold text-gray-800">{universeLabel(withVulnerabilidad, withVulnerabilidadData.length)}</h3>
+          <h3 className="text-2xl font-bold text-gray-800">{formatNumber(withVulnerabilidad)}</h3>
         </div>
       </div>
 
