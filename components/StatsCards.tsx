@@ -1,7 +1,7 @@
 import React from 'react';
 import { Users, UserCheck, MapPin, Building2, Map, Calendar, AlertCircle, Activity, Award } from 'lucide-react';
 import { Participant } from '../types';
-import { formatNumber, formatPercentage } from '../utils/formatters';
+import { formatNumber } from '../utils/formatters';
 
 interface StatsCardsProps {
   data: Participant[];
@@ -28,23 +28,19 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ data, totalItems }) => {
     ? (validEdadRegistro.reduce((acc, p) => acc + p.edadRegistro, 0) / validEdadRegistro.length).toFixed(1)
     : 'N/A';
 
-  // 2. % Discapacidades — sobre universo con dato (excluye N/A/N/D/null)
+  // 2. Registrados con discapacidad — universo con dato (excluye N/A/N/D/null)
   const withDiscapacidadData = data.filter(p =>
     p.discapacidades !== null && p.discapacidades !== 'N/D' && p.discapacidades !== 'N/A'
   );
   const discapacitados = withDiscapacidadData.filter(p => p.discapacidades !== 'Ninguna');
-  const pctDiscapacidades = withDiscapacidadData.length > 0
-    ? formatPercentage((discapacitados.length / withDiscapacidadData.length) * 100) + ` (${formatNumber(withDiscapacidadData.length)} con dato)`
-    : 'N/A';
+  const discapacitadosCount = discapacitados.length;
 
-  // 3. % Enfermedades — sobre universo con dato
+  // 3. Registrados con enfermedad — universo con dato
   const withEnfermedadesData = data.filter(p =>
     p.enfermedades !== null && p.enfermedades !== 'N/D' && p.enfermedades !== 'N/A'
   );
   const enfermos = withEnfermedadesData.filter(p => p.enfermedades !== 'Ninguna');
-  const pctEnfermedades = withEnfermedadesData.length > 0
-    ? formatPercentage((enfermos.length / withEnfermedadesData.length) * 100) + ` (${formatNumber(withEnfermedadesData.length)} con dato)`
-    : 'N/A';
+  const enfermosCount = enfermos.length;
 
   // 4. Programas Sociales — más común entre quienes tienen dato
   const programasCounts: Record<string, number> = {};
@@ -125,8 +121,8 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ data, totalItems }) => {
           <AlertCircle size={24} />
         </div>
         <div>
-          <p className="text-sm text-gray-500 font-medium">% Discapacidades</p>
-          <h3 className="text-2xl font-bold text-gray-800">{pctDiscapacidades}</h3>
+          <p className="text-sm text-gray-500 font-medium">Registrados con Discapacidad</p>
+          <h3 className="text-2xl font-bold text-gray-800">{formatNumber(discapacitadosCount)}</h3>
         </div>
       </div>
 
@@ -135,8 +131,8 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ data, totalItems }) => {
           <Activity size={24} />
         </div>
         <div>
-          <p className="text-sm text-gray-500 font-medium">% Enfermedades</p>
-          <h3 className="text-2xl font-bold text-gray-800">{pctEnfermedades}</h3>
+          <p className="text-sm text-gray-500 font-medium">Registrados con Enfermedad</p>
+          <h3 className="text-2xl font-bold text-gray-800">{formatNumber(enfermosCount)}</h3>
         </div>
       </div>
 
