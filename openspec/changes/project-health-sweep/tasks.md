@@ -1,67 +1,120 @@
-# Tasks: M5 — Demographic/Temporal Denominators + Unknown Buckets (project-health-sweep)
+# Tasks: M6 — Sync State Machine (project-health-sweep)
 
 ## Review Workload Forecast
 
 | Field | Value |
 |---|---|
 | Decision needed before apply | No |
-| Chained PRs recommended | No (single PR; split M5a/M5b fallback if >400) |
+| Chained PRs recommended | Yes (M6a + M6b) |
 | Chain strategy | stacked-to-main |
-| 400-line budget risk | Medium |
-| Estimated changed lines | ~335 |
+| 400-line budget risk | High |
+| Estimated changed lines | ~480 (core + tests) |
 
-Decision needed before apply: No
-Chained PRs recommended: No
-Chain strategy: stacked-to-main
-400-line budget risk: Medium
+### Split Rationale
 
-### Suggested Work Units
+| PR | WUs | Core Δ | Test Δ | Total |
+|:---|---:|---:|---:|---:|
+| **M6a** — Foundation | WU1+WU2+WU3+WU4+WU7 | ~170 | ~150 | ~320 |
+| **M6b** — Resilience | WU5+WU6+WU8 | ~110 | ~200 | ~310 |
+
+M6a ships first and closes H2 for stale cache, dual hooks, stale pause, unsafe resume, and unawaited writes. M6b stacks on M6a and closes H2 for page retry and update/delete detection plus full behavioral coverage.
+
+### Work Units
 
 | Unit | Goal | PR | Focused test command | Runtime harness | Rollback boundary |
 |---|---|---|---|---|---|
-| 1 | Center key fix (R5) — `useIndicatorBoards.ts` | single | `npm run test:unit -- useIndicatorBoards` | jsdom, fixture matrix | `hooks/useIndicatorBoards.ts` |
-| 2 | Unknown sex bucket (R1) — `useIndicatorBoards.ts`, `useIndicators.ts` | single | `npm run test:unit -- {useIndicatorBoards,useIndicators}` | Node + jsdom, fixture matrix | `hooks/useIndicatorBoards.ts` + `hooks/useIndicators.ts` |
-| 3 | Unknown age + Charts legend (R2+R6) — `useIndicatorBoards.ts`, `ChartsSection.tsx` | single | `npm run test` | Node + jsdom, fixture matrix | `hooks/useIndicatorBoards.ts` + `components/ChartsSection.tsx` |
-| 4 | Valid-age avg (R3) — `useIndicators.ts`, `useMapStats.ts` | single | `npm run test` | Node + jsdom, fixture matrix | `hooks/useIndicators.ts` + `hooks/useMapStats.ts` |
-| 5 | StatsCards denominator (R7) — `StatsCards.tsx` | single | `npm run test` | jsdom, fixture matrix | `components/StatsCards.tsx` |
-| 6 | Midnight recompute (R4) — `RegistroDiarioBoard.tsx` | single | `npm run test` | jsdom, fake timers | `pages/indicadores/RegistroDiarioBoard.tsx` |
+| 1 | Export `clearApiCache()` from api.ts | M6a | `npm run test:unit -- useDashboardData` | `npm run build:ci` | `services/api.ts` |
+| 2 | DashboardProvider stops calling useDashboardData | M6a | `npm run test:unit -- DashboardContext` | `npm run build:ci` | `contexts/DashboardContext.tsx` |
+| 3 | Live pause via `isPausedRef` | M6a | `npm run test:unit -- useDashboardData` | `npm run build:ci` | `hooks/useDashboardData.ts` |
+| 4 | Persisted checkpoint in IndexedDB metadata | M6a | `npm run test:unit -- useDashboardData` | `npm run build:ci` | `hooks/useDashboardData.ts`, `services/database.ts` |
+| 5 | Page retry with exponential backoff | M6b | `npm run test:unit -- useDashboardData` | `npm run build:ci` | `hooks/useDashboardData.ts` |
+| 6 | Update/delete detection in polling | M6b | `npm run test:unit -- useDashboardData` | `npm run build:ci` | `hooks/useDashboardData.ts` |
+| 7 | Await all IndexedDB writes | M6a | `npm run test:unit -- useDashboardData` | `npm run build:ci` | `hooks/useDashboardData.ts` |
+| 8 | Update existing test file with R-sync assertions | M6b | `npm run test:unit -- useDashboardData` | `npm run build:ci` | `hooks/useDashboardData.spec.ts` |
 
-## Phase 1: Center Key & Demographic Fixes
+## Phase 1: Foundation — M6a
 
-- [x] 1.1 **WU1 — Center key fix**: In `hooks/useIndicatorBoards.ts`, add `key: name` to `topCenters` entries before truncation. Use `c.key` for `womenByCentro`/`menByCentro` lookups in `genderByCenter`. Strip `key` in final `centerData.topCenters`. Remove reverse-lookup IIFEs (≈15 lines changed).
-- [x] 1.2 **WU2 — Unknown sex bucket**: In `hooks/useIndicatorBoards.ts` L124-128, replace `men = total - women` with `men = count(data, p => isMen(p.sexo))`, add `unknown = count(data, p => !isWomen(p.sexo) && !isMen(p.sexo))`. Use known-sex `women + men` for `womenPct`/`menPct` denominators. Add `unknown`/`unknownPct` to `DemographicSlice`. In `hooks/useIndicators.ts`, add `unknownSex` counter, update indicators 2-3 denominator to known-sex total.
-- [x] 1.3 **WU3 — Unknown age bucket**: In `hooks/useIndicatorBoards.ts` L192-203, remove default-to-zero (`p.edad || 0` → `p.edad`). Add `'Unknown'` bucket. Route 0/null/undefined/>120/<14 to Unknown. Fix minor tracking L252: `age < 18` → `age > 0 && age < 18`. In `ChartsSection.tsx` L87-104, add `'Unknown': 0` to ranges, route invalid ages to Unknown.
+### WU1 — Export `clearApiCache()` from api.ts
 
-## Phase 2: Denominator Corrections
+- [x] 1.1 In `services/api.ts`, export a `clearApiCache` function that calls `requestCache.clear()` (the existing Map at line 5).
+- [x] 1.2 In `hooks/useDashboardData.ts`, import `clearApiCache` and call it at the top of `handleManualRefresh`, before the `setTimeout(() => startSmartSync(1), 1200)`.
 
-- [x] 2.1 **WU4 — Valid-age avg**: In `hooks/useIndicators.ts` L151, change `avgAgeNow` denominator from `total` to `data.filter(p => p.edad > 0).length`. In `hooks/useMapStats.ts` L111-112, change average denominator from `locData.length` to `locData.filter(p => p.edad > 0).length`; sum only valid ages.
-- [x] 2.2 **WU5 — StatsCards denominator**: In `StatsCards.tsx`, update discapacidad/enfermedad/programaSocial/vulnerabilidad prevalence cards to display `n / known-value-universe`. Universe = records with non-null, non-N/D, non-N/A value for that field. Display format: `12 / 20 (60%)`.
+### WU2 — DashboardProvider stops calling useDashboardData
 
-## Phase 3: Midnight Recompute
+- [x] 2.1 In `contexts/DashboardContext.tsx`, remove import of `useDashboardData` and `CorruptedRecord` from `../hooks/useDashboardData`.
+- [x] 2.2 Remove `const hookValue = useDashboardData()` and the `externalValue ?? hookValue` fallback.
+- [x] 2.3 Render `<DashboardContext.Provider value={value}>` directly, where `value` is the required `value` prop.
+- [x] 2.4 If `value` is undefined at runtime, throw a dev-time error: `'DashboardProvider requires a value prop — call useDashboardData in the parent and pass it down.'`
 
-- [x] 3.1 **WU6 — Tick state**: In `RegistroDiarioBoard.tsx`, add `const [now, setNow] = useState(() => new Date())` and a `useEffect` with `setInterval(() => setNow(new Date()), 60000)`. Add `now` to `useMemo` deps. Replace `const today = new Date()` inside the memo with `now`.
+### WU3 — Live pause via `isPausedRef`
 
-## Phase 4: Foundation — Config & Test Infra
+- [x] 3.1 In `hooks/useDashboardData.ts`, add `const isPausedRef = useRef(false)` alongside `stopSyncRef`.
+- [x] 3.2 Keep `isPaused` state for rendering. `togglePause`: flip `isPausedRef.current`, then `setIsPaused(isPausedRef.current)`.
+- [x] 3.3 In the sync loop, change `while (isPaused)` (line 188) to `while (isPausedRef.current)`.
+- [x] 3.4 Remove `isPaused` from the `useCallback` dependency array.
+- [x] 3.5 Update `handleManualRefresh`: set `isPausedRef.current = false` so a paused sync can be cancelled by refresh.
 
-- [x] 4.1 **Vitest config**: Add `hooks/**/*.spec.ts`, `components/**/*.spec.tsx`, `pages/**/*.spec.tsx` to integration project `include` in `vitest.config.ts`.
-- [x] 4.2 **UseIndicatorBoards spec**: Create `hooks/useIndicatorBoards.spec.ts` with fixture matrices for unknown sex (M/F/null/''/X/MASCULINO/FEMENINO → women=2, men=2, unknown=3), unknown age (0/15/null/25/undefined → Unknown=3, 25+=1), center key uniqueness (two 18-char-colliding names → distinct entries), and minor exclusion (age 0 NOT in minors).
-- [x] 4.3 **UseIndicators spec**: Create `hooks/useIndicators.spec.ts` with valid-age avg fixture [25,0,30,null] → 27.5 (not 13.75) and unknown sex denominator check.
-- [x] 4.4 **UseMapStats spec**: Create `hooks/useMapStats.spec.ts` with valid-age avg denominator fixture.
-- [x] 4.5 **ChartsSection spec**: Create `components/ChartsSection.spec.tsx` with unknown age routing fixture [null,0,25,35] → Unknown in chart.
-- [x] 4.6 **StatsCards spec**: Create `components/StatsCards.spec.tsx` with denominator context fixture (5 records, 3 known discapacidades, 1 real → universe=3 shown).
-- [x] 4.7 **RegistroDiarioBoard spec**: Create `pages/indicadores/RegistroDiarioBoard.spec.tsx` with fake-timer midnight-crossing test.
+### WU4 — Persisted checkpoint
+
+- [x] 4.1 In `services/database.ts`, extend the metadata type (`MonitoreoDB['metadata']['value']`) with additive fields: `lastSyncedPage?: number`, `lastSyncedRecordCount?: number`, `syncTimestamp?: number`. No DB_VERSION change (schema is additive).
+- [x] 4.2 In `hooks/useDashboardData.ts` startup effect: after reading `getMetadata('syncInfo')`, set `currentPage = meta.lastSyncedPage || 1` instead of computing from `dashboardData.length`.
+- [x] 4.3 After each successful page fetch+processing, `await saveMetadata('syncInfo', { ...existingMeta, lastSyncedPage: currentPage, lastSyncedRecordCount: totalLoadedCount, syncTimestamp: Date.now() })`.
+- [x] 4.4 In `handleManualRefresh` and at `startSmartSync(1)` start: persist `lastSyncedPage: 1, lastSyncedRecordCount: 0, syncTimestamp: Date.now()` in metadata.
+
+### WU7 — Await IndexedDB writes
+
+- [x] 7.1 Add `await` to `saveParticipants(cleanBatch)` call (line 248).
+- [x] 7.2 Add `await` to both `saveMetadata(...)` calls (lines 253, 279).
+- [x] 7.3 Add `await` to `clearAllData()` call (line 366).
+- [x] 7.4 Verify no remaining `.catch()`-only IndexedDB calls in `handleManualRefresh` or the sync loop.
+
+## Phase 2: Resilience — M6b
+
+### WU5 — Page retry with exponential backoff
+
+- [ ] 5.1 Add `erroredPages: number[]` to `SyncStats` interface and `statsRef`.
+- [ ] 5.2 Wrap the fetch+process block with a 3-attempt retry loop: delays 1000ms, 2000ms, 4000ms (`wait(1000)`, `wait(2000)`, `wait(4000)`).
+- [ ] 5.3 On success within retries, `break`.
+- [ ] 5.4 On exhaustion after 3 attempts, push `currentPage` to `erroredPages`, continue to next page. Do NOT throw.
+- [ ] 5.5 The existing `catch` at line 310-313 becomes the innermost catch (per attempt). Remove the `currentPage++` there; page advancement moves outside the retry loop on exhaustion.
+
+### WU6 — Update/delete detection in polling
+
+- [ ] 6.1 After the poll probe (`fetchParticipants(1, 1, 0, ...)`), compute a lightweight checksum: `JSON.stringify(items.slice(0, 5).map(i => i.id + (i.ultimaModificacion || '')))`.
+- [ ] 6.2 Store `lastChecksum` in a ref and in metadata.
+- [ ] 6.3 Enhance the poll trigger condition: `apiTotal > totalRecordsInApi || apiTotal < totalRecordsInApi || (apiTotal === totalRecordsInApi && checksum !== lastChecksum)` → trigger re-verify.
+- [ ] 6.4 On re-verify, call `handleManualRefresh` (or equivalent full restart). Mark this as a full re-verify, not incremental.
+
+## Phase 3: Tests — M6b
+
+### WU8 — Update `useDashboardData.spec.ts`
+
+- [ ] 8.1 **R-sync-1 (single provider)**: Mount App with DashboardProvider wrapping; spy on `console.log` from `useDashboardData`; assert it fires exactly once.
+- [ ] 8.2 **R-sync-2 (clearApiCache)**: Spy on `clearApiCache`. Call `handleManualRefresh`. Assert `clearApiCache` was called before the sync restart timer.
+- [ ] 8.3 **R-sync-3 (live pause)**: With fake timers, start sync, call `togglePause`, advance timers, assert sync loop pauses (fetch not called for next page). Call `togglePause`, assert resume. Call cancel, assert restart from page 1.
+- [ ] 8.4 **R-sync-4 (checkpoint)**: Mock API with 10 pages. After page 5 completes, assert `saveMetadata` was called with `lastSyncedPage: 5`. Simulate crash; on new mount, assert `startSmartSync` resumes from page 5 (not page 6).
+- [ ] 8.5 **R-sync-5 (retry)**: Mock API where page 3 fails twice (throw error) then succeeds on third attempt. Assert all page-3 records present. Mock API where page 4 always fails. Assert `erroredPages` contains `[4]`.
+- [ ] 8.6 **R-sync-6 (update/delete)**: Mock API with `totalItems: 100, items: [{id:1, ultimaModificacion: '2026-01-01'}]`. Set `totalRecordsInApi = 100, lastChecksum = same`. Second poll returns same `totalItems: 100` but different checksum. Assert re-verify triggered.
+- [ ] 8.7 **R-sync-7 (awaited writes)**: Spy on `saveParticipants` — assert it's called with `await` (the mock resolves before next line executes). After sync completes, assert persisted count matches expected.
 
 ## Out of Scope
 
-- No sync state machine (M6), export (M8), perf (M7), a11y (M10), auth changes.
-- No changes to `dataUtils.ts`, `DashboardContext.tsx`, `services/database.ts`, `services/api.ts`.
-- No center-name changes to `DesercionBoard.tsx` or `CentrosSinMenoresBoard.tsx` (already correct).
+- No auth changes (`AuthContext`, `ProtectedRoute`, `constants.ts`).
+- No formula corrections (`useIndicators.ts`, `useIndicatorBoards.ts`, `ChartsSection.tsx`).
+- No normalization contract changes (`dataUtils.ts`, `normalize.ts`).
+- No charts, maps, boards.
+- No exporter changes.
+- No performance optimization (`requestIdleCallback`, Workers, benchmarks).
+- No a11y changes.
+- No `.env` access.
+- No `App.tsx` changes (already the single caller — confirmed by reading source).
 
 ## Risk Register
 
 | Risk | Mitigation |
 |---|---|
-| Test infra not updated for hook/*.spec.ts | Task 4.1 is the first task — config update before any hook tests |
-| Coverage ≥80% gate fails | Add edge-case fixtures in the same PR (null/undefined/outlier values) |
-| M5 applies before M4 | Blocking dependency — M4 must merge first; WU1-WU6 assume normalized input |
-| `DemographicSlice.unknown`/`unknownPct` is additive — no consumer breakage | Type-check will confirm; no runtime impact on existing consumers |
+| M3 not merged → no test file to extend | Blocking dependency — M3 must land before M6 apply starts |
+| `await` on IndexedDB writes introduces UI jank | Acceptable for M6; M7 profiling will surface if optimization needed |
+| `erroredPages` type mismatch with existing `SyncStats` consumers | Additive field; all existing consumers iterate by named key, not index |
+| M6b diff polluted by M6a when rebased | Rebase M6b onto merged M6a before opening; confirm diff shows only M6b changes |
+| Checksum on page 1 unreliable for update detection | Fallback: if `ultimaModificacion` absent, compare `id` set size + first-5 `id + edad` stringified |
