@@ -1,5 +1,5 @@
 import React, { createContext, useContext, type ReactNode } from 'react';
-import { useDashboardData, type CorruptedRecord } from '../hooks/useDashboardData';
+import type { CorruptedRecord } from '../hooks/useDashboardData';
 import type { Participant } from '../types';
 
 interface SyncStats {
@@ -34,12 +34,15 @@ const DashboardContext = createContext<DashboardContextValue | null>(null);
 
 interface DashboardProviderProps {
   children: ReactNode;
-  value?: DashboardContextValue;
+  value: DashboardContextValue;
 }
 
-export const DashboardProvider: React.FC<DashboardProviderProps> = ({ children, value: externalValue }) => {
-  const hookValue = useDashboardData();
-  const value = externalValue ?? hookValue;
+export const DashboardProvider: React.FC<DashboardProviderProps> = ({ children, value }) => {
+  if (typeof value === 'undefined') {
+    throw new Error(
+      'DashboardProvider requires a value prop — call useDashboardData in the parent and pass it down.',
+    );
+  }
 
   return (
     <DashboardContext.Provider value={value}>
