@@ -215,13 +215,17 @@ export const useDashboardData = (): UseDashboardDataResult => {
                         const item = items[i];
                         const clean = sanitizeParticipant(item, i);
 
-                        if (clean.estado === 'DATA_CORRUPTA') {
+                        // Quarantine corrupt records — exclude from dashboardData
+                        if (clean.estado === 'CRITICALLY_CORRUPT' || clean.estado === 'GENERIC_ERROR') {
                             localCorruptedCount++;
                             newCorrupted.push({
                                 id: clean.id,
                                 raw: item,
-                                reason: 'Estructura inválida o datos ilegibles'
+                                reason: clean.estado === 'CRITICALLY_CORRUPT'
+                                    ? 'Estructura inválida o datos ilegibles'
+                                    : 'Datos corruptos (fechas inválidas)'
                             });
+                            continue;
                         }
 
                         // Check duplicados O(1)
