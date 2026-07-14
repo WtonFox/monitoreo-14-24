@@ -239,12 +239,12 @@ const DesercionBoard: React.FC = () => {
         </h3>
 
         {topCenters.length > 0 ? (
-          <div className={`h-${chartH} w-full`}>
+          <div className="h-96 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={topCenters}
                 layout="vertical"
-                margin={{ left: 10, right: 20 }}
+                margin={{ left: 20, right: 30 }}
               >
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                 <XAxis
@@ -254,9 +254,8 @@ const DesercionBoard: React.FC = () => {
                 <YAxis
                   dataKey="centro"
                   type="category"
-                  width={140}
-                  tickFormatter={tickShort}
-                  style={{ fontSize: '11px' }}
+                  width={160}
+                  tick={{ fontSize: 11 }}
                 />
                 <Tooltip
                   formatter={(v: unknown) => formatPercentage(Number(v))}
@@ -271,7 +270,7 @@ const DesercionBoard: React.FC = () => {
             </ResponsiveContainer>
           </div>
         ) : (
-          <div className={`h-${chartH} flex flex-col items-center justify-center text-gray-400`}>
+          <div className="h-96 flex flex-col items-center justify-center text-gray-400">
             <TrendingDown size={32} className="mb-2 text-gray-300" />
             <p>Sin datos</p>
           </div>
