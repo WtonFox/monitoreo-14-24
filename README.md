@@ -2,6 +2,14 @@
 
 Plataforma de analisis y visualizacion de datos para monitorear el impacto del programa social **Oportunidad 14-24** en Republica Dominicana. Proporciona una interfaz interactiva para visualizar estadisticas, mapas geograficos de cobertura y metricas de impacto social.
 
+## Security
+
+Do not commit `.env`. Copy `.env.example` and replace `VITE_API_TOKEN` with the value from the API administrator.
+
+The committed `.env.example` value `YOUR_BEARER_TOKEN_HERE` is a placeholder, not a credential.
+
+See `openspec/changes/project-health-sweep/specs/credential-incident-containment/spec.md` for the historical incident and rotation procedure.
+
 ## Caracteristicas Principales
 
 - **Tablero de Estadisticas:** Visualizacion de participantes por genero, edad, provincia y estado
