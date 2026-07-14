@@ -255,9 +255,9 @@ export const useDashboardData = (): UseDashboardDataResult => {
 
                     // Guardar en DB asíncronamente (no bloqueante)
                     if (cleanBatch.length > 0) {
-                        saveParticipants(cleanBatch).catch(err =>
-                            console.error('Failed to save batch to IndexedDB:', err)
-                        );
+                        await saveParticipants(cleanBatch).catch(err => {
+                            console.error('Failed to save batch to IndexedDB:', err);
+                        });
                     }
 
                     // Actualizar contador local
@@ -385,7 +385,7 @@ export const useDashboardData = (): UseDashboardDataResult => {
         });
 
         // Clear DB before restart
-        clearAllData().catch(err => {
+        await clearAllData().catch(err => {
             console.error('Failed to clear database:', err);
         });
 
