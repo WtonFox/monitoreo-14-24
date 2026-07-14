@@ -13,8 +13,11 @@ import { defineConfig, defineProject } from 'vitest/config';
  *   that commit lands, `npm run test` exits 0 with no tests (R-verify-1).
  * - Two projects: `unit` (pure-fn characterizations in `utils/**`) under Node,
  *   and `integration` (hook characterizations in `hooks/**`) under jsdom.
- *   M3a only author the `utils/**` suites; the `hooks/**` suites belong to
- *   M3b but the project is declared here so it exists from day one.
+ *   M3a only authors the `utils/**` suites; the `hooks/**` suites belong to
+ *   M3b but the project is declared here so it exists from day one. Each
+ *   project inherits the root `test` config (setupFiles, passWithNoTests,
+ *   clearMocks, restoreMocks) by virtue of the projects not overriding those
+ *   keys.
  */
 
 export default defineConfig({
@@ -31,7 +34,6 @@ export default defineConfig({
         restoreMocks: true,
         projects: [
             defineProject({
-                extends: true,
                 test: {
                     name: 'unit',
                     include: ['utils/**/*.char.test.ts'],
@@ -39,7 +41,6 @@ export default defineConfig({
                 }
             }),
             defineProject({
-                extends: true,
                 test: {
                     name: 'integration',
                     include: ['hooks/**/*.char.test.ts'],
