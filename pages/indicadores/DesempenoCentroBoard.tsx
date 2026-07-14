@@ -41,7 +41,9 @@ const DesempenoCentroBoard: React.FC = () => {
   }));
 
   return (
-    <BoardShell>
+    <BoardShell
+    title="Desempeño por Centro"
+    description="Rendimiento de centros: distribución, retención, egreso, género y edad promedio.">
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center">

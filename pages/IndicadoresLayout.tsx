@@ -100,6 +100,20 @@ const IndicadoresLayout: React.FC = () => {
               </span>
             </button>
 
+            {/* Active More Tab label — visible only when a MORE_TAB is selected */}
+            {(() => {
+              const currentPath = window.location.hash.replace('#', '').split('?')[0];
+              const activeTab = MORE_TABS.find(t => t.to === currentPath);
+              if (!activeTab) return null;
+              const Icon = activeTab.icon;
+              return (
+                <div className="hidden lg:flex items-center gap-1.5 mt-1 text-[11px] font-medium text-blue-600 justify-end">
+                  <Icon size={12} />
+                  <span>{activeTab.label}</span>
+                </div>
+              );
+            })()}
+
             {showMore && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setShowMore(false)} />

@@ -3,6 +3,7 @@ import { AlertTriangle } from 'lucide-react';
 
 interface BoardShellProps {
   title?: string;
+  description?: string;
   children?: React.ReactNode;
   empty?: boolean;
   emptyMessage?: string;
@@ -10,12 +11,11 @@ interface BoardShellProps {
 
 /**
  * Shared wrapper for indicator board pages.
- * Provides consistent padding, animation, empty state, and optional title.
- *
- * Boards may adopt this shell gradually in Phase 2–3.
+ * Provides consistent padding, animation, empty state, optional title and description.
  */
 const BoardShell: React.FC<BoardShellProps> = ({
   title,
+  description,
   children,
   empty = false,
   emptyMessage,
@@ -34,7 +34,12 @@ const BoardShell: React.FC<BoardShellProps> = ({
   return (
     <div className="p-6 max-w-7xl mx-auto w-full animate-in fade-in duration-500 space-y-6">
       {title && (
-        <h2 className="text-2xl font-bold text-gray-800">{title}</h2>
+        <div className="mb-2">
+          <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
+          {description && (
+            <p className="text-sm text-gray-500 mt-1 max-w-2xl">{description}</p>
+          )}
+        </div>
       )}
       {children}
     </div>

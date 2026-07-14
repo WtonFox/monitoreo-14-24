@@ -40,7 +40,9 @@ const VulnerabilidadBoard: React.FC = () => {
   ].filter(d => d.value > 0);
 
   return (
-    <BoardShell>
+    <BoardShell
+    title="Vulnerabilidad"
+    description="Participantes con condiciones de vulnerabilidad: discapacidades, enfermedades, alergias y programas sociales.">
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center">

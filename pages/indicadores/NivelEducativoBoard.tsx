@@ -33,7 +33,9 @@ const NivelEducativoBoard: React.FC = () => {
     : 0;
 
   return (
-    <BoardShell>
+    <BoardShell
+    title="Nivel Educativo"
+    description="Distribución por nivel de estudio y su relación con el estado del programa y sexo.">
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center">
