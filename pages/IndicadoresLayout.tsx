@@ -20,19 +20,53 @@ const MAIN_TABS = [
   { to: ROUTES.INDICADORES_PROGRAMA, label: 'Estado del Programa', icon: Activity },
 ];
 
-// ── New categories (grouped in dropdown) ──
+// ── Dropdown categories (grouped with visual separators) ──
 
-const MORE_TABS = [
-  { to: ROUTES.INDICADORES_CALIDAD, label: 'Calidad del Dato', icon: CheckCircle },
-  { to: ROUTES.INDICADORES_VULNERABILIDAD, label: 'Vulnerabilidad', icon: AlertTriangle },
-  { to: ROUTES.INDICADORES_COBERTURA, label: 'Cobertura Temporal', icon: Calendar },
-  { to: ROUTES.INDICADORES_NIVEL_EDUCATIVO, label: 'Nivel Educativo', icon: GraduationCap },
-  { to: ROUTES.INDICADORES_DESEMPENO_CENTRO, label: 'Desempeño Centro', icon: Building2 },
-  { to: ROUTES.INDICADORES_CENTROS_SIN_MENORES, label: 'Centros sin Menores', icon: Users },
-  { to: ROUTES.INDICADORES_DESERCION, label: 'Deserción', icon: TrendingDown },
-  { to: ROUTES.INDICADORES_REGISTRO_DIARIO, label: 'Registro Diario', icon: CalendarDays },
-  { to: ROUTES.INDICADORES_CALIDAD_ND, label: 'Calidad ND', icon: FileWarning },
+interface MoreTabItem {
+  to: string;
+  label: string;
+  icon: React.FC<{ size?: number; className?: string }>;
+}
+
+interface MoreTabGroup {
+  label: string;
+  items: MoreTabItem[];
+}
+
+const TAB_GROUPS: MoreTabGroup[] = [
+  {
+    label: 'Datos y Calidad',
+    items: [
+      { to: ROUTES.INDICADORES_CALIDAD, label: 'Calidad del Dato', icon: CheckCircle },
+      { to: ROUTES.INDICADORES_CALIDAD_ND, label: 'Calidad ND', icon: FileWarning },
+      { to: ROUTES.INDICADORES_CENTROS_SIN_MENORES, label: 'Centros sin Menores', icon: Users },
+    ],
+  },
+  {
+    label: 'Riesgo Social',
+    items: [
+      { to: ROUTES.INDICADORES_VULNERABILIDAD, label: 'Vulnerabilidad', icon: AlertTriangle },
+      { to: ROUTES.INDICADORES_DESERCION, label: 'Deserción', icon: TrendingDown },
+    ],
+  },
+  {
+    label: 'Educación y Cobertura',
+    items: [
+      { to: ROUTES.INDICADORES_NIVEL_EDUCATIVO, label: 'Nivel Educativo', icon: GraduationCap },
+      { to: ROUTES.INDICADORES_COBERTURA, label: 'Cobertura Temporal', icon: Calendar },
+    ],
+  },
+  {
+    label: 'Operaciones y Seguimiento',
+    items: [
+      { to: ROUTES.INDICADORES_REGISTRO_DIARIO, label: 'Registro Diario', icon: CalendarDays },
+      { to: ROUTES.INDICADORES_DESEMPENO_CENTRO, label: 'Desempeño Centro', icon: Building2 },
+    ],
+  },
 ];
+
+const ALL_MORE_TABS = TAB_GROUPS.flatMap(g => g.items);
+const MORE_TABS_COUNT = ALL_MORE_TABS.length;
 
 // ── Shared tab style ──
 
@@ -109,7 +143,7 @@ const IndicadoresLayout: React.FC = () => {
             {/* Active More Tab pill — reactive to route changes via useLocation */}
             {(() => {
               const currentPath = location.pathname;
-              const activeTab = MORE_TABS.find(t => t.to === currentPath);
+              const activeTab = ALL_MORE_TABS.find(t => t.to === currentPath);
               if (!activeTab) return null;
               const Icon = activeTab.icon;
               return (
@@ -137,7 +171,7 @@ const IndicadoresLayout: React.FC = () => {
                 aria-haspopup="true"
                 aria-expanded={showMore}
                 className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-                  MORE_TABS.some(t => t.to === location.pathname)
+                  ALL_MORE_TABS.some(t => t.to === location.pathname)
                     ? 'border-blue-600 text-blue-700'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
@@ -145,7 +179,7 @@ const IndicadoresLayout: React.FC = () => {
                 <ChevronDown size={16} />
                 <span>Más indicadores</span>
                 <span className="text-[10px] text-gray-400 font-bold ml-0.5">
-                  {MORE_TABS.length}
+                  {MORE_TABS_COUNT}
                 </span>
               </button>
 
@@ -157,23 +191,31 @@ const IndicadoresLayout: React.FC = () => {
                     className="fixed bg-white border border-gray-200 rounded-xl shadow-lg z-20 py-1 min-w-[220px]"
                     style={{ top: menuOrigin.top, right: menuOrigin.right }}
                   >
-                    {MORE_TABS.map(tab => (
-                      <NavLink
-                        key={tab.to}
-                        to={tab.to}
-                        end={false}
-                        onClick={handleCloseMore}
-                        className={({ isActive }) =>
-                          `flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors ${
-                            isActive
-                              ? 'bg-blue-50 text-blue-700 font-medium'
-                              : 'text-gray-600 hover:bg-gray-50'
-                          }`
-                        }
-                      >
-                        <tab.icon size={15} />
-                        {tab.label}
-                      </NavLink>
+                    {TAB_GROUPS.map((group, gi) => (
+                      <React.Fragment key={group.label}>
+                        {gi > 0 && <div className="border-t border-gray-100 my-1" />}
+                        <div className="px-4 py-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                          {group.label}
+                        </div>
+                        {group.items.map(tab => (
+                          <NavLink
+                            key={tab.to}
+                            to={tab.to}
+                            end={false}
+                            onClick={handleCloseMore}
+                            className={({ isActive }) =>
+                              `flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors ${
+                                isActive
+                                  ? 'bg-blue-50 text-blue-700 font-medium'
+                                  : 'text-gray-600 hover:bg-gray-50'
+                              }`
+                            }
+                          >
+                            <tab.icon size={15} />
+                            {tab.label}
+                          </NavLink>
+                        ))}
+                      </React.Fragment>
                     ))}
                   </div>
                 </>,

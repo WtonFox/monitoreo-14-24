@@ -12,6 +12,7 @@ import ImpactoSocial from './pages/ImpactoSocial';
 import MapaInteractivo from './pages/MapaInteractivo';
 import Participantes from './pages/Participantes';
 import Diagnostico from './pages/Diagnostico';
+import Alertas from './pages/Alertas';
 import Forbidden from './pages/Forbidden';
 
 import IndicadoresLayout from './pages/IndicadoresLayout';
@@ -197,6 +198,14 @@ export const router = createHashRouter([
             ),
           },
         ],
+      },
+      {
+        path: 'alertas',
+        element: (
+          <ProtectedRoute>
+            <Alertas />
+          </ProtectedRoute>
+        ),
       },
       // Forbidden is unguarded — anyone can see it
       { path: 'forbidden', element: <Forbidden /> },
