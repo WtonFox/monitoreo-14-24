@@ -289,12 +289,12 @@ export function computeBoardData(
       statusCount[p.estado] = (statusCount[p.estado] || 0) + 1;
       if (isActiveStatus(p.estado)) {
         totalActive++;
-        if (needsProg && p.centro) activeByCentro[p.centro] = (activeByCentro[p.centro] || 0) + 1;
+        if ((needsProg || needsCtr) && p.centro) activeByCentro[p.centro] = (activeByCentro[p.centro] || 0) + 1;
         if (needsProg && p.municipio) activeByMuni[p.municipio] = (activeByMuni[p.municipio] || 0) + 1;
       }
       if (isGraduatedStatus(p.estado)) {
         totalGraduated++;
-        if (needsProg && p.centro) graduatedByCentro[p.centro] = (graduatedByCentro[p.centro] || 0) + 1;
+        if ((needsProg || needsCtr) && p.centro) graduatedByCentro[p.centro] = (graduatedByCentro[p.centro] || 0) + 1;
         if (needsProg && p.municipio) graduatedByMuni[p.municipio] = (graduatedByMuni[p.municipio] || 0) + 1;
       }
     }
