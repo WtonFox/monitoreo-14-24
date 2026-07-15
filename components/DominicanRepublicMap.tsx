@@ -6,7 +6,7 @@ import { useMap } from 'react-leaflet';
 import { Participant } from '../types';
 import { REGION_PROVINCES, PROVINCE_MUNICIPALITIES } from '../constants';
 import { useGeoJSON } from '../hooks/useGeoJSON';
-import { useMapStats } from '../hooks/useMapStats';
+import { useMapStats, type LocationStats } from '../hooks/useMapStats';
 import {
     normalizeProvinceName,
     normalizeLocationName,
@@ -28,6 +28,13 @@ interface DominicanRepublicMapProps {
     level?: 'region' | 'province' | 'municipality';
     selectedProvince?: string | null;
     selectedMunicipality?: string | null;
+    // NEW optional props — when provided, skip internal useMapStats
+    mapData?: Record<string, number>;
+    locationStats?: Record<string, LocationStats>;
+    getColor?: (count: number, useLocalScale?: boolean) => string;
+    maxCount?: number;
+    // NEW optional callback
+    onLocationSelect?: (locationName: string | null) => void;
 }
 
 // Función auxiliar para formatear números
@@ -39,7 +46,13 @@ export const DominicanRepublicMap: React.FC<DominicanRepublicMapProps> = ({
     viewMode,
     level = 'province',
     selectedProvince = null,
-    selectedMunicipality = null
+    selectedMunicipality = null,
+    // NEW optional props
+    mapData: externalMapData,
+    locationStats: externalLocationStats,
+    getColor: externalGetColor,
+    maxCount: externalMaxCount,
+    onLocationSelect,
 }) => {
     // State
     const [hoveredLocation, setHoveredLocation] = useState<string | null>(null);
@@ -50,12 +63,13 @@ export const DominicanRepublicMap: React.FC<DominicanRepublicMapProps> = ({
     // Hooks
     const { geoJSON, isLoading } = useGeoJSON(level as 'region' | 'province' | 'municipality', viewMode);
 
-    const {
-        mapData,
-        locationStats,
-        maxCount,
-        getColor
-    } = useMapStats(data, level as 'region' | 'province' | 'municipality', selectedProvince);
+    const internalStats = useMapStats(data, level as 'region' | 'province' | 'municipality', selectedProvince);
+
+    // Use external props when provided (optional override), fallback to internal stats
+    const mapData = externalMapData ?? internalStats.mapData;
+    const locationStats = externalLocationStats ?? internalStats.locationStats;
+    const getColor = externalGetColor ?? internalStats.getColor;
+    const maxCount = externalMaxCount ?? internalStats.maxCount;
 
     // Calcular centroides cuando cargue el GeoJSON de municipios
     // TODO: Esto podría moverse a otro hook o dentro de useGeoJSON si se generaliza
@@ -191,6 +205,11 @@ export const DominicanRepublicMap: React.FC<DominicanRepublicMapProps> = ({
             mouseout: () => {
                 setHoveredLocation(null);
                 setTooltipPosition(null);
+            },
+            click: () => {
+                if (onLocationSelect) {
+                    onLocationSelect(locationName);
+                }
             },
         });
     };
