@@ -1,6 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { DominicanRepublicMap } from './DominicanRepublicMap';
 import { MapFilters } from './MapFilters';
+import { LocationInfoBox } from './LocationInfoBox';
+import { useMapStats } from '../hooks/useMapStats';
 import { Participant } from '../types';
 import { Maximize2, Minimize2, Map as MapIcon, Layers } from 'lucide-react';
 
@@ -60,6 +62,17 @@ export const MapSection: React.FC<MapSectionProps> = ({ data }) => {
         setMapLevel('province');
     };
 
+    // Location selection state (tap/click on polygon)
+    const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
+
+    const handleLocationSelect = (name: string | null) => {
+        if (name === selectedLocation) {
+            setSelectedLocation(null);
+        } else {
+            setSelectedLocation(name);
+        }
+    };
+
     // Filter Data
     const filteredData = useMemo(() => {
         if (!data || !Array.isArray(data)) return [];
@@ -93,6 +106,14 @@ export const MapSection: React.FC<MapSectionProps> = ({ data }) => {
             return true;
         });
     }, [data, selectedProvince, selectedMunicipality, selectedGender, selectedAgeRange, selectedYearIngreso, selectedYearInclusion]);
+
+    // Map stats lifted from DominicanRepublicMap for LocationInfoBox
+    const {
+        mapData: computedMapData,
+        locationStats,
+        maxCount,
+        getColor
+    } = useMapStats(filteredData, mapLevel, selectedProvince);
 
     return (
         <div className="space-y-4">
@@ -142,29 +163,39 @@ export const MapSection: React.FC<MapSectionProps> = ({ data }) => {
                         </div>
                     </div>
 
-                    {/* Filters Component */}
-                    <MapFilters
-                        selectedProvince={selectedProvince}
-                        selectedMunicipality={selectedMunicipality}
-                        selectedGender={selectedGender}
-                        selectedAgeRange={selectedAgeRange}
-                        // New props for years
-                        selectedYearIngreso={selectedYearIngreso}
-                        selectedYearInclusion={selectedYearInclusion}
+                    {/* Conditionally render LocationInfoBox or MapFilters */}
+                    {selectedLocation && locationStats[selectedLocation] ? (
+                        <LocationInfoBox
+                            locationName={selectedLocation}
+                            totalParticipants={filteredData.length}
+                            stats={locationStats[selectedLocation]}
+                            level={mapLevel}
+                            onClose={() => setSelectedLocation(null)}
+                        />
+                    ) : (
+                        <MapFilters
+                            selectedProvince={selectedProvince}
+                            selectedMunicipality={selectedMunicipality}
+                            selectedGender={selectedGender}
+                            selectedAgeRange={selectedAgeRange}
+                            // New props for years
+                            selectedYearIngreso={selectedYearIngreso}
+                            selectedYearInclusion={selectedYearInclusion}
 
-                        availableProvinces={availableProvinces}
-                        availableMunicipalities={availableMunicipalities}
+                            availableProvinces={availableProvinces}
+                            availableMunicipalities={availableMunicipalities}
 
-                        onProvinceChange={handleProvinceChange}
-                        onMunicipalityChange={setSelectedMunicipality}
-                        onGenderChange={setSelectedGender}
-                        onAgeRangeChange={setSelectedAgeRange}
-                        // New handlers
-                        onYearIngresoChange={setSelectedYearIngreso}
-                        onYearInclusionChange={setSelectedYearInclusion}
+                            onProvinceChange={handleProvinceChange}
+                            onMunicipalityChange={setSelectedMunicipality}
+                            onGenderChange={setSelectedGender}
+                            onAgeRangeChange={setSelectedAgeRange}
+                            // New handlers
+                            onYearIngresoChange={setSelectedYearIngreso}
+                            onYearInclusionChange={setSelectedYearInclusion}
 
-                        onClearFilters={handleClearFilters}
-                    />
+                            onClearFilters={handleClearFilters}
+                        />
+                    )}
 
                     {/* Stats Summary Card (Enhanced) */}
                     <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
@@ -270,6 +301,11 @@ export const MapSection: React.FC<MapSectionProps> = ({ data }) => {
                         level={mapLevel}
                         selectedProvince={selectedProvince}
                         selectedMunicipality={selectedMunicipality}
+                        mapData={computedMapData}
+                        locationStats={locationStats}
+                        getColor={getColor}
+                        maxCount={maxCount}
+                        onLocationSelect={handleLocationSelect}
                     />
                 </div>
 

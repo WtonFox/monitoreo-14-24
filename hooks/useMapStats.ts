@@ -7,6 +7,14 @@ import {
     findRegion
 } from '../utils/geoUtils';
 
+export interface LocationStats {
+    total: number;
+    genderBreakdown: { M: number; F: number; other: number };
+    statusBreakdown: Record<string, number>;
+    ageRanges: { min: number; max: number; avg: number };
+    topCenters: { name: string; count: number }[];
+}
+
 export const useMapStats = (
     data: Participant[],
     level: 'region' | 'province' | 'municipality',
