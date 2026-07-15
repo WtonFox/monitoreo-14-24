@@ -377,7 +377,9 @@ export function computeBoardData(
   let topCursos: { name: string; value: number }[] = [];
   let genderByMunicipio: { name: string; Mujeres: number; Hombres: number }[] = [];
 
-  if (needs('territorial')) {
+  // Computed outside needs('territorial') because program and center slices also depend on them
+  const shouldComputeTop = needs('territorial') || needs('program') || needs('center');
+  if (shouldComputeTop) {
     topMunicipios = topNArr(
       Object.entries(municipioCount).map(([name, value]) => ({ name, value })),
       10
@@ -390,6 +392,9 @@ export function computeBoardData(
       Object.entries(cursoCount).map(([name, value]) => ({ name, value })),
       10
     );
+  }
+
+  if (needs('territorial')) {
     genderByMunicipio = topMunicipios.map(m => ({
       name: m.name,
       Mujeres: womenByMuni[m.name] || 0,
