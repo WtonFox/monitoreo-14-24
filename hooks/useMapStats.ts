@@ -57,10 +57,7 @@ export const useMapStats = (
 
     // Calcular estadísticas detalladas — SINGLE PASS (R-perf-3)
     // Also computes national rates inside the same pass (no extra iterations)
-    let nationalPhoneRate = 0;
-    let nationalVulnerabilityRate = 0;
-
-    const locationStats = useMemo(() => {
+    const { locationStats, nationalPhoneRate, nationalVulnerabilityRate } = useMemo(() => {
         const stats: Record<string, {
             total: number;
             genderBreakdown: { M: number; F: number; other: number };
@@ -161,10 +158,6 @@ export const useMapStats = (
             }
         });
 
-        // Write national rates into outer-scope variables
-        nationalPhoneRate = totalAcc > 0 ? phoneAcc / totalAcc : 0;
-        nationalVulnerabilityRate = totalAcc > 0 ? vulnAcc / totalAcc : 0;
-
         // ── Post-process: compute avg age and topCenters from accumulators ──
         Object.keys(stats).forEach(loc => {
             const s = stats[loc];
@@ -188,7 +181,11 @@ export const useMapStats = (
             result[loc] = clean;
         });
 
-        return result;
+        return {
+            locationStats: result,
+            nationalPhoneRate: totalAcc > 0 ? phoneAcc / totalAcc : 0,
+            nationalVulnerabilityRate: totalAcc > 0 ? vulnAcc / totalAcc : 0,
+        };
     }, [data, level]);
 
     // Encontrar máximos y mínimos para escala de colores
