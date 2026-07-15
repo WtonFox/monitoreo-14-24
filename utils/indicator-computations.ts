@@ -23,7 +23,8 @@ const isEmptyValue = (val: string | null | undefined): boolean =>
 const sanitizeValue = (s: string): string =>
   s.replace(/&#x[0-9A-Fa-f]+;/g, '').trim();
 
-const completitudPct = (count: number, total: number): string => pct(count, total);
+const completitudPct = (count: number, total: number): string =>
+  `${formatNumber(count)} de ${formatNumber(total)} (${pct(count, total)})`;
 
 function topNAgg(
   record: Record<string, number>,
@@ -410,7 +411,7 @@ export function computeIndicators(data: Participant[]): UseIndicatorsResult {
   });
   all.push({
     id: 21,
-    name: 'N\u00famero de participantes por estado civil',
+    name: 'Cantidad de participantes por estado civil',
     category: 'demograficos',
     value: formatTopN(estadoCivilCounts),
     topItems: buildTopItems(estadoCivilCounts, total),
@@ -433,7 +434,7 @@ export function computeIndicators(data: Participant[]): UseIndicatorsResult {
 
   all.push({
     id: 11,
-    name: 'Número de participantes por municipio',
+    name: 'Cantidad de participantes por municipio',
     category: 'territoriales',
     value: formatTopN(municipioCounts),
     topCount: 10,
@@ -457,7 +458,7 @@ export function computeIndicators(data: Participant[]): UseIndicatorsResult {
   });
   all.push({
     id: 13,
-    name: 'N\u00famero de participantes por sector',
+    name: 'Cantidad de participantes por sector',
     category: 'territoriales',
     value: 'N/D',
     formula: 'Conteo por sector',
@@ -477,7 +478,7 @@ export function computeIndicators(data: Participant[]): UseIndicatorsResult {
   });
   all.push({
     id: 15,
-    name: 'Número de participantes por centro',
+    name: 'Cantidad de participantes por centro',
     category: 'territoriales',
     value: formatTopN(centroCounts),
     topCount: 10,
@@ -501,7 +502,7 @@ export function computeIndicators(data: Participant[]): UseIndicatorsResult {
   });
   all.push({
     id: 17,
-    name: 'Número de participantes por curso',
+    name: 'Cantidad de participantes por curso',
     category: 'territoriales',
     value: formatTopN(cursoCounts),
     topCount: 10,
@@ -550,7 +551,7 @@ export function computeIndicators(data: Participant[]): UseIndicatorsResult {
 
   all.push({
     id: 19,
-    name: 'Número de participantes por estado',
+    name: 'Cantidad de participantes por estado',
     category: 'programa',
     value: formatTopN(estadoCounts),
     topItems: buildTopItems(estadoCounts, total),
@@ -582,7 +583,7 @@ export function computeIndicators(data: Participant[]): UseIndicatorsResult {
   all.push({
     id: 26,
     name: 'Porcentaje de responsables con teléfono',
-    category: 'programa',
+    category: 'calidad-dato',
     value: pct(tutorsWithPhone.length, tutorsTotal.length),
     formula: '(Responsables con teléfono / Total responsables) × 100',
     description: 'Disponibilidad de contacto de los responsables. Afecta la capacidad de seguimiento.',
@@ -628,7 +629,7 @@ export function computeIndicators(data: Participant[]): UseIndicatorsResult {
   all.push({
     id: 23,
     name: 'Porcentaje de participantes con teléfono',
-    category: 'sociales',
+    category: 'calidad-dato',
     value: pct(withPhone, total),
     formula: '(Con teléfono registrado / Total) × 100',
     description: 'Calidad del dato de contacto. A mayor %, mejor capacidad de seguimiento y comunicación.',
@@ -637,7 +638,7 @@ export function computeIndicators(data: Participant[]): UseIndicatorsResult {
   all.push({
     id: 24,
     name: 'Porcentaje de participantes con dirección',
-    category: 'sociales',
+    category: 'calidad-dato',
     value: pct(withAddress, total),
     formula: '(Con dirección registrada / Total) × 100',
     description: 'Completitud del dato domiciliario. Afecta la capacidad de localización y visitas de campo.',
@@ -646,7 +647,7 @@ export function computeIndicators(data: Participant[]): UseIndicatorsResult {
   all.push({
     id: 29,
     name: 'Porcentaje de mujeres en centros (global)',
-    category: 'sociales',
+    category: 'demograficos',
     value: total > 0 ? pct(women, total) : '0.0%',
     formula: '(Mujeres / Total) × 100',
     description: 'Participación femenina global. En el board detallado se muestra el desglose por centro en gráfico de barras.',
@@ -655,7 +656,7 @@ export function computeIndicators(data: Participant[]): UseIndicatorsResult {
   all.push({
     id: 30,
     name: 'Porcentaje de hombres en centros (global)',
-    category: 'sociales',
+    category: 'demograficos',
     value: total > 0 ? pct(men, total) : '0.0%',
     formula: '(Hombres / Total) × 100',
     description: 'Participación masculina global. En el board detallado se muestra el desglose por curso en gráfico de barras.',
@@ -671,7 +672,7 @@ export function computeIndicators(data: Participant[]): UseIndicatorsResult {
   all.push({
     id: 31,
     name: 'Porcentaje de grupo etario en centros (global)',
-    category: 'sociales',
+    category: 'demograficos',
     value: `Rango 14-17: ${pct(age14_17, total)} | Rango 18-24: ${pct(age18_24, total)}`,
     topItems: groupEtarioTopItems,
     resto: groupEtarioResto,
@@ -682,7 +683,7 @@ export function computeIndicators(data: Participant[]): UseIndicatorsResult {
   all.push({
     id: 32,
     name: 'Porcentaje de grupo etario en cursos (global)',
-    category: 'sociales',
+    category: 'demograficos',
     value: `Rango 14-17: ${pct(age14_17, total)} | Rango 18-24: ${pct(age18_24, total)}`,
     topItems: groupEtarioTopItems,
     resto: groupEtarioResto,
@@ -905,7 +906,7 @@ export function computeIndicators(data: Participant[]): UseIndicatorsResult {
   });
   all.push({
     id: 52,
-    name: 'Edad promedio al momento del registro',
+    name: 'Edad de ingreso al programa',
     category: 'cobertura-temporal',
     value: avgAgeReg,
     formula: '\u03a3 edadRegistro / Total con edadRegistro',
@@ -1108,7 +1109,6 @@ export function computeIndicators(data: Participant[]): UseIndicatorsResult {
     buildGroup('demograficos', 'Demográficos'),
     buildGroup('territoriales', 'Territoriales'),
     buildGroup('programa', 'Estado del Programa'),
-    buildGroup('sociales', 'Sociales'),
     buildGroup('calidad-dato', 'Calidad del Dato'),
     buildGroup('vulnerabilidad', 'Salud y Vulnerabilidad'),
     buildGroup('cobertura-temporal', 'Cobertura Temporal'),

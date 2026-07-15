@@ -20,7 +20,6 @@ const Indicadores = React.lazy(() => import('./pages/Indicadores'));
 const DemograficosBoard = React.lazy(() => import('./pages/indicadores/DemograficosBoard'));
 const TerritorialesBoard = React.lazy(() => import('./pages/indicadores/TerritorialesBoard'));
 const ProgramaBoard = React.lazy(() => import('./pages/indicadores/ProgramaBoard'));
-const SocialesBoard = React.lazy(() => import('./pages/indicadores/SocialesBoard'));
 const CalidadDatoBoard = React.lazy(() => import('./pages/indicadores/CalidadDatoBoard'));
 const VulnerabilidadBoard = React.lazy(() => import('./pages/indicadores/VulnerabilidadBoard'));
 const CoberturaBoard = React.lazy(() => import('./pages/indicadores/CoberturaBoard'));
@@ -123,11 +122,7 @@ export const router = createHashRouter([
           },
           {
             path: 'sociales',
-            element: (
-              <Suspense fallback={<div className="p-8 text-center text-gray-400">Cargando...</div>}>
-                <SocialesBoard />
-              </Suspense>
-            ),
+            element: <Navigate to="/indicadores" replace />,
           },
           {
             path: 'calidad-dato',

@@ -16,7 +16,7 @@ interface OverviewTabProps {
 const PIE_COLORS = ['#2563eb', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6', '#06b6d4', '#f97316'];
 
 export const OverviewTab: React.FC<OverviewTabProps> = ({ indicator, boardData, meta }) => {
-  const { demographicData, territorialData, programData, socialData } = boardData;
+  const { demographicData, territorialData, programData } = boardData;
 
   switch (indicator.category) {
     case 'demograficos':
@@ -119,41 +119,6 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ indicator, boardData, 
                   <div className="w-full bg-gray-200 rounded-full h-2"><div className={`${bar.color} h-2 rounded-full transition-all`} style={{ width: `${Math.min(bar.pct, 100)}%` }} /></div>
                 </div>
               ))}
-            </div>
-          </div>
-        </div>
-      );
-
-    case 'sociales':
-      return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="bg-gray-50 rounded-xl border border-gray-200 p-4">
-            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Completitud de datos</h4>
-            <div className="space-y-5 mt-2">
-              {[
-                { label: 'Teléfono registrado', pct: socialData.phoneCompletenessPct, color: 'bg-blue-500' },
-                { label: 'Dirección registrada', pct: socialData.addressCompletenessPct, color: 'bg-emerald-500' },
-              ].map(bar => (
-                <div key={bar.label}>
-                  <div className="flex justify-between text-xs mb-1.5"><span className="text-gray-600">{bar.label}</span><span className="font-bold text-gray-900">{formatPercentage(bar.pct)}</span></div>
-                  <div className="w-full bg-gray-200 rounded-full h-3"><div className={`${bar.color} h-3 rounded-full transition-all`} style={{ width: `${bar.pct}%` }} /></div>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="bg-gray-50 rounded-xl border border-gray-200 p-4">
-            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Género por centro (top 5)</h4>
-            <div className="space-y-2 mt-1">
-              {socialData.genderByCentro.slice(0, 5).map((item, i) => {
-                const total = item.Mujeres + item.Hombres;
-                const wp = total > 0 ? (item.Mujeres / total) * 100 : 0;
-                return (
-                  <div key={i}>
-                    <div className="flex justify-between text-[11px] text-gray-600 mb-0.5"><span className="truncate mr-2">{item.name}</span><span className="font-semibold tabular-nums">{formatNumber(total)}</span></div>
-                    <div className="w-full bg-gray-200 rounded-full h-1.5 flex overflow-hidden"><div className="bg-blue-500 h-1.5 transition-all" style={{ width: `${wp}%` }} /><div className="bg-amber-400 h-1.5 transition-all" style={{ width: `${100 - wp}%` }} /></div>
-                  </div>
-                );
-              })}
             </div>
           </div>
         </div>

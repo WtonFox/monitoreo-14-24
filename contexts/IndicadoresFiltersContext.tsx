@@ -13,7 +13,6 @@ const routeBoardMap: Record<string, BoardCategory | 'all'> = {
   [ROUTES.INDICADORES_DEMOGRAFICOS]: 'demographic',
   [ROUTES.INDICADORES_TERRITORIALES]: 'territorial',
   [ROUTES.INDICADORES_PROGRAMA]: 'program',
-  [ROUTES.INDICADORES_SOCIALES]: 'social',
   [ROUTES.INDICADORES_CALIDAD]: 'quality',
   [ROUTES.INDICADORES_VULNERABILIDAD]: 'vulnerability',
   [ROUTES.INDICADORES_COBERTURA]: 'temporal',
