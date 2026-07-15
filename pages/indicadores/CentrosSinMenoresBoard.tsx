@@ -1,6 +1,7 @@
-import React, { useMemo } from 'react'
+import React, { useState, useMemo } from 'react'
 import { formatNumber, formatPercentage } from '../../utils/formatters'
-import { Users, Building2, Percent, AlertTriangle } from 'lucide-react'
+import { chartClass } from '../../utils/indicadores-helpers'
+import { Users, Building2, Percent, AlertTriangle, Grid3X3, List } from 'lucide-react'
 import BoardShell from '../../components/BoardShell'
 import BoardInfo from '../../components/BoardInfo'
 import { useIndicadoresFilters } from '../../contexts/IndicadoresFiltersContext'
@@ -28,6 +29,7 @@ interface ComputedMetrics {
 
 const CentrosSinMenoresBoard: React.FC = () => {
   const { filteredData } = useIndicadoresFilters();
+  const [viewMode, setViewMode] = useState<'grid' | 'row'>('row');
 
   const {
     totalCentros,
@@ -168,12 +170,10 @@ const CentrosSinMenoresBoard: React.FC = () => {
         </div>
       </div>
 
-      {/* Filter Bar + Info */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex-1">
-          <IndicadoresFilterBar showYear showProvince showMunicipio />
-        </div>
-        <div className="flex-shrink-0">
+      {/* Filter Bar + Info + View Toggle */}
+      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-wrap items-center gap-3">
+        <IndicadoresFilterBar showYear showProvince showMunicipio noContainer />
+        <div className="ml-auto flex items-center gap-2">
           <BoardInfo
             title="Centros sin Cobertura de Menores"
             sections={[
@@ -184,11 +184,20 @@ const CentrosSinMenoresBoard: React.FC = () => {
               { heading: 'Cómo leerlo', content: 'La tabla izquierda (Edad Actual) te dice qué centros hoy no atienden menores. La tabla derecha (Edad Registro) te dice qué centros nunca atendieron menores. La diferencia entre ambas revela centros donde los menores se inscribieron pero ya crecieron.' },
             ]}
           />
+          <div className="h-6 w-px bg-gray-200" />
+          <div className="flex bg-gray-100 rounded-lg p-1">
+            <button onClick={() => setViewMode('row')}
+              className={`p-1.5 rounded ${viewMode === 'row' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+              title="Vista fila"><List size={16} /></button>
+            <button onClick={() => setViewMode('grid')}
+              className={`p-1.5 rounded ${viewMode === 'grid' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+              title="Vista cuadrícula"><Grid3X3 size={16} /></button>
+          </div>
         </div>
       </div>
 
       {/* ── Comparison tables ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className={chartClass(viewMode)}>
         {/* Table A: Edad ACTUAL */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
           <h3 className="text-lg font-bold text-gray-800 mb-1">

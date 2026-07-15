@@ -67,7 +67,7 @@ const barColor = (pct: number): string => {
 
 const CalidadNdBoard: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('general');
-  const [layoutMode, setLayoutMode] = useState<'grid' | 'row'>('grid');
+  const [layoutMode, setLayoutMode] = useState<'grid' | 'row'>('row');
   const { filteredData } = useIndicadoresFilters();
 
   const computed: ComputedMetrics = useMemo(() => {
@@ -231,12 +231,10 @@ const CalidadNdBoard: React.FC = () => {
         </div>
       </div>
 
-      {/* Filter Bar + View Toggles + Info */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex-1">
-          <IndicadoresFilterBar showYear showProvince showMunicipio />
-        </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
+      {/* ── Filters + View Toggles + Info ── */}
+      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-wrap items-center gap-3">
+        <IndicadoresFilterBar showYear showProvince showMunicipio noContainer />
+        <div className="ml-auto flex items-center gap-2">
           <BoardInfo
             title="Calidad del Dato (ND)"
             sections={[
@@ -248,37 +246,24 @@ const CalidadNdBoard: React.FC = () => {
               { heading: 'Vista por provincia', content: 'Cambia a "Por Provincia" para ver el desglose de % ND de cada campo por provincia. Útil para detectar patrones geográficos en la calidad del dato.' },
             ]}
           />
+          <div className="h-6 w-px bg-gray-200" />
           <div className="flex bg-gray-100 rounded-lg p-1">
-            <button
-              onClick={() => setViewMode('general')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-sm font-medium transition-colors ${
-                viewMode === 'general'
-                  ? 'bg-white shadow-sm text-blue-600'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              <BarChart3 size={14} />
+            <button onClick={() => setViewMode('general')}
+              className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${viewMode === 'general' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}>
               General
             </button>
-            <button
-              onClick={() => setViewMode('provincia')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-sm font-medium transition-colors ${
-                viewMode === 'provincia'
-                  ? 'bg-white shadow-sm text-blue-600'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              <TableIcon size={14} />
-              Por Provincia
+            <button onClick={() => setViewMode('provincia')}
+              className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${viewMode === 'provincia' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}>
+              Por provincia
             </button>
           </div>
           <div className="flex bg-gray-100 rounded-lg p-1">
-            <button onClick={() => setLayoutMode('grid')}
-              className={`p-1.5 rounded ${layoutMode === 'grid' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-              title="Vista cuadrícula"><Grid3X3 size={16} /></button>
             <button onClick={() => setLayoutMode('row')}
               className={`p-1.5 rounded ${layoutMode === 'row' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
               title="Vista fila"><List size={16} /></button>
+            <button onClick={() => setLayoutMode('grid')}
+              className={`p-1.5 rounded ${layoutMode === 'grid' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+              title="Vista cuadrícula"><Grid3X3 size={16} /></button>
           </div>
         </div>
       </div>

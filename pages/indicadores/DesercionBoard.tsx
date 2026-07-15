@@ -38,7 +38,7 @@ const isDesertionStatus = (estado: string | null | undefined): boolean => {
 
 const DesercionBoard: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('general');
-  const [layoutMode, setLayoutMode] = useState<'grid' | 'row'>('grid');
+  const [layoutMode, setLayoutMode] = useState<'grid' | 'row'>('row');
   const [localProvince, setLocalProvince] = useState('todos');
   const { filteredData } = useIndicadoresFilters();
 
@@ -173,11 +173,9 @@ const DesercionBoard: React.FC = () => {
       </div>
 
       {/* ── Filters + View Toggles + Info ── */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex-1">
-          <IndicadoresFilterBar showYear showProvince showMunicipio />
-        </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
+      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-wrap items-center gap-3">
+        <IndicadoresFilterBar showYear showProvince showMunicipio noContainer />
+        <div className="ml-auto flex items-center gap-2">
           <BoardInfo
             title="Tablero de Deserción"
             sections={[
@@ -188,35 +186,24 @@ const DesercionBoard: React.FC = () => {
               { heading: 'Filtros', content: 'Los filtros globales (año, provincia, municipio) aplican sobre todos los datos. El toggle General/Por provincia permite segmentar el ranking.' },
             ]}
           />
+          <div className="h-6 w-px bg-gray-200" />
           <div className="flex bg-gray-100 rounded-lg p-1">
-            <button
-              onClick={() => { setViewMode('general'); setLocalProvince('todos'); }}
-              className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
-                viewMode === 'general'
-                  ? 'bg-white shadow-sm text-blue-600'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
+            <button onClick={() => { setViewMode('general'); setLocalProvince('todos'); }}
+              className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${viewMode === 'general' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}>
               General
             </button>
-            <button
-              onClick={() => setViewMode('provincia')}
-              className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
-                viewMode === 'provincia'
-                  ? 'bg-white shadow-sm text-blue-600'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
+            <button onClick={() => setViewMode('provincia')}
+              className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${viewMode === 'provincia' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}>
               Por provincia
             </button>
           </div>
           <div className="flex bg-gray-100 rounded-lg p-1">
-            <button onClick={() => setLayoutMode('grid')}
-              className={`p-1.5 rounded ${layoutMode === 'grid' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-              title="Vista cuadrícula"><Grid3X3 size={16} /></button>
             <button onClick={() => setLayoutMode('row')}
               className={`p-1.5 rounded ${layoutMode === 'row' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
               title="Vista fila"><List size={16} /></button>
+            <button onClick={() => setLayoutMode('grid')}
+              className={`p-1.5 rounded ${layoutMode === 'grid' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+              title="Vista cuadrícula"><Grid3X3 size={16} /></button>
           </div>
         </div>
       </div>
