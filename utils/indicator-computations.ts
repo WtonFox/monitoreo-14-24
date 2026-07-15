@@ -2,6 +2,7 @@ import type { Participant } from '../types';
 import { formatNumber, formatPercentage } from '../utils/formatters';
 import { isWomen, isMen, isActiveStatus, isGraduatedStatus, hasValue } from '../utils/normalize';
 import type { Indicator, IndicatorCategory, IndicatorGroup, UseIndicatorsResult } from '../hooks/useIndicators';
+import { findRegion } from '../utils/geoUtils';
 
 const count = (data: Participant[], predicate: (p: Participant) => boolean): number =>
   data.filter(predicate).length;
@@ -18,6 +19,13 @@ const safeDiv = (a: number, b: number): number => (b > 0 ? a / b : 0);
 
 const isEmptyValue = (val: string | null | undefined): boolean =>
   val === null || val === undefined || val.trim() === '' || val === 'N/A' || val === 'N/D';
+
+/** Estados que indican deserción (case-insensitive) — reutilizado de DesercionBoard */
+const isDesertionStatus = (estado: string | null | undefined): boolean => {
+  if (!estado) return false;
+  const s = estado.trim().toLowerCase();
+  return ['retirado', 'desertor', 'baja', 'cancelado', 'inactivo', 'no admitido', 'abandonó', 'abandono'].includes(s);
+};
 
 /** Limpia entidades HTML residuales que llegan desde la API (&#x0D;, &#x0A;, etc.) */
 const sanitizeValue = (s: string): string =>
@@ -132,6 +140,17 @@ export function computeIndicators(data: Participant[]): UseIndicatorsResult {
   const men14_17 = count(data, p => p.edad >= 14 && p.edad <= 17 && isMen(p.sexo));
   const men18_24 = count(data, p => p.edad >= 18 && p.edad <= 24 && isMen(p.sexo));
 
+  // New age-bucket computations for expansion (IDs 66, 67, 76)
+  const age18_20 = count(data, p => p.edad >= 18 && p.edad <= 20);
+  const age21_24 = count(data, p => p.edad >= 21 && p.edad <= 24);
+  const age25Plus = count(data, p => p.edad >= 25);
+  const women18_20 = count(data, p => p.edad >= 18 && p.edad <= 20 && isWomen(p.sexo));
+  const women21_24 = count(data, p => p.edad >= 21 && p.edad <= 24 && isWomen(p.sexo));
+  const women25Plus = count(data, p => p.edad >= 25 && isWomen(p.sexo));
+  const men18_20 = count(data, p => p.edad >= 18 && p.edad <= 20 && isMen(p.sexo));
+  const men21_24 = count(data, p => p.edad >= 21 && p.edad <= 24 && isMen(p.sexo));
+  const men25Plus = count(data, p => p.edad >= 25 && isMen(p.sexo));
+
   const estadoCivilCounts: Record<string, number> = {};
   const municipioCounts: Record<string, number> = {};
   const centroCounts: Record<string, number> = {};
@@ -175,6 +194,27 @@ export function computeIndicators(data: Participant[]): UseIndicatorsResult {
   const menByCentro: Record<string, number> = {};
   const centroAgeSum: Record<string, number> = {};
   const centroAgeCount: Record<string, number> = {};
+
+  // ---- Expansion accumulators (IDs 66-83) ----
+  const maritalSexCounts: Record<string, { women: number; men: number; unknown: number }> = {};
+  const regionCounts: Record<string, number> = {};
+  const womenByRegion: Record<string, number> = {};
+  const menByRegion: Record<string, number> = {};
+  const regionAge14_17: Record<string, number> = {};
+  const regionAge18_24: Record<string, number> = {};
+  const centersByRegion: Record<string, Set<string>> = {};
+  const centersWith14_17ByRegion: Record<string, Set<string>> = {};
+  const centersByProvince: Record<string, Set<string>> = {};
+  const centersWith14_17ByProvince: Record<string, Set<string>> = {};
+  const yearCenters: Record<number, Set<string>> = {};
+  const yearCentersWith14_17: Record<number, Set<string>> = {};
+  const courseDesertion: Record<string, { total: number; desertion: number }> = {};
+  const regionDesertion: Record<string, { total: number; desertion: number }> = {};
+  const yearDesertionTotals: Record<number, { total: number; desertion: number }> = {};
+  const provinceEducationCounts: Record<string, Record<string, number>> = {};
+  const regionEducationCounts: Record<string, Record<string, number>> = {};
+  const educationDesertion: Record<string, { total: number; desertion: number }> = {};
+  const yearEducationCounts: Record<number, Record<string, number>> = {};
 
   for (const p of data) {
     if (p.estadoCivil && !isEmptyValue(p.estadoCivil)) {
@@ -293,6 +333,79 @@ export function computeIndicators(data: Participant[]): UseIndicatorsResult {
       if (p.centro) {
         if (!centroEducationCounts[p.centro]) centroEducationCounts[p.centro] = {};
         centroEducationCounts[p.centro][p.nivelEstudio] = (centroEducationCounts[p.centro][p.nivelEstudio] || 0) + 1;
+      }
+    }
+
+    // ---- Expansion in-loop accumulators (IDs 66-83) ----
+    if (p.estadoCivil && !isEmptyValue(p.estadoCivil)) {
+      if (!maritalSexCounts[p.estadoCivil]) {
+        maritalSexCounts[p.estadoCivil] = { women: 0, men: 0, unknown: 0 };
+      }
+      if (isWomen(p.sexo)) maritalSexCounts[p.estadoCivil].women++;
+      else if (isMen(p.sexo)) maritalSexCounts[p.estadoCivil].men++;
+      else maritalSexCounts[p.estadoCivil].unknown++;
+    }
+
+    const region = findRegion(p.provincia || '');
+    regionCounts[region] = (regionCounts[region] || 0) + 1;
+    if (isWomen(p.sexo)) womenByRegion[region] = (womenByRegion[region] || 0) + 1;
+    if (isMen(p.sexo)) menByRegion[region] = (menByRegion[region] || 0) + 1;
+    if (p.edad >= 14 && p.edad <= 17) regionAge14_17[region] = (regionAge14_17[region] || 0) + 1;
+    if (p.edad >= 18 && p.edad <= 24) regionAge18_24[region] = (regionAge18_24[region] || 0) + 1;
+
+    if (p.centro) {
+      const reg = region;
+      if (!centersByRegion[reg]) centersByRegion[reg] = new Set();
+      centersByRegion[reg].add(p.centro);
+      if (!centersByProvince[p.provincia || 'Desconocido']) centersByProvince[p.provincia || 'Desconocido'] = new Set();
+      centersByProvince[p.provincia || 'Desconocido'].add(p.centro);
+      if (p.edad >= 14 && p.edad <= 17) {
+        if (!centersWith14_17ByRegion[reg]) centersWith14_17ByRegion[reg] = new Set();
+        centersWith14_17ByRegion[reg].add(p.centro);
+        if (!centersWith14_17ByProvince[p.provincia || 'Desconocido']) centersWith14_17ByProvince[p.provincia || 'Desconocido'] = new Set();
+        centersWith14_17ByProvince[p.provincia || 'Desconocido'].add(p.centro);
+      }
+      const y = p.fechaRegistro ? new Date(p.fechaRegistro).getFullYear() : 0;
+      if (y > 0) {
+        if (!yearCenters[y]) yearCenters[y] = new Set();
+        yearCenters[y].add(p.centro);
+        if (p.edad >= 14 && p.edad <= 17) {
+          if (!yearCentersWith14_17[y]) yearCentersWith14_17[y] = new Set();
+          yearCentersWith14_17[y].add(p.centro);
+        }
+      }
+    }
+
+    if (p.rutaFormativa) {
+      if (!courseDesertion[p.rutaFormativa]) courseDesertion[p.rutaFormativa] = { total: 0, desertion: 0 };
+      courseDesertion[p.rutaFormativa].total++;
+      if (isDesertionStatus(p.estado)) courseDesertion[p.rutaFormativa].desertion++;
+    }
+
+    if (!regionDesertion[region]) regionDesertion[region] = { total: 0, desertion: 0 };
+    regionDesertion[region].total++;
+    if (isDesertionStatus(p.estado)) regionDesertion[region].desertion++;
+
+    const yr = p.fechaRegistro ? new Date(p.fechaRegistro).getFullYear() : 0;
+    if (yr > 0) {
+      if (!yearDesertionTotals[yr]) yearDesertionTotals[yr] = { total: 0, desertion: 0 };
+      yearDesertionTotals[yr].total++;
+      if (isDesertionStatus(p.estado)) yearDesertionTotals[yr].desertion++;
+    }
+
+    if (p.nivelEstudio && !isEmptyValue(p.nivelEstudio)) {
+      if (p.provincia) {
+        if (!provinceEducationCounts[p.provincia]) provinceEducationCounts[p.provincia] = {};
+        provinceEducationCounts[p.provincia][p.nivelEstudio] = (provinceEducationCounts[p.provincia][p.nivelEstudio] || 0) + 1;
+      }
+      if (!regionEducationCounts[region]) regionEducationCounts[region] = {};
+      regionEducationCounts[region][p.nivelEstudio] = (regionEducationCounts[region][p.nivelEstudio] || 0) + 1;
+      if (!educationDesertion[p.nivelEstudio]) educationDesertion[p.nivelEstudio] = { total: 0, desertion: 0 };
+      educationDesertion[p.nivelEstudio].total++;
+      if (isDesertionStatus(p.estado)) educationDesertion[p.nivelEstudio].desertion++;
+      if (yr > 0) {
+        if (!yearEducationCounts[yr]) yearEducationCounts[yr] = {};
+        yearEducationCounts[yr][p.nivelEstudio] = (yearEducationCounts[yr][p.nivelEstudio] || 0) + 1;
       }
     }
   }
@@ -1087,6 +1200,457 @@ export function computeIndicators(data: Participant[]): UseIndicatorsResult {
     status: 'viable',
   });
 
+  // ── Phase 2: 18 new indicators (IDs 66–83) ──
+
+  // ID 66 — Age-bucket distribution (14-17, 18-20, 21-24, 25+)
+  all.push({
+    id: 66,
+    name: 'Distribución por grupo etario detallado',
+    category: 'demograficos',
+    value: [
+      `14-17: ${formatNumber(age14_17)} (${pct(age14_17, total)})`,
+      `18-20: ${formatNumber(age18_20)} (${pct(age18_20, total)})`,
+      `21-24: ${formatNumber(age21_24)} (${pct(age21_24, total)})`,
+      `25+: ${formatNumber(age25Plus)} (${pct(age25Plus, total)})`,
+    ].join(' | '),
+    topItems: [
+      { name: '14-17', value: age14_17, pct: total > 0 ? (age14_17 / total) * 100 : 0 },
+      { name: '18-20', value: age18_20, pct: total > 0 ? (age18_20 / total) * 100 : 0 },
+      { name: '21-24', value: age21_24, pct: total > 0 ? (age21_24 / total) * 100 : 0 },
+      { name: '25+', value: age25Plus, pct: total > 0 ? (age25Plus / total) * 100 : 0 },
+    ],
+    formula: 'Por grupo etario / Total × 100',
+    description: 'Distribución detallada en 4 grupos etarios. Desglosa el rango 18-24 en 18-20 y 21-24, y captura participantes mayores de 24.',
+    status: 'viable',
+  });
+
+  // ID 67 — Sex ratio per age bucket
+  all.push({
+    id: 67,
+    name: 'Proporción mujeres:hombres por grupo etario',
+    category: 'demograficos',
+    value: [
+      `14-17: ${women14_17}:${men14_17} (${men14_17 > 0 ? (women14_17 / men14_17).toFixed(1) : '∞'}:1)`,
+      `18-20: ${women18_20}:${men18_20} (${men18_20 > 0 ? (women18_20 / men18_20).toFixed(1) : '∞'}:1)`,
+      `21-24: ${women21_24}:${men21_24} (${men21_24 > 0 ? (women21_24 / men21_24).toFixed(1) : '∞'}:1)`,
+      `25+: ${women25Plus}:${men25Plus} (${men25Plus > 0 ? (women25Plus / men25Plus).toFixed(1) : '∞'}:1)`,
+    ].join(' | '),
+    topItems: [
+      { name: '14-17', value: men14_17 > 0 ? women14_17 / men14_17 : 0 },
+      { name: '18-20', value: men18_20 > 0 ? women18_20 / men18_20 : 0 },
+      { name: '21-24', value: men21_24 > 0 ? women21_24 / men21_24 : 0 },
+      { name: '25+', value: men25Plus > 0 ? women25Plus / men25Plus : 0 },
+    ],
+    formula: '(Mujeres del grupo / Hombres del grupo) : 1',
+    description: 'Razón de género por grupo etario. Valores > 1 indican más mujeres que hombres. ∞ cuando no hay hombres en el grupo.',
+    status: 'viable',
+  });
+
+  // ID 68 — Marital status × sex cross-tabulation
+  const maritalSexItems: { name: string; value: number }[] = [];
+  for (const [status, counts] of Object.entries(maritalSexCounts)) {
+    if (counts.women > 0) maritalSexItems.push({ name: `${status} (Mujeres)`, value: counts.women });
+    if (counts.men > 0) maritalSexItems.push({ name: `${status} (Hombres)`, value: counts.men });
+    if (counts.unknown > 0) maritalSexItems.push({ name: `${status} (Sexo desconocido)`, value: counts.unknown });
+  }
+  maritalSexItems.sort((a, b) => b.value - a.value);
+  all.push({
+    id: 68,
+    name: 'Cruce de estado civil y sexo',
+    category: 'demograficos',
+    value: maritalSexItems.length > 0
+      ? topN(Object.fromEntries(maritalSexItems.map(i => [i.name, i.value])), 5)
+          .map(([k, v]) => `${k}: ${formatNumber(v)}`).join(' | ')
+      : 'Sin datos',
+    topItems: maritalSexItems.slice(0, 10),
+    resto: maritalSexItems.slice(10).reduce((s, i) => s + i.value, 0),
+    formula: 'Conteo por cruce de estadoCivil × sexo',
+    description: 'Distribución por combinación de estado civil y sexo. Participantes con sexo no determinado se agrupan como "Sexo desconocido".',
+    status: 'viable',
+  });
+
+  // ID 69 — Participation by planning region (findRegion)
+  all.push({
+    id: 69,
+    name: 'Participación por región de planificación',
+    category: 'territoriales',
+    value: formatTopN(regionCounts, true, total),
+    topCount: 10,
+    topItems: buildTopItems(regionCounts, total, 10),
+    resto: calcResto(regionCounts, 10),
+    formula: 'findRegion(provincia) → Σ por región',
+    description: 'Distribución de participantes por región de planificación. Provincias no mapeadas se agrupan como "Desconocido".',
+    status: 'viable',
+  });
+
+  // ID 70 — Sex distribution per planning region
+  const regionSexItems = Object.keys(regionCounts)
+    .map(region => ({
+      name: region,
+      value: regionCounts[region],
+      womenPct: regionCounts[region] > 0 ? ((womenByRegion[region] || 0) / regionCounts[region]) * 100 : 0,
+      menPct: regionCounts[region] > 0 ? ((menByRegion[region] || 0) / regionCounts[region]) * 100 : 0,
+    }))
+    .sort((a, b) => b.value - a.value);
+  all.push({
+    id: 70,
+    name: 'Distribución de sexo por región de planificación',
+    category: 'territoriales',
+    value: regionSexItems.length > 0
+      ? regionSexItems.slice(0, 5)
+          .map(r => `${r.name}: M ${formatPercentage(r.womenPct)} / H ${formatPercentage(r.menPct)}`).join(' | ')
+      : 'Sin datos',
+    topItems: regionSexItems.map(r => ({ name: r.name, value: r.value, pct: r.womenPct })),
+    formula: 'Por región: (Mujeres / Total de la región) × 100',
+    description: 'Participación femenina por región de planificación. El porcentaje de hombres es el complemento.',
+    status: 'viable',
+  });
+
+  // ID 71 — Age distribution per region (14-17% / 18-24%)
+  const regionAgeItems = Object.keys(regionCounts)
+    .filter(r => regionCounts[r] > 0)
+    .map(region => ({
+      name: region,
+      value: regionCounts[region],
+      pct14_17: regionCounts[region] > 0 ? ((regionAge14_17[region] || 0) / regionCounts[region]) * 100 : 0,
+      pct18_24: regionCounts[region] > 0 ? ((regionAge18_24[region] || 0) / regionCounts[region]) * 100 : 0,
+    }))
+    .sort((a, b) => b.value - a.value);
+  all.push({
+    id: 71,
+    name: 'Distribución etaria por región de planificación',
+    category: 'territoriales',
+    value: regionAgeItems.length > 0
+      ? regionAgeItems.slice(0, 5)
+          .map(r => `${r.name}: 14-17 ${formatPercentage(r.pct14_17)} / 18-24 ${formatPercentage(r.pct18_24)}`).join(' | ')
+      : 'Sin datos',
+    topItems: regionAgeItems.map(r => ({ name: r.name, value: r.value, pct: r.pct14_17 })),
+    formula: 'Por región: (Edad 14-17 / Total región) × 100',
+    description: 'Proporción de adolescentes (14-17) por región. Regiones con 0 participantes se omiten.',
+    status: 'viable',
+  });
+
+  // ID 72 — Centers without 14-17 participants per planning region
+  const regionGapItems = Object.keys(centersByRegion)
+    .map(region => {
+      const totalC = centersByRegion[region].size;
+      const withMinors = (centersWith14_17ByRegion[region] || new Set()).size;
+      const without = totalC - withMinors;
+      return { name: region, value: without, total: totalC, pct: totalC > 0 ? (without / totalC) * 100 : 0 };
+    })
+    .sort((a, b) => b.pct - a.pct);
+  all.push({
+    id: 72,
+    name: 'Centros sin menores (14-17) por región',
+    category: 'centros-sin-menores',
+    value: regionGapItems.length > 0
+      ? regionGapItems.slice(0, 5)
+          .map(r => `${r.name}: ${r.value}/${r.total} (${formatPercentage(r.pct)})`).join(' | ')
+      : 'Sin centros',
+    topItems: regionGapItems.map(r => ({ name: r.name, value: r.value, pct: r.pct })),
+    formula: 'Centros sin 14-17 / Total centros de la región × 100',
+    description: 'Cobertura de menores por región. Regiones con alto % necesitan intervención focalizada.',
+    status: 'viable',
+  });
+
+  // ID 73 — YoY trend in centers without minors
+  const gapTrendYears = Object.keys(yearCenters).map(Number).sort();
+  const gapTrendData = gapTrendYears.map(y => {
+    const totalC = (yearCenters[y] || new Set()).size;
+    const withMinors = (yearCentersWith14_17[y] || new Set()).size;
+    return { year: y, without: totalC - withMinors };
+  });
+  let gapTrendDirection = 'Sin tendencia disponible';
+  if (gapTrendData.length >= 2) {
+    const first = gapTrendData[0].without;
+    const last = gapTrendData[gapTrendData.length - 1].without;
+    if (last < first) gapTrendDirection = 'Mejorando';
+    else if (last > first) gapTrendDirection = 'Empeorando';
+    else gapTrendDirection = 'Estable';
+  }
+  all.push({
+    id: 73,
+    name: 'Tendencia anual de centros sin menores',
+    category: 'centros-sin-menores',
+    value: gapTrendData.length > 0
+      ? gapTrendData.map(d => `${d.year}: ${formatNumber(d.without)} centros`).join(' → ')
+      : 'Sin datos',
+    topItems: gapTrendData.map(d => ({ name: String(d.year), value: d.without })),
+    formula: 'Conteo anual de centros sin participantes 14-17',
+    description: `Evolución interanual de centros sin cobertura de menores. Tendencia: ${gapTrendDirection}`,
+    status: 'viable',
+  });
+
+  // ID 74 — Province-level gap detail per region
+  const provinceGapItems = Object.keys(centersByProvince)
+    .map(prov => {
+      const totalC = (centersByProvince[prov] || new Set()).size;
+      const withMinors = (centersWith14_17ByProvince[prov] || new Set()).size;
+      return { name: prov, value: totalC - withMinors, total: totalC, pct: totalC > 0 ? ((totalC - withMinors) / totalC) * 100 : 0 };
+    })
+    .sort((a, b) => b.value - a.value);
+  all.push({
+    id: 74,
+    name: 'Brecha de centros sin menores por provincia',
+    category: 'centros-sin-menores',
+    value: provinceGapItems.length > 0
+      ? provinceGapItems.slice(0, 5)
+          .map(p => `${p.name}: ${p.value}/${p.total} (${formatPercentage(p.pct)})`).join(' | ')
+      : 'Sin datos',
+    topItems: provinceGapItems.map(p => ({ name: p.name, value: p.value, pct: p.pct })),
+    resto: provinceGapItems.slice(5).reduce((s, p) => s + p.value, 0),
+    formula: 'Centros sin 14-17 / Total centros de la provincia × 100',
+    description: 'Desglose provincial de brecha de cobertura de menores.',
+    status: 'viable',
+  });
+
+  // ID 75 — Desertion rate per rutaFormativa (course)
+  const courseDesertionItems = Object.entries(courseDesertion)
+    .map(([course, { total: t, desertion: d }]) => ({
+      name: course,
+      value: d,
+      total: t,
+      rate: t > 0 ? (d / t) * 100 : 0,
+    }))
+    .sort((a, b) => b.rate - a.rate);
+  all.push({
+    id: 75,
+    name: 'Tasa de deserción por ruta formativa',
+    category: 'desercion',
+    value: courseDesertionItems.length > 0
+      ? courseDesertionItems.slice(0, 5)
+          .map(c => `${c.name}: ${formatPercentage(c.rate)} (${formatNumber(c.value)}/${formatNumber(c.total)})`).join(' | ')
+      : 'Sin datos',
+    topItems: courseDesertionItems.map(c => ({ name: c.name, value: c.value, pct: c.rate })),
+    resto: courseDesertionItems.slice(5).reduce((s, c) => s + c.value, 0),
+    formula: '(Desertores del curso / Total del curso) × 100',
+    description: 'Ranking de rutas formativas con mayor tasa de deserción. Ordenado descendente.',
+    status: 'viable',
+  });
+
+  // ID 76 — Desertion rate by age bucket
+  const ageDesertionBuckets = [
+    { name: '14-17', min: 14, max: 17 },
+    { name: '18-20', min: 18, max: 20 },
+    { name: '21-24', min: 21, max: 24 },
+    { name: '25+', min: 25, max: 999 },
+  ];
+  const ageDesertionItems = ageDesertionBuckets
+    .map(b => {
+      const total = count(data, p => p.edad >= b.min && p.edad <= b.max);
+      const desertion = count(data, p => p.edad >= b.min && p.edad <= b.max && isDesertionStatus(p.estado));
+      return { name: b.name, value: desertion, total, rate: total > 0 ? (desertion / total) * 100 : -1 };
+    })
+    .filter(b => b.total > 0);
+  all.push({
+    id: 76,
+    name: 'Tasa de deserción por grupo etario',
+    category: 'desercion',
+    value: ageDesertionItems.length > 0
+      ? ageDesertionItems.map(a => `${a.name}: ${formatPercentage(a.rate)} (${formatNumber(a.value)}/${formatNumber(a.total)})`).join(' | ')
+      : 'Sin datos',
+    topItems: ageDesertionItems.map(a => ({ name: a.name, value: a.value, pct: a.rate })),
+    formula: '(Desertores del grupo / Total del grupo) × 100',
+    description: 'Tasa de deserción desglosada por grupo etario. Grupos sin participantes se omiten.',
+    status: 'viable',
+  });
+
+  // ID 77 — Desertion rate by sex
+  const sexDesertionMap: Record<string, { total: number; desertion: number }> = {};
+  for (const p of data) {
+    let sexKey = 'Otro';
+    if (isWomen(p.sexo)) sexKey = 'Mujeres';
+    else if (isMen(p.sexo)) sexKey = 'Hombres';
+    if (!sexDesertionMap[sexKey]) sexDesertionMap[sexKey] = { total: 0, desertion: 0 };
+    sexDesertionMap[sexKey].total++;
+    if (isDesertionStatus(p.estado)) sexDesertionMap[sexKey].desertion++;
+  }
+  const sexDesertionItems = Object.entries(sexDesertionMap)
+    .map(([sex, { total: t, desertion: d }]) => ({
+      name: sex,
+      value: d,
+      total: t,
+      rate: t > 0 ? (d / t) * 100 : 0,
+    }))
+    .sort((a, b) => b.rate - a.rate);
+  all.push({
+    id: 77,
+    name: 'Tasa de deserción por sexo',
+    category: 'desercion',
+    value: sexDesertionItems.map(s => `${s.name}: ${formatPercentage(s.rate)} (${formatNumber(s.value)}/${formatNumber(s.total)})`).join(' | '),
+    topItems: sexDesertionItems.map(s => ({ name: s.name, value: s.value, pct: s.rate })),
+    formula: '(Desertores del grupo / Total del grupo) × 100',
+    description: 'Tasa de deserción por sexo. Participantes con sexo no determinado se agrupan como "Otro".',
+    status: 'viable',
+  });
+
+  // ID 78 — Desertion rate per planning region
+  const regionDesertionItems = Object.entries(regionDesertion)
+    .map(([reg, { total: t, desertion: d }]) => ({
+      name: reg,
+      value: d,
+      total: t,
+      rate: t > 0 ? (d / t) * 100 : 0,
+    }))
+    .sort((a, b) => b.rate - a.rate);
+  all.push({
+    id: 78,
+    name: 'Tasa de deserción por región de planificación',
+    category: 'desercion',
+    value: regionDesertionItems.length > 0
+      ? regionDesertionItems.slice(0, 5)
+          .map(r => `${r.name}: ${formatPercentage(r.rate)} (${formatNumber(r.value)}/${formatNumber(r.total)})`).join(' | ')
+      : 'Sin datos',
+    topItems: regionDesertionItems.map(r => ({ name: r.name, value: r.value, pct: r.rate })),
+    resto: regionDesertionItems.slice(5).reduce((s, r) => s + r.value, 0),
+    formula: 'findRegion(provincia) → (Desertores / Total región) × 100',
+    description: 'Deserción por región de planificación. Regiones no mapeadas aparecen como "Desconocido".',
+    status: 'viable',
+  });
+
+  // ID 79 — YoY aggregate desertion rate trend
+  const yoyYears = Object.keys(yearDesertionTotals).map(Number).sort();
+  const desertionTrendData = yoyYears.map(y => ({
+    year: y,
+    value: yearDesertionTotals[y].desertion,
+    total: yearDesertionTotals[y].total,
+    rate: yearDesertionTotals[y].total > 0 ? (yearDesertionTotals[y].desertion / yearDesertionTotals[y].total) * 100 : 0,
+  }));
+  let desertionTrendDirection = 'Sin tendencia disponible';
+  if (desertionTrendData.length >= 2) {
+    const firstRate = desertionTrendData[0].rate;
+    const lastRate = desertionTrendData[desertionTrendData.length - 1].rate;
+    if (lastRate < firstRate) desertionTrendDirection = 'Mejorando';
+    else if (lastRate > firstRate) desertionTrendDirection = 'Empeorando';
+    else desertionTrendDirection = 'Estable';
+  }
+  all.push({
+    id: 79,
+    name: 'Tendencia anual de deserción',
+    category: 'desercion',
+    value: desertionTrendData.length > 0
+      ? desertionTrendData.map(d => `${d.year}: ${formatPercentage(d.rate)} (${formatNumber(d.value)}/${formatNumber(d.total)})`).join(' → ')
+      : 'Sin datos',
+    topItems: desertionTrendData.map(d => ({ name: String(d.year), value: d.value, pct: d.rate })),
+    formula: '(Desertores / Total) × 100 por año',
+    description: `Evolución interanual de la tasa de deserción global. Tendencia: ${desertionTrendDirection}`,
+    status: 'viable',
+  });
+
+  // ID 80 — Top education level per province
+  const provTopEdu = Object.entries(provinceEducationCounts)
+    .map(([prov, levels]) => {
+      const totalProv = Object.values(levels).reduce((s, v) => s + v, 0);
+      const top = Object.entries(levels).sort(([, a], [, b]) => b - a)[0];
+      return {
+        name: prov,
+        value: top ? top[1] : 0,
+        level: top ? top[0] : 'Sin datos',
+        total: totalProv,
+        pct: totalProv > 0 && top ? (top[1] / totalProv) * 100 : 0,
+      };
+    })
+    .sort((a, b) => b.value - a.value);
+  all.push({
+    id: 80,
+    name: 'Nivel educativo predominante por provincia',
+    category: 'nivel-educativo',
+    value: provTopEdu.length > 0
+      ? provTopEdu.slice(0, 5).map(p => `${p.name}: ${p.level} (${formatPercentage(p.pct)}, ${formatNumber(p.value)}/${formatNumber(p.total)})`).join(' | ')
+      : 'Sin datos',
+    topItems: provTopEdu.map(p => ({ name: p.name, value: p.value, pct: p.pct })),
+    resto: provTopEdu.slice(5).reduce((s, p) => s + p.value, 0),
+    formula: 'Por provincia: nivelEstudio más frecuente / Total provincia × 100',
+    description: 'Nivel educativo predominante en cada provincia, ordenado por cantidad de participantes.',
+    status: 'viable',
+  });
+
+  // ID 81 — Education level distribution per planning region
+  const regTopEdu = Object.entries(regionEducationCounts)
+    .map(([reg, levels]) => {
+      const totalReg = Object.values(levels).reduce((s, v) => s + v, 0);
+      const top = Object.entries(levels).sort(([, a], [, b]) => b - a)[0];
+      return {
+        name: reg,
+        value: totalReg,
+        level: top ? top[0] : 'Sin datos',
+        topCount: top ? top[1] : 0,
+        pct: totalReg > 0 && top ? (top[1] / totalReg) * 100 : 0,
+      };
+    })
+    .sort((a, b) => b.value - a.value);
+  all.push({
+    id: 81,
+    name: 'Distribución de nivel educativo por región',
+    category: 'nivel-educativo',
+    value: regTopEdu.length > 0
+      ? regTopEdu.slice(0, 5).map(r => `${r.name}: ${r.level} (${formatPercentage(r.pct)})`).join(' | ')
+      : 'Sin datos',
+    topItems: regTopEdu.map(r => ({ name: r.name, value: r.value, pct: r.pct })),
+    resto: regTopEdu.slice(5).reduce((s, r) => s + r.value, 0),
+    formula: 'findRegion(provincia) → nivelEstudio más frecuente por región',
+    description: 'Nivel educativo predominante en cada región de planificación.',
+    status: 'viable',
+  });
+
+  // ID 82 — Desertion rate per nivelEstudio (education level)
+  const eduDesertionItems = Object.entries(educationDesertion)
+    .map(([level, { total: t, desertion: d }]) => ({
+      name: level,
+      value: d,
+      total: t,
+      rate: t > 0 ? (d / t) * 100 : 0,
+    }))
+    .sort((a, b) => b.rate - a.rate);
+  all.push({
+    id: 82,
+    name: 'Correlación deserción y nivel educativo',
+    category: 'nivel-educativo',
+    value: eduDesertionItems.length > 0
+      ? eduDesertionItems.slice(0, 5)
+          .map(e => `${e.name}: ${formatPercentage(e.rate)} (${formatNumber(e.value)}/${formatNumber(e.total)})`).join(' | ')
+      : 'Sin datos',
+    topItems: eduDesertionItems.map(e => ({ name: e.name, value: e.value, pct: e.rate })),
+    resto: eduDesertionItems.slice(5).reduce((s, e) => s + e.value, 0),
+    formula: '(Desertores del nivel / Total del nivel) × 100',
+    description: 'Tasa de deserción por nivel educativo. Niveles con mayor abandono requieren atención.',
+    status: 'viable',
+  });
+
+  // ID 83 — YoY trend of education level distribution
+  const eduTrendYears = Object.keys(yearEducationCounts).map(Number).sort();
+  const eduTrendData = eduTrendYears.map(y => {
+    const levels = yearEducationCounts[y];
+    const totalYr = Object.values(levels).reduce((s, v) => s + v, 0);
+    const top = Object.entries(levels).sort(([, a], [, b]) => b - a)[0];
+    return {
+      year: y,
+      topLevel: top ? top[0] : 'N/A',
+      topCount: top ? top[1] : 0,
+      total: totalYr,
+      pct: totalYr > 0 && top ? (top[1] / totalYr) * 100 : 0,
+    };
+  });
+  let eduTrendDirection = 'Sin tendencia disponible';
+  if (eduTrendData.length >= 2) {
+    const firstLevel = eduTrendData[0].topLevel;
+    const lastLevel = eduTrendData[eduTrendData.length - 1].topLevel;
+    if (firstLevel !== lastLevel) eduTrendDirection = `Cambió de "${firstLevel}" a "${lastLevel}"`;
+    else eduTrendDirection = `Se mantiene en "${firstLevel}"`;
+  }
+  all.push({
+    id: 83,
+    name: 'Tendencia anual de nivel educativo',
+    category: 'nivel-educativo',
+    value: eduTrendData.length > 0
+      ? eduTrendData.map(d => `${d.year}: ${d.topLevel} (${formatPercentage(d.pct)})`).join(' → ')
+      : 'Sin datos',
+    topItems: eduTrendData.map(d => ({ name: String(d.year), value: d.topCount, pct: d.pct })),
+    formula: 'Por año: nivelEstudio más frecuente',
+    description: `Evolución del nivel educativo predominante por año. ${eduTrendDirection}`,
+    status: 'viable',
+  });
+
   const evaluateStatus = (indicator: Indicator): Indicator['status'] => {
     if (indicator.status === 'pending') return 'pending';
     if (total === 0) return 'no-viable';
@@ -1114,6 +1678,8 @@ export function computeIndicators(data: Participant[]): UseIndicatorsResult {
     buildGroup('cobertura-temporal', 'Cobertura Temporal'),
     buildGroup('nivel-educativo', 'Nivel Educativo'),
     buildGroup('desempeno-centro', 'Desempe\u00f1o por Centro'),
+    buildGroup('centros-sin-menores', 'Centros Sin Menores'),
+    buildGroup('desercion', 'Deserción'),
   ];
 
   return { indicators: all, groups, lastUpdated };

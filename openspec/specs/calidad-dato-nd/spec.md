@@ -1,8 +1,8 @@
-# Calidad del Dato (ND) — Specification
+# Calidad del Dato (Unified) — Specification
 
 ## Purpose
 
-Measure data quality by counting fields with "nd", null, or unavailable values across 11 key participant fields, per-province breakdown.
+Replace the separate CalidadDatoBoard and CalidadNdBoard with a single `CalidadIntegradaBoard` that displays both completeness metrics (IDs 37–42) and ND metrics (11-field enumeration) side by side.
 
 ## Requirements
 
@@ -73,13 +73,45 @@ The system MUST inspect exactly these 11 fields: `telefonos`, `telefonosResponsa
 - THEN exactly 11 rows SHALL appear
 - AND each row SHALL correspond to one of the 11 fields
 
-### R5: Distinct from CalidadDatoBoard
+### R5: Unified Board Display
 
-The system SHALL NOT reuse or duplicate logic from the existing `CalidadDatoBoard`. This board measures ND frequency across participant socio-demographic fields, not completeness of contact fields.
+The system MUST render a single integrated board showing:
+- **Completeness section** (existing CalidadDatoBoard logic via `boardData.qualityData`): KPI of completeness percentage, per-field completeness ranking for fields: `cedula`, `fechaNacimiento`, `nivelEstudio`, `alergias`, `discapacidades`, `enfermedades`.
+- **ND section** (existing CalidadNdBoard logic via internal FIELDS enumeration): KPI of ND percentage, per-field ND ranking for 11 fields: `telefonos`, `telefonosResponsable`, `cedulaTutor`, `tutor`, `alergias`, `discapacidades`, `enfermedades`, `programasSociales`, `nivelEstudio`, `estadoCivil`, `direccion`.
 
-#### Scenario: Different scope confirmed
+#### Scenario: Unified board renders both sections
 
-- GIVEN the existing CalidadDatoBoard tracks phone/address completeness
-- WHEN CalidadNdBoard renders
-- THEN its KPI value SHALL be different from CalidadDatoBoard's (same dataset, different metrics)
-- AND no shared computation coupling SHALL exist
+- GIVEN the filtered dataset
+- WHEN `CalidadIntegradaBoard` renders
+- THEN the completeness KPI SHALL display independently from the ND KPI
+- AND the completeness ranking SHALL show the 6 quality fields
+- AND the ND ranking SHALL show the 11 socio-demographic fields
+- AND both sections SHALL be visually separated with section headers
+
+#### Scenario: Completeness vs ND values differ
+
+- GIVEN a dataset where completeness is 95% but ND is 15%
+- WHEN the unified board renders
+- THEN the completeness KPI SHALL show 95%
+- AND the ND KPI SHALL show 15%
+- AND the two values SHALL NOT be confused or averaged
+
+#### Scenario: Both sections respect filter
+
+- GIVEN provincia="Santiago"
+- WHEN the unified board renders
+- THEN both completeness and ND sections SHALL reflect Santiago-only data
+- AND both SHALL use the same filtered dataset
+
+#### Scenario: Empty dataset
+
+- GIVEN zero participants match the active filters
+- WHEN the unified board renders
+- THEN both KPIs SHALL show 0.0%
+- AND both rankings SHALL show "Sin datos" empty state
+
+### Route Change
+
+- `/indicadores/calidad-dato` SHALL render `CalidadIntegradaBoard`
+- `/indicadores/calidad-nd` SHALL redirect to `/indicadores/calidad-dato`
+- The `INDICADORES_CALIDAD_ND` route constant SHALL point to `/indicadores/calidad-dato` (redirect target)

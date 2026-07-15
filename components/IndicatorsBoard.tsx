@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Users, MapPin, Activity, CheckCircle, AlertTriangle, Calendar, GraduationCap, Building2, CheckCircle2, XCircle } from 'lucide-react';
+import { Users, MapPin, Activity, CheckCircle, AlertTriangle, Calendar, GraduationCap, Building2, CheckCircle2, XCircle, TrendingDown } from 'lucide-react';
 import type { IndicatorGroup, Indicator, IndicatorCategory } from '../hooks/useIndicators';
 import { formatNumber } from '../utils/formatters';
 import { useIndicadoresFilters } from '../contexts/IndicadoresFiltersContext';
@@ -84,6 +84,22 @@ const CATEGORY_STYLES: Record<
     bg: 'bg-slate-50/30',
     accent: 'bg-slate-50',
   },
+  'centros-sin-menores': {
+    bar: 'bg-orange-500',
+    icon: 'text-orange-600',
+    border: 'border-orange-100',
+    header: 'text-orange-800 bg-orange-50 border-orange-200',
+    bg: 'bg-orange-50/30',
+    accent: 'bg-orange-50',
+  },
+  desercion: {
+    bar: 'bg-red-500',
+    icon: 'text-red-600',
+    border: 'border-red-100',
+    header: 'text-red-800 bg-red-50 border-red-200',
+    bg: 'bg-red-50/30',
+    accent: 'bg-red-50',
+  },
 };
 
 const CATEGORY_ICONS: Record<string, React.FC<{ size?: number; className?: string }>> = {
@@ -95,6 +111,8 @@ const CATEGORY_ICONS: Record<string, React.FC<{ size?: number; className?: strin
   'cobertura-temporal': Calendar,
   'nivel-educativo': GraduationCap,
   'desempeno-centro': Building2,
+  'centros-sin-menores': XCircle,
+  desercion: TrendingDown,
 };
 
 // ---------------------------------------------------------------------------

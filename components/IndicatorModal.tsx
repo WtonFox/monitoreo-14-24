@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import {
   X, Users, MapPin, Activity,
-  CheckCircle2, AlertTriangle, CheckCircle, Calendar, GraduationCap, Building2, XCircle,
+  CheckCircle2, AlertTriangle, CheckCircle, Calendar, GraduationCap, Building2, XCircle, TrendingDown,
 } from 'lucide-react';
 import type { Indicator, IndicatorCategory } from '../hooks/useIndicators';
 import type { BoardData } from '../hooks/useIndicatorBoards';
@@ -22,6 +22,8 @@ const CATEGORY_META: Record<
   'cobertura-temporal': { icon: Calendar, primary: '#0891b2', bg: '#ecfeff', light: '#cffafe' },
   'nivel-educativo': { icon: GraduationCap, primary: '#0d9488', bg: '#f0fdfa', light: '#ccfbf1' },
   'desempeno-centro': { icon: Building2, primary: '#64748b', bg: '#f8fafc', light: '#e2e8f0' },
+  'centros-sin-menores': { icon: XCircle, primary: '#ea580c', bg: '#fff7ed', light: '#fed7aa' },
+  desercion: { icon: TrendingDown, primary: '#dc2626', bg: '#fef2f2', light: '#fecaca' },
 };
 
 interface IndicatorModalProps {

@@ -31,6 +31,7 @@ const CentrosSinMenoresBoard = React.lazy(() => import('./pages/indicadores/Cent
 const DesercionBoard = React.lazy(() => import('./pages/indicadores/DesercionBoard'));
 const RegistroDiarioBoard = React.lazy(() => import('./pages/indicadores/RegistroDiarioBoard'));
 const CalidadNdBoard = React.lazy(() => import('./pages/indicadores/CalidadNdBoard'));
+const CalidadIntegradaBoard = React.lazy(() => import('./pages/indicadores/CalidadIntegradaBoard'));
 const ImpactoBoard = React.lazy(() => import('./pages/indicadores/ImpactoBoard'));
 
 export const router = createHashRouter([
@@ -131,7 +132,7 @@ export const router = createHashRouter([
             path: 'calidad-dato',
             element: (
               <Suspense fallback={<LoadingSkeleton variant="board" />}>
-                <CalidadDatoBoard />
+                <CalidadIntegradaBoard />
               </Suspense>
             ),
           },
@@ -193,11 +194,7 @@ export const router = createHashRouter([
           },
           {
             path: 'calidad-nd',
-            element: (
-              <Suspense fallback={<LoadingSkeleton variant="board" />}>
-                <CalidadNdBoard />
-              </Suspense>
-            ),
+            element: <Navigate to="/indicadores/calidad-dato" replace />,
           },
         ],
       },

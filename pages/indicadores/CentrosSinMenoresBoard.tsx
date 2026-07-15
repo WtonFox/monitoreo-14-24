@@ -1,11 +1,21 @@
-import React, { useState, useMemo } from 'react'
-import { formatNumber, formatPercentage } from '../../utils/formatters'
-import { chartClass } from '../../utils/indicadores-helpers'
-import { Users, Building2, Percent, AlertTriangle, Grid3X3, List } from 'lucide-react'
-import BoardShell from '../../components/BoardShell'
-import BoardInfo from '../../components/BoardInfo'
-import { useIndicadoresFilters } from '../../contexts/IndicadoresFiltersContext'
-import { IndicadoresFilterBar } from '../../components/IndicadoresFilterBar'
+import React, { useState, useMemo } from 'react';
+import { formatNumber, formatPercentage } from '../../utils/formatters';
+import { chartClass } from '../../utils/indicadores-helpers';
+import {
+  Users,
+  Building2,
+  Percent,
+  AlertTriangle,
+  Grid3X3,
+  List,
+  Globe,
+  TrendingUp,
+} from 'lucide-react';
+import BoardShell from '../../components/BoardShell';
+import BoardInfo from '../../components/BoardInfo';
+import { useIndicadoresFilters } from '../../contexts/IndicadoresFiltersContext';
+import { IndicadoresFilterBar } from '../../components/IndicadoresFilterBar';
+import { findRegion } from '../../utils/geoUtils';
 
 interface CentroSinMenores {
   centro: string;
@@ -30,6 +40,71 @@ interface ComputedMetrics {
 const CentrosSinMenoresBoard: React.FC = () => {
   const { filteredData, isDataLoading } = useIndicadoresFilters();
   const [viewMode, setViewMode] = useState<'grid' | 'row'>('row');
+
+  // ── NEW SECTION DATA: Region Gap Summary ──
+  const regionGapData = useMemo(() => {
+    const regionCenters = new Map<string, Set<string>>();
+    const regionCentersWithMinors = new Map<string, Set<string>>();
+    for (const p of filteredData) {
+      if (!p.centro) continue;
+      const region = findRegion(p.provincia || '');
+      if (!regionCenters.has(region)) regionCenters.set(region, new Set());
+      regionCenters.get(region)!.add(p.centro);
+      if (p.edad >= 14 && p.edad <= 17) {
+        if (!regionCentersWithMinors.has(region))
+          regionCentersWithMinors.set(region, new Set());
+        regionCentersWithMinors.get(region)!.add(p.centro);
+      }
+    }
+    return Array.from(regionCenters.entries())
+      .map(([region, centers]) => {
+        const total = centers.size;
+        const withMinors = (regionCentersWithMinors.get(region) || new Set())
+          .size;
+        const without = total - withMinors;
+        return {
+          region,
+          total,
+          without,
+          pct: total > 0 ? (without / total) * 100 : 0,
+        };
+      })
+      .sort((a, b) => b.pct - a.pct);
+  }, [filteredData]);
+
+  // ── NEW SECTION DATA: YoY Gap Trend ──
+  const gapTrendData = useMemo(() => {
+    const yearCenters = new Map<number, Set<string>>();
+    const yearCentersWithMinors = new Map<number, Set<string>>();
+    for (const p of filteredData) {
+      if (!p.centro || !p.fechaRegistro) continue;
+      const y = new Date(p.fechaRegistro).getFullYear();
+      if (!yearCenters.has(y)) yearCenters.set(y, new Set());
+      yearCenters.get(y)!.add(p.centro);
+      if (p.edad >= 14 && p.edad <= 17) {
+        if (!yearCentersWithMinors.has(y))
+          yearCentersWithMinors.set(y, new Set());
+        yearCentersWithMinors.get(y)!.add(p.centro);
+      }
+    }
+    const years = Array.from(yearCenters.keys()).sort();
+    const data = years.map((y) => {
+      const total = yearCenters.get(y)!.size;
+      const withMinors = (yearCentersWithMinors.get(y) || new Set()).size;
+      return { year: y, total, without: total - withMinors };
+    });
+
+    let direction = 'Sin tendencia disponible';
+    if (data.length >= 2) {
+      const first = data[0].without;
+      const last = data[data.length - 1].without;
+      if (last < first) direction = 'Mejorando';
+      else if (last > first) direction = 'Empeorando';
+      else direction = 'Estable';
+    }
+
+    return { data, direction };
+  }, [filteredData]);
 
   const {
     totalCentros,
@@ -69,9 +144,15 @@ const CentrosSinMenoresBoard: React.FC = () => {
         totalMenoresActualCount++;
       }
     }
-    const sinMenoresActual = allCentros.filter(c => !centrosConMenoresActual.has(c));
+    const sinMenoresActual = allCentros.filter(
+      (c) => !centrosConMenoresActual.has(c),
+    );
     const centrosDataActualArr: CentroSinMenores[] = sinMenoresActual
-      .map(c => ({ centro: c, provincia: centroProvincia.get(c) ?? null, total: centroTotal.get(c) ?? 0 }))
+      .map((c) => ({
+        centro: c,
+        provincia: centroProvincia.get(c) ?? null,
+        total: centroTotal.get(c) ?? 0,
+      }))
       .sort((a, b) => b.total - a.total);
 
     // ── LÓGICA B: Edad al REGISTRO (p.edadRegistro) — la nueva ──
@@ -83,16 +164,25 @@ const CentrosSinMenoresBoard: React.FC = () => {
         totalMenoresRegistroCount++;
       }
     }
-    const sinMenoresRegistro = allCentros.filter(c => !centrosConMenoresRegistro.has(c));
+    const sinMenoresRegistro = allCentros.filter(
+      (c) => !centrosConMenoresRegistro.has(c),
+    );
     const centrosDataRegistroArr: CentroSinMenores[] = sinMenoresRegistro
-      .map(c => ({ centro: c, provincia: centroProvincia.get(c) ?? null, total: centroTotal.get(c) ?? 0 }))
+      .map((c) => ({
+        centro: c,
+        provincia: centroProvincia.get(c) ?? null,
+        total: centroTotal.get(c) ?? 0,
+      }))
       .sort((a, b) => b.total - a.total);
 
     // ── KPIs con la lógica de Edad Actual (la medición directa) ──
     return {
       totalCentros: allCentros.length,
       centrosSinMenores: sinMenoresActual.length,
-      pctSinCobertura: allCentros.length > 0 ? (sinMenoresActual.length / allCentros.length) * 100 : 0,
+      pctSinCobertura:
+        allCentros.length > 0
+          ? (sinMenoresActual.length / allCentros.length) * 100
+          : 0,
       totalMenores: totalMenoresActualCount,
       centrosData: centrosDataActualArr,
       // Datos para la tabla comparativa (lógica actual)
@@ -117,8 +207,9 @@ const CentrosSinMenoresBoard: React.FC = () => {
 
   return (
     <BoardShell
-    title="Centros sin Cobertura de Menores"
-    description="Centros de formación sin participantes en el rango 14-17 años. Compara edad actual vs edad al registro.">
+      title="Centros sin Cobertura de Menores"
+      description="Centros de formación sin participantes en el rango 14-17 años. Compara edad actual vs edad al registro."
+    >
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center">
@@ -181,21 +272,49 @@ const CentrosSinMenoresBoard: React.FC = () => {
           <BoardInfo
             title="Centros sin Cobertura de Menores"
             sections={[
-              { heading: '¿Qué mide?', content: 'Identifica los centros de formación que no tienen participantes en el rango de edad objetivo del programa (14-17 años).' },
-              { heading: 'Lógica: Edad Actual', content: 'Usa la edad actual del participante (p.edad). Muestra los centros sin participantes menores de edad en el momento actual. Es la métrica principal del tablero.' },
-              { heading: 'Lógica: Edad al Registro', content: 'Usa la edad que tenía el participante al momento de inscribirse (p.edadRegistro). Muestra centros que nunca registraron un menor, incluso si ese menor hoy ya es mayor. Se muestra en la tabla derecha para comparación.' },
-              { heading: 'Fórmula', content: 'Centro sin cobertura = centro donde COUNT(participantes 14-17) = 0 sobre el total de participantes del centro.' },
-              { heading: 'Cómo leerlo', content: 'La tabla izquierda (Edad Actual) te dice qué centros hoy no atienden menores. La tabla derecha (Edad Registro) te dice qué centros nunca atendieron menores. La diferencia entre ambas revela centros donde los menores se inscribieron pero ya crecieron.' },
+              {
+                heading: '¿Qué mide?',
+                content:
+                  'Identifica los centros de formación que no tienen participantes en el rango de edad objetivo del programa (14-17 años).',
+              },
+              {
+                heading: 'Lógica: Edad Actual',
+                content:
+                  'Usa la edad actual del participante (p.edad). Muestra los centros sin participantes menores de edad en el momento actual. Es la métrica principal del tablero.',
+              },
+              {
+                heading: 'Lógica: Edad al Registro',
+                content:
+                  'Usa la edad que tenía el participante al momento de inscribirse (p.edadRegistro). Muestra centros que nunca registraron un menor, incluso si ese menor hoy ya es mayor. Se muestra en la tabla derecha para comparación.',
+              },
+              {
+                heading: 'Fórmula',
+                content:
+                  'Centro sin cobertura = centro donde COUNT(participantes 14-17) = 0 sobre el total de participantes del centro.',
+              },
+              {
+                heading: 'Cómo leerlo',
+                content:
+                  'La tabla izquierda (Edad Actual) te dice qué centros hoy no atienden menores. La tabla derecha (Edad Registro) te dice qué centros nunca atendieron menores. La diferencia entre ambas revela centros donde los menores se inscribieron pero ya crecieron.',
+              },
             ]}
           />
           <div className="h-6 w-px bg-gray-200" />
           <div className="flex bg-gray-100 rounded-lg p-1">
-            <button onClick={() => setViewMode('row')}
+            <button
+              onClick={() => setViewMode('row')}
               className={`p-1.5 rounded ${viewMode === 'row' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-              title="Vista fila"><List size={16} /></button>
-            <button onClick={() => setViewMode('grid')}
+              title="Vista fila"
+            >
+              <List size={16} />
+            </button>
+            <button
+              onClick={() => setViewMode('grid')}
               className={`p-1.5 rounded ${viewMode === 'grid' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-              title="Vista cuadrícula"><Grid3X3 size={16} /></button>
+              title="Vista cuadrícula"
+            >
+              <Grid3X3 size={16} />
+            </button>
           </div>
         </div>
       </div>
@@ -208,31 +327,50 @@ const CentrosSinMenoresBoard: React.FC = () => {
             Sin cobertura (edad actual)
           </h3>
           <p className="text-xs text-gray-400 mb-4">
-            Usa <code className="text-xs bg-gray-100 px-1 rounded">p.edad</code> — {formatNumber(centrosSinMenoresActual)} centros, {formatNumber(totalMenoresActual)} menores 14-17
+            Usa <code className="text-xs bg-gray-100 px-1 rounded">p.edad</code>{' '}
+            — {formatNumber(centrosSinMenoresActual)} centros,{' '}
+            {formatNumber(totalMenoresActual)} menores 14-17
           </p>
           {centrosDataActual.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-200">
-                    <th className="text-left py-2 px-3 font-medium text-gray-500">Centro</th>
-                    <th className="text-left py-2 px-3 font-medium text-gray-500">Provincia</th>
-                    <th className="text-right py-2 px-3 font-medium text-gray-500">Total</th>
+                    <th className="text-left py-2 px-3 font-medium text-gray-500">
+                      Centro
+                    </th>
+                    <th className="text-left py-2 px-3 font-medium text-gray-500">
+                      Provincia
+                    </th>
+                    <th className="text-right py-2 px-3 font-medium text-gray-500">
+                      Total
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {centrosDataActual.map(row => (
-                    <tr key={row.centro} className="border-b border-gray-100 hover:bg-gray-50">
-                      <td className="py-2 px-3 text-gray-800 font-medium text-sm">{row.centro}</td>
-                      <td className="py-2 px-3 text-gray-500 text-sm">{row.provincia || '—'}</td>
-                      <td className="py-2 px-3 text-right text-gray-800 text-sm">{formatNumber(row.total)}</td>
+                  {centrosDataActual.map((row) => (
+                    <tr
+                      key={row.centro}
+                      className="border-b border-gray-100 hover:bg-gray-50"
+                    >
+                      <td className="py-2 px-3 text-gray-800 font-medium text-sm">
+                        {row.centro}
+                      </td>
+                      <td className="py-2 px-3 text-gray-500 text-sm">
+                        {row.provincia || '—'}
+                      </td>
+                      <td className="py-2 px-3 text-right text-gray-800 text-sm">
+                        {formatNumber(row.total)}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
           ) : (
-            <div className="h-24 flex items-center justify-center text-gray-400 text-sm">Todos los centros tienen menores</div>
+            <div className="h-24 flex items-center justify-center text-gray-400 text-sm">
+              Todos los centros tienen menores
+            </div>
           )}
         </div>
 
@@ -242,37 +380,169 @@ const CentrosSinMenoresBoard: React.FC = () => {
             Sin cobertura (edad registro)
           </h3>
           <p className="text-xs text-gray-400 mb-4">
-            Usa <code className="text-xs bg-gray-100 px-1 rounded">p.edadRegistro</code> — {formatNumber(centrosSinMenoresRegistro)} centros, {formatNumber(totalMenoresRegistro)} menores 14-17
+            Usa{' '}
+            <code className="text-xs bg-gray-100 px-1 rounded">
+              p.edadRegistro
+            </code>{' '}
+            — {formatNumber(centrosSinMenoresRegistro)} centros,{' '}
+            {formatNumber(totalMenoresRegistro)} menores 14-17
           </p>
           {centrosDataRegistro.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-200">
-                    <th className="text-left py-2 px-3 font-medium text-gray-500">Centro</th>
-                    <th className="text-left py-2 px-3 font-medium text-gray-500">Provincia</th>
-                    <th className="text-right py-2 px-3 font-medium text-gray-500">Total</th>
+                    <th className="text-left py-2 px-3 font-medium text-gray-500">
+                      Centro
+                    </th>
+                    <th className="text-left py-2 px-3 font-medium text-gray-500">
+                      Provincia
+                    </th>
+                    <th className="text-right py-2 px-3 font-medium text-gray-500">
+                      Total
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {centrosDataRegistro.map(row => (
-                    <tr key={row.centro} className="border-b border-gray-100 hover:bg-gray-50">
-                      <td className="py-2 px-3 text-gray-800 font-medium text-sm">{row.centro}</td>
-                      <td className="py-2 px-3 text-gray-500 text-sm">{row.provincia || '—'}</td>
-                      <td className="py-2 px-3 text-right text-gray-800 text-sm">{formatNumber(row.total)}</td>
+                  {centrosDataRegistro.map((row) => (
+                    <tr
+                      key={row.centro}
+                      className="border-b border-gray-100 hover:bg-gray-50"
+                    >
+                      <td className="py-2 px-3 text-gray-800 font-medium text-sm">
+                        {row.centro}
+                      </td>
+                      <td className="py-2 px-3 text-gray-500 text-sm">
+                        {row.provincia || '—'}
+                      </td>
+                      <td className="py-2 px-3 text-right text-gray-800 text-sm">
+                        {formatNumber(row.total)}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
           ) : (
-            <div className="h-24 flex items-center justify-center text-gray-400 text-sm">Todos los centros tienen menores</div>
+            <div className="h-24 flex items-center justify-center text-gray-400 text-sm">
+              Todos los centros tienen menores
+            </div>
           )}
         </div>
+      </div>
+
+      {/* ── SECTION: Region Gap Summary ── */}
+      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+        <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+          Centros sin Menores por Región de Planificación
+        </h3>
+        {regionGapData.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-200">
+                  <th className="text-left py-3 px-4 font-medium text-gray-500">
+                    #
+                  </th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-500">
+                    Región
+                  </th>
+                  <th className="text-right py-3 px-4 font-medium text-gray-500">
+                    Sin Cobertura
+                  </th>
+                  <th className="text-right py-3 px-4 font-medium text-gray-500">
+                    % Sin Cobertura
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {regionGapData.map((row, idx) => (
+                  <tr
+                    key={row.region}
+                    className="border-b border-gray-100 hover:bg-gray-50"
+                  >
+                    <td className="py-3 px-4 text-gray-400">{idx + 1}</td>
+                    <td className="py-3 px-4 text-gray-800 font-medium">
+                      {row.region}
+                    </td>
+                    <td className="py-3 px-4 text-right text-gray-800">
+                      {row.without}/{row.total}
+                    </td>
+                    <td className="py-3 px-4 text-right font-semibold text-red-600">
+                      {formatPercentage(row.pct)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="h-24 flex items-center justify-center text-gray-400">
+            Sin datos regionales
+          </div>
+        )}
+      </div>
+
+      {/* ── SECTION: YoY Gap Trend ── */}
+      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+        <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+          Tendencia Anual de Centros sin Menores
+          <span
+            className={`ml-2 text-sm font-medium px-2 py-0.5 rounded-full ${
+              gapTrendData.direction === 'Mejorando'
+                ? 'bg-green-50 text-green-700'
+                : gapTrendData.direction === 'Empeorando'
+                  ? 'bg-red-50 text-red-700'
+                  : 'bg-gray-50 text-gray-500'
+            }`}
+          >
+            {gapTrendData.direction}
+          </span>
+        </h3>
+        {gapTrendData.data.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-200">
+                  <th className="text-left py-3 px-4 font-medium text-gray-500">
+                    Año
+                  </th>
+                  <th className="text-right py-3 px-4 font-medium text-gray-500">
+                    Total Centros
+                  </th>
+                  <th className="text-right py-3 px-4 font-medium text-gray-500">
+                    Sin Menores
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {gapTrendData.data.map((row) => (
+                  <tr
+                    key={row.year}
+                    className="border-b border-gray-100 hover:bg-gray-50"
+                  >
+                    <td className="py-3 px-4 text-gray-800 font-medium">
+                      {row.year}
+                    </td>
+                    <td className="py-3 px-4 text-right text-gray-800">
+                      {formatNumber(row.total)}
+                    </td>
+                    <td className="py-3 px-4 text-right font-semibold text-red-600">
+                      {formatNumber(row.without)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="h-24 flex items-center justify-center text-gray-400">
+            Sin datos de tendencia
+          </div>
+        )}
       </div>
     </BoardShell>
   );
 };
 
 export default CentrosSinMenoresBoard;
-

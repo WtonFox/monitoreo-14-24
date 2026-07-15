@@ -31,7 +31,6 @@ const PAGE_TITLES: Record<string, string> = {
     [ROUTES.INDICADORES_CENTROS_SIN_MENORES]: 'Indicadores — Centros sin Menores',
     [ROUTES.INDICADORES_DESERCION]: 'Indicadores — Deserción',
     [ROUTES.INDICADORES_REGISTRO_DIARIO]: 'Indicadores — Registro Diario',
-    [ROUTES.INDICADORES_CALIDAD_ND]: 'Indicadores — Calidad ND',
     [ROUTES.ALERTAS]: 'Alertas del Sistema',
 };
 

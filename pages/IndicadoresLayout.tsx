@@ -5,7 +5,7 @@ import { ROUTES } from '../types/routes';
 import {
   LayoutDashboard, Users, MapPin, Activity,
   CheckCircle, AlertTriangle, Calendar, GraduationCap, Building2,
-  TrendingDown, CalendarDays, FileWarning, Target,
+  TrendingDown, CalendarDays, Target,
   ChevronDown,
 } from 'lucide-react';
 import { IndicadoresFiltersProvider } from '../contexts/IndicadoresFiltersContext';
@@ -39,7 +39,6 @@ const TAB_GROUPS: MoreTabGroup[] = [
     label: 'Datos y Calidad',
     items: [
       { to: ROUTES.INDICADORES_CALIDAD, label: 'Calidad del Dato', icon: CheckCircle },
-      { to: ROUTES.INDICADORES_CALIDAD_ND, label: 'Calidad ND', icon: FileWarning },
       { to: ROUTES.INDICADORES_CENTROS_SIN_MENORES, label: 'Centros sin Menores', icon: Users },
     ],
   },
