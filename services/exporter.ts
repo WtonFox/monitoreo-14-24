@@ -3,6 +3,7 @@ import * as XLSX from 'xlsx';
 import { Participant } from '../types';
 import { fetchParticipants } from './api';
 import { sanitizeParticipant } from '../utils/dataUtils';
+import { downloadBlob } from '../utils/exportUtils';
 
 export interface ExportReceipt {
   totalRecordsExpected: number;
@@ -383,17 +384,4 @@ export async function exportToJSON(
   }
 }
 
-/**
- * Helper para descargar blob como archivo
- */
-function downloadBlob(blob: Blob, filename: string): void {
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
 
-  // Limpiar objeto URL después de un tiempo
-  setTimeout(() => URL.revokeObjectURL(link.href), 100);
-}

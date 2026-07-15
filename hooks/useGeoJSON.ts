@@ -35,12 +35,13 @@ export const useGeoJSON = (level: 'region' | 'province' | 'municipality', viewMo
             setError(null);
             setGeoJSON(null); // Clear previous to avoid ghosts
 
+            const base = import.meta.env.BASE_URL;
             let url = '';
             switch (level) {
-                case 'region': url = '/geojson/RD_RUP.json'; break;
-                case 'province': url = '/geojson/RD_PROVINCIAS.json'; break;
-                case 'municipality': url = '/geojson/RD_MUNICIPIOS.json'; break;
-                default: url = '/geojson/RD_PROVINCIAS.json';
+                case 'region': url = base + 'geojson/RD_RUP.json'; break;
+                case 'province': url = base + 'geojson/RD_PROVINCIAS.json'; break;
+                case 'municipality': url = base + 'geojson/RD_MUNICIPIOS.json'; break;
+                default: url = base + 'geojson/RD_PROVINCIAS.json';
             }
 
             try {

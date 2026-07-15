@@ -1,14 +1,6 @@
 import React, { createContext, useContext, type ReactNode } from 'react';
 import type { Participant } from '../types';
-import type { CorruptedRecord } from '../hooks/useDashboardData';
-
-interface SyncStats {
-  loaded: number;
-  errors: number;
-  corrupted: number;
-  duplicated: number;
-  progress: number;
-}
+import type { CorruptedRecord, SyncStats } from '../hooks/useDashboardData';
 
 export interface DashboardContextValue {
   dashboardData: Participant[];

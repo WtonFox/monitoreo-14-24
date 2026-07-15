@@ -180,13 +180,13 @@ const IndicatorTile: React.FC<{
 
         {/* Value or structured top-items list */}
         {indicator.topItems && indicator.topItems.length > 0 ? (
-          <div className="space-y-1.5 mb-3 w-full pr-8">
-            {indicator.topItems.map((item, i) => (
+          <div className={`space-y-1.5 mb-3 w-full pr-8 p-2.5 rounded-lg ${styles.accent}`}>
+            {indicator.topItems.slice(0, 5).map((item, i) => (
               <div key={i} className="flex justify-between items-center gap-2 text-xs">
-                <span className="text-gray-600 truncate min-w-0">
+                <span className="font-medium text-gray-700 min-w-0 break-words">
                   {i + 1}. {item.name}
                 </span>
-                <span className="font-semibold text-gray-800 tabular-nums whitespace-nowrap flex-shrink-0">
+                <span className="font-bold text-gray-900 tabular-nums whitespace-nowrap flex-shrink-0">
                   {formatNumber(item.value)}
                   {item.pct !== undefined ? ` (${item.pct.toFixed(1)}%)` : ''}
                 </span>

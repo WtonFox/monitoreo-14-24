@@ -11,7 +11,7 @@ import {
     Info,
     WifiOff
 } from 'lucide-react';
-import { CorruptedRecord } from '../hooks/useDashboardData';
+import { CorruptedRecord, SyncStats } from '../hooks/useDashboardData';
 import { formatNumber } from '../utils/formatters';
 import {
     BarChart,
@@ -25,14 +25,6 @@ import {
     Cell,
     LabelList
 } from 'recharts';
-
-interface SyncStats {
-    loaded: number;
-    errors: number;
-    corrupted: number;
-    duplicated: number;
-    progress: number;
-}
 
 interface SystemStatusSectionProps {
     syncStats: SyncStats;

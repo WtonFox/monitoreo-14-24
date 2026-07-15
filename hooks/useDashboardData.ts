@@ -10,7 +10,7 @@ import {
     getMetadata
 } from '../services/database';
 
-interface SyncStats {
+export interface SyncStats {
     loaded: number;
     errors: number;
     corrupted: number;

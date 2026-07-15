@@ -94,7 +94,7 @@ function stubContextValue(
     totalRecordsInApi: 0,
     isSyncing: false,
     isPaused: false,
-    syncStats: { loaded: 0, errors: 0, corrupted: 0, duplicated: 0, progress: 0 },
+    syncStats: { loaded: 0, errors: 0, corrupted: 0, duplicated: 0, progress: 0, erroredPages: [] },
     criticalConnectionError: false,
     connectionErrorMessage: '',
     customToken: '',

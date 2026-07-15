@@ -3,14 +3,16 @@ import { Participant } from '../types';
 /**
  * Helper para descargar un Blob como archivo
  */
-export const downloadBlob = (blob: Blob, filename: string) => {
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-};
+export function downloadBlob(blob: Blob, filename: string): void {
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
+  setTimeout(() => URL.revokeObjectURL(link.href), 100);
+}
 
 /**
  * Exporta datos de participantes a formato CSV

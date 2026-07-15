@@ -3,7 +3,8 @@ import { Participant } from '../types';
 import { Download, Search, ChevronLeft, ChevronRight, ChevronDown, FileJson, FileSpreadsheet, FileText, XCircle, Settings } from 'lucide-react';
 import { ColumnSelector, ColumnConfig } from './ColumnSelector';
 import { formatNumber } from '../utils/formatters';
-import * as XLSX from 'xlsx';
+import { renderCell } from './table/TableCellRenderer';
+import { handleLocalJSON, handleLocalExport, handleLocalXLSX } from './table/tableExportHelpers';
 
 interface ExportProgressDisplay {
   current: number;
@@ -118,214 +119,6 @@ export const DataTable: React.FC<DataTableProps> = ({
 
   const handleResetColumns = () => {
     saveColumns(DEFAULT_COLUMNS);
-  };
-
-  const sanitizeVal = (v: unknown): unknown => {
-    if (typeof v !== 'string' || v.length === 0) return v;
-    return '=+-@'.includes(v[0]) ? `'${v}` : v;
-  };
-
-  const generateLocalCSV = (items: Participant[]) => {
-    const headers = [
-      'ID', 'Nombres', 'Apellidos', 'Cédula', 'Edad', 'Edad Registro',
-      'Fecha Nacimiento', 'Fecha Registro', 'Fecha Inclusión',
-      'Tutor', 'Cédula Tutor', 'Teléfono Responsable',
-      'Vulnerabilidades', 'Alergias', 'Discapacidades', 'Enfermedades',
-      'Programas Sociales',
-      'Estado', 'Sexo', 'Estado Civil', 'Nivel Estudio', 'Provincia',
-      'Municipio', 'Centro', 'Dirección', 'Ruta Formativa'
-    ];
-
-    const rows = items.map(item => [
-      item.id,
-      `"${sanitizeVal(item.nombres || '')}"`,
-      `"${sanitizeVal(item.apellidos || '')}"`,
-      `"${sanitizeVal(item.cedula || '')}"`,
-      item.edad,
-      item.edadRegistro || '',
-      item.fechaNacimiento,
-      item.fechaRegistro,
-      item.fechaInclusion || '',
-      `"${sanitizeVal(item.tutor || '')}"`,
-      `"${sanitizeVal(item.cedulaTutor || '')}"`,
-      `"${sanitizeVal(item.telefonosResponsable || '')}"`,
-      `"${sanitizeVal(item.vulnerabilidades || '')}"`,
-      `"${sanitizeVal(item.alergias || '')}"`,
-      `"${sanitizeVal(item.discapacidades || '')}"`,
-      `"${sanitizeVal(item.enfermedades || '')}"`,
-      `"${sanitizeVal(item.programasSociales || '')}"`,
-      item.estado,
-      item.sexo,
-      `"${sanitizeVal(item.estadoCivil || '')}"`,
-      `"${sanitizeVal(item.nivelEstudio || '')}"`,
-      `"${sanitizeVal(item.provincia || '')}"`,
-      `"${sanitizeVal(item.municipio || '')}"`,
-      `"${sanitizeVal(item.centro || '')}"`,
-      `"${sanitizeVal(item.direccion || '')}"`,
-      `"${sanitizeVal(item.rutaFormativa || '')}"`
-    ].join(';'));
-
-    return '\uFEFF' + [headers.join(';'), ...rows].join('\n');
-  };
-
-  const handleLocalJSON = () => {
-    const exportData = allFilteredData || data;
-    if (exportData.length === 0) return;
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `oportunidad1424_datos_${new Date().toISOString().slice(0, 10)}.json`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const handleLocalExport = () => {
-    const exportData = allFilteredData || data;
-    if (exportData.length === 0) return;
-
-    const csvContent = generateLocalCSV(exportData);
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `oportunidad1424_vista_${new Date().toISOString().slice(0, 10)}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const handleLocalXLSX = () => {
-    const exportData = allFilteredData || data;
-    if (exportData.length === 0) return;
-
-    const excelRow = (item: Participant) => ({
-      'ID': item.id,
-      'Nombres': sanitizeVal(item.nombres || ''),
-      'Apellidos': sanitizeVal(item.apellidos || ''),
-      'Cédula': sanitizeVal(item.cedula || ''),
-      'Edad': item.edad,
-      'Edad Registro': item.edadRegistro || '',
-      'Fecha Nacimiento': item.fechaNacimiento || '',
-      'Fecha Registro': item.fechaRegistro || '',
-      'Fecha Inclusión': item.fechaInclusion || '',
-      'Tutor': sanitizeVal(item.tutor || ''),
-      'Cédula Tutor': sanitizeVal(item.cedulaTutor || ''),
-      'Teléfono Responsable': sanitizeVal(item.telefonosResponsable || ''),
-      'Vulnerabilidades': sanitizeVal(item.vulnerabilidades || ''),
-      'Alergias': sanitizeVal(item.alergias || ''),
-      'Discapacidades': sanitizeVal(item.discapacidades || ''),
-      'Enfermedades': sanitizeVal(item.enfermedades || ''),
-      'Programas Sociales': sanitizeVal(item.programasSociales || ''),
-      'Estado': sanitizeVal(item.estado || ''),
-      'Sexo': sanitizeVal(item.sexo || ''),
-      'Estado Civil': sanitizeVal(item.estadoCivil || ''),
-      'Nivel Estudio': sanitizeVal(item.nivelEstudio || ''),
-      'Provincia': sanitizeVal(item.provincia || ''),
-      'Municipio': sanitizeVal(item.municipio || ''),
-      'Centro': sanitizeVal(item.centro || ''),
-      'Dirección': sanitizeVal(item.direccion || ''),
-      'Ruta Formativa': sanitizeVal(item.rutaFormativa || ''),
-    });
-
-    const excelData = exportData.map(excelRow);
-
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.json_to_sheet(excelData);
-    ws['!cols'] = [
-      { wch: 8 }, { wch: 20 }, { wch: 20 }, { wch: 15 },
-      { wch: 6 }, { wch: 10 }, { wch: 12 }, { wch: 12 },
-      { wch: 12 }, { wch: 20 }, { wch: 15 }, { wch: 15 },
-      { wch: 25 }, { wch: 20 }, { wch: 20 }, { wch: 25 },
-      { wch: 25 }, { wch: 15 }, { wch: 8 }, { wch: 15 },
-      { wch: 20 }, { wch: 20 }, { wch: 20 }, { wch: 25 },
-      { wch: 30 }, { wch: 20 },
-    ];
-    XLSX.utils.book_append_sheet(wb, ws, 'Participantes');
-    const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-    const blob = new Blob([excelBuffer], {
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `oportunidad1424_vista_${new Date().toISOString().slice(0, 10)}.xlsx`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const renderCell = (item: Participant, columnId: string) => {
-    switch (columnId) {
-      case 'fullName':
-        return (
-          <div>
-            <div className="font-medium text-gray-900">{item.nombres} {item.apellidos}</div>
-            <div className="text-xs text-gray-400">ID: {item.id}</div>
-          </div>
-        );
-      case 'cedula':
-        return <span className="font-mono text-xs">{item.cedula || 'N/A'}</span>;
-      case 'edad':
-        return <span>{item.edad} años</span>;
-      case 'edadRegistro':
-        return <span>{item.edadRegistro ? `${item.edadRegistro} años` : 'N/A'}</span>;
-      case 'sexo':
-        return <span>{item.sexo}</span>;
-      case 'estadoCivil':
-        return <span>{item.estadoCivil || 'N/A'}</span>;
-      case 'provincia':
-        return <span>{item.provincia || 'N/A'}</span>;
-      case 'municipio':
-        return <span>{item.municipio || 'N/A'}</span>;
-      case 'centro':
-        return <div className="max-w-xs truncate" title={item.centro || ''}>{item.centro || 'N/A'}</div>;
-      case 'estado':
-        return (
-          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full 
-                  ${item.estado === 'Activo' ? 'bg-green-100 text-green-700' :
-              item.estado === 'Retirado' ? 'bg-red-100 text-red-700' :
-                'bg-blue-100 text-blue-700'}`}>
-            {item.estado || 'Desconocido'}
-          </span>
-        );
-      case 'fechaRegistro':
-        return <span className="text-xs whitespace-nowrap">{item.fechaRegistro ? new Date(item.fechaRegistro).toLocaleDateString() : 'N/A'}</span>;
-      case 'fechaInclusion':
-        return <span className="text-xs whitespace-nowrap">{item.fechaInclusion ? new Date(item.fechaInclusion).toLocaleDateString() : 'N/A'}</span>;
-      case 'tutor':
-        return <span className="text-xs">{item.tutor || 'N/A'}</span>;
-      case 'cedulaTutor':
-        return <span className="font-mono text-xs">{item.cedulaTutor || 'N/A'}</span>;
-      case 'telefonos':
-        return <span className="text-xs">{item.telefonos || 'N/A'}</span>;
-      case 'telefonosResponsable':
-        return <span className="text-xs">{item.telefonosResponsable || 'N/A'}</span>;
-      case 'direccion':
-        return <div className="max-w-[200px] truncate text-xs" title={item.direccion || ''}>{item.direccion || 'N/A'}</div>;
-      case 'nivelEstudio':
-        return <span>{item.nivelEstudio || 'N/A'}</span>;
-      case 'rutaFormativa':
-        return <span>{item.rutaFormativa || 'N/A'}</span>;
-      case 'alergias':
-        return <span className="text-xs">{item.alergias || 'N/A'}</span>;
-      case 'discapacidades':
-        return <span className="text-xs">{item.discapacidades || 'N/A'}</span>;
-      case 'enfermedades':
-        return <span className="text-xs">{item.enfermedades || 'N/A'}</span>;
-      case 'programasSociales':
-        return <div className="max-w-[200px] truncate text-xs" title={item.programasSociales || ''}>{item.programasSociales || 'N/A'}</div>;
-      case 'fechaNacimiento':
-        return <span className="text-xs whitespace-nowrap">{item.fechaNacimiento ? new Date(item.fechaNacimiento).toLocaleDateString() : 'N/A'}</span>;
-      case 'vulnerabilidades':
-        return <div className="max-w-[200px] truncate text-xs" title={item.vulnerabilidades || ''}>{item.vulnerabilidades || 'N/A'}</div>;
-      default:
-        return null;
-    }
   };
 
   const visibleColumns = columns.filter(c => c.visible);
@@ -500,21 +293,21 @@ export const DataTable: React.FC<DataTableProps> = ({
                       <div className="fixed inset-0 z-10" onClick={() => setShowFormatDropdown(false)} />
                       <div className="absolute left-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-20 py-1 min-w-[180px]">
                         <button
-                          onClick={() => { setShowFormatDropdown(false); handleLocalExport(); }}
+                          onClick={() => { setShowFormatDropdown(false); handleLocalExport(allFilteredData || data); }}
                           className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
                         >
                           <FileText size={16} className="text-green-600" />
                           CSV (Vista actual)
                         </button>
                         <button
-                          onClick={() => { setShowFormatDropdown(false); handleLocalXLSX(); }}
+                          onClick={() => { setShowFormatDropdown(false); handleLocalXLSX(allFilteredData || data); }}
                           className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
                         >
                           <FileSpreadsheet size={16} className="text-blue-600" />
                           Excel (XLSX)
                         </button>
                         <button
-                          onClick={() => { setShowFormatDropdown(false); handleLocalJSON(); }}
+                          onClick={() => { setShowFormatDropdown(false); handleLocalJSON(allFilteredData || data); }}
                           className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
                         >
                           <FileJson size={16} className="text-purple-600" />

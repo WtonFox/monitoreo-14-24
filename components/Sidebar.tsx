@@ -3,15 +3,8 @@ import { NavLink } from 'react-router-dom';
 import { ROUTES } from '../types/routes';
 import { LayoutDashboard, List, WifiOff, Globe, PauseCircle, PlayCircle, Map as MapIcon, AlertCircle, RefreshCw, CheckCircle2, Activity, BarChart3 } from 'lucide-react';
 import { formatNumber } from '../utils/formatters';
-import { CorruptedRecord } from '../hooks/useDashboardData';
+import { CorruptedRecord, SyncStats } from '../hooks/useDashboardData';
 import { useAuth } from '../contexts/AuthContext';
-
-interface SyncStats {
-    loaded: number;
-    errors: number;
-    corrupted: number;
-    progress: number;
-}
 
 interface SidebarProps {
     syncStats: SyncStats;
@@ -108,7 +101,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <div className="p-6 border-b border-gray-100 flex justify-between items-center">
                 <div className="flex items-center gap-3">
                     <img
-                        src="/op-1424.jpg"
+                        src={import.meta.env.BASE_URL + "op-1424.jpg"}
                         alt="Logo 14/24"
                         className="w-12 h-12 rounded-lg object-contain bg-white shadow-sm border border-gray-100"
                     />
