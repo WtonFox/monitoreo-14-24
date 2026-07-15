@@ -31,6 +31,7 @@ const CentrosSinMenoresBoard = React.lazy(() => import('./pages/indicadores/Cent
 const DesercionBoard = React.lazy(() => import('./pages/indicadores/DesercionBoard'));
 const RegistroDiarioBoard = React.lazy(() => import('./pages/indicadores/RegistroDiarioBoard'));
 const CalidadNdBoard = React.lazy(() => import('./pages/indicadores/CalidadNdBoard'));
+const ImpactoBoard = React.lazy(() => import('./pages/indicadores/ImpactoBoard'));
 
 export const router = createHashRouter([
   {
@@ -119,8 +120,12 @@ export const router = createHashRouter([
             ),
           },
           {
-            path: 'sociales',
-            element: <Navigate to="/indicadores" replace />,
+            path: 'impacto',
+            element: (
+              <Suspense fallback={<LoadingSkeleton variant="board" />}>
+                <ImpactoBoard />
+              </Suspense>
+            ),
           },
           {
             path: 'calidad-dato',

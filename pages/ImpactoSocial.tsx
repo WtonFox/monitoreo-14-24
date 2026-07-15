@@ -1,15 +1,9 @@
 import React from 'react';
-import { useFiltersContext } from '../contexts/FiltersContext';
-import { ImpactSection } from '../components/ImpactSection';
+import { Navigate } from 'react-router-dom';
+import { ROUTES } from '../types/routes';
 
-const ImpactoSocial: React.FC = () => {
-  const { filteredData } = useFiltersContext();
-
-  return (
-    <div className="p-6 max-w-7xl mx-auto w-full animate-in fade-in duration-500">
-      <ImpactSection data={filteredData} />
-    </div>
-  );
-};
+const ImpactoSocial: React.FC = () => (
+  <Navigate to={ROUTES.INDICADORES_IMPACTO} replace />
+);
 
 export default ImpactoSocial;

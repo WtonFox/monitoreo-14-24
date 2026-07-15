@@ -5,7 +5,7 @@ import { ROUTES } from '../types/routes';
 import {
   LayoutDashboard, Users, MapPin, Activity,
   CheckCircle, AlertTriangle, Calendar, GraduationCap, Building2,
-  TrendingDown, CalendarDays, FileWarning,
+  TrendingDown, CalendarDays, FileWarning, Target,
   ChevronDown,
 } from 'lucide-react';
 import { IndicadoresFiltersProvider } from '../contexts/IndicadoresFiltersContext';
@@ -18,6 +18,7 @@ const MAIN_TABS = [
   { to: ROUTES.INDICADORES_DEMOGRAFICOS, label: 'Demográficos', icon: Users },
   { to: ROUTES.INDICADORES_TERRITORIALES, label: 'Territoriales', icon: MapPin },
   { to: ROUTES.INDICADORES_PROGRAMA, label: 'Estado del Programa', icon: Activity },
+  { to: ROUTES.INDICADORES_IMPACTO, label: 'Impacto', icon: Target },
 ];
 
 // ── Dropdown categories (grouped with visual separators) ──
