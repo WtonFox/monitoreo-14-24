@@ -6,7 +6,7 @@ import {
 } from 'recharts'
 import { Calendar, TrendingUp, Clock, Grid3X3, List } from 'lucide-react'
 import BoardShell from '../../components/BoardShell'
-import { tickShort, chartClass, chartH } from '../../utils/indicadores-helpers'
+import { chartClass, chartH } from '../../utils/indicadores-helpers'
 import { useIndicadoresFilters } from '../../contexts/IndicadoresFiltersContext'
 import { IndicadoresFilterBar } from '../../components/IndicadoresFilterBar'
 import BoardInfo from '../../components/BoardInfo';
