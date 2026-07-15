@@ -112,36 +112,10 @@ export const MapSection: React.FC<MapSectionProps> = ({ data }) => {
         mapData: computedMapData,
         locationStats,
         maxCount,
-        getColor
+        getColor,
+        nationalPhoneRate,
+        nationalVulnerabilityRate,
     } = useMapStats(filteredData, mapLevel, selectedProvince);
-
-    // National averages for location comparison
-    const nationalPhoneRate = useMemo(() => {
-        if (!filteredData || filteredData.length === 0) return 0;
-        const withPhone = filteredData.filter(p => p.telefonos && p.telefonos.trim() !== '' && p.telefonos !== 'N/A' && p.telefonos !== 'N/D').length;
-        return withPhone / filteredData.length;
-    }, [filteredData]);
-
-    const nationalVulnerabilityRate = useMemo(() => {
-        if (!filteredData || filteredData.length === 0) return 0;
-        const hasVuln = filteredData.filter(p =>
-            (p.discapacidades && p.discapacidades.trim() !== '' && p.discapacidades !== 'N/A' && p.discapacidades !== 'N/D') ||
-            (p.enfermedades && p.enfermedades.trim() !== '' && p.enfermedades !== 'N/A' && p.enfermedades !== 'N/D') ||
-            (p.alergias && p.alergias.trim() !== '' && p.alergias !== 'N/A' && p.alergias !== 'N/D')
-        ).length;
-        return hasVuln / filteredData.length;
-    }, [filteredData]);
-
-    // National education distribution
-    const nationalEducation = useMemo(() => {
-        const dist: Record<string, number> = {};
-        filteredData.forEach(p => {
-            if (p.nivelEstudio && p.nivelEstudio.trim() !== '' && p.nivelEstudio !== 'N/A' && p.nivelEstudio !== 'N/D') {
-                dist[p.nivelEstudio] = (dist[p.nivelEstudio] || 0) + 1;
-            }
-        });
-        return dist;
-    }, [filteredData]);
 
     return (
         <div className="space-y-4">
