@@ -1,7 +1,7 @@
 import React from 'react';
 import { formatNumber } from '../utils/formatters';
 import { toTitleCase } from '../utils/geoUtils';
-import { X } from 'lucide-react';
+import { X, ChevronDown } from 'lucide-react';
 import type { LocationStats } from '../hooks/useMapStats';
 
 interface LocationInfoBoxProps {
@@ -10,7 +10,21 @@ interface LocationInfoBoxProps {
     stats: LocationStats;
     level: 'region' | 'province' | 'municipality';
     onClose: () => void;
+    nationalPhoneRate?: number;
+    nationalVulnerabilityRate?: number;
 }
+
+const CollapsibleSection: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
+    <details className="group py-1 border-b border-gray-100">
+        <summary className="text-gray-600 mb-1 cursor-pointer list-none flex items-center justify-between">
+            <span className="font-medium">{title}</span>
+            <ChevronDown size={14} className="text-gray-400 transition-transform group-open:rotate-180" />
+        </summary>
+        <div className="pt-1 space-y-1">
+            {children}
+        </div>
+    </details>
+);
 
 export const LocationInfoBox: React.FC<LocationInfoBoxProps> = ({
     locationName,
@@ -18,6 +32,8 @@ export const LocationInfoBox: React.FC<LocationInfoBoxProps> = ({
     stats,
     level,
     onClose,
+    nationalPhoneRate,
+    nationalVulnerabilityRate,
 }) => {
     const percentage = totalParticipants > 0
         ? ((stats.total / totalParticipants) * 100).toFixed(1)
@@ -34,6 +50,32 @@ export const LocationInfoBox: React.FC<LocationInfoBoxProps> = ({
         .slice(0, 3);
 
     const topCenters = stats.topCenters.slice(0, 3);
+
+    // Education
+    const sortedEducation = Object.entries(stats.educationBreakdown)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 3);
+    const educationTotal = stats.educationBreakdown
+        ? Object.values(stats.educationBreakdown).reduce((s, v) => s + v, 0)
+        : 0;
+
+    // Phone rate
+    const phoneRate = stats.total > 0 ? (stats.phoneCount / stats.total) * 100 : 0;
+    const nationalPhonePct = nationalPhoneRate !== undefined ? (nationalPhoneRate * 100).toFixed(1) : null;
+    const phoneComparison = nationalPhoneRate !== undefined
+        ? (phoneRate - nationalPhoneRate * 100) > 0
+            ? `${(phoneRate - nationalPhoneRate * 100).toFixed(1)}% más que el nacional`
+            : `${(nationalPhoneRate * 100 - phoneRate).toFixed(1)}% menos que el nacional`
+        : null;
+
+    // Vulnerability rate
+    const vulnerabilityRate = stats.total > 0 ? (stats.vulnerabilityCount / stats.total) * 100 : 0;
+    const nationalVulnPct = nationalVulnerabilityRate !== undefined ? (nationalVulnerabilityRate * 100).toFixed(1) : null;
+
+    // Year counts
+    const sortedYears = Object.entries(stats.yearCounts)
+        .sort(([a], [b]) => b.localeCompare(a))
+        .slice(0, 3);
 
     return (
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
@@ -115,8 +157,8 @@ export const LocationInfoBox: React.FC<LocationInfoBoxProps> = ({
 
                     {/* Top centers */}
                     {topCenters.length > 0 && (
-                        <div className="py-1">
-                            <div className="text-gray-600 mb-1">Top Centros:</div>
+                        <div className="py-1 border-b border-gray-100">
+                            <div className="text-gray-600 mb-1">Centros:</div>
                             <div className="space-y-1">
                                 {topCenters.map((center, idx) => (
                                     <div key={idx} className="flex justify-between text-xs items-start">
@@ -128,6 +170,72 @@ export const LocationInfoBox: React.FC<LocationInfoBoxProps> = ({
                                 ))}
                             </div>
                         </div>
+                    )}
+
+                    {/* ── Collapsible extra sections ── */}
+
+                    {/* Education */}
+                    {sortedEducation.length > 0 && (
+                        <CollapsibleSection title="Nivel Educativo">
+                            {sortedEducation.map(([level, count]) => {
+                                const pct = educationTotal > 0 ? ((count / educationTotal) * 100).toFixed(1) : '0.0';
+                                return (
+                                    <div key={level} className="flex justify-between text-xs">
+                                        <span className="text-gray-700">{level}</span>
+                                        <span className="font-semibold text-gray-900">{formatNumber(count)} ({pct}%)</span>
+                                    </div>
+                                );
+                            })}
+                        </CollapsibleSection>
+                    )}
+
+                    {/* Phone contactability */}
+                    <CollapsibleSection title="Contactabilidad">
+                        <div className="flex justify-between text-xs">
+                            <span className="text-gray-700">Con teléfono:</span>
+                            <span className="font-semibold text-gray-900">
+                                {formatNumber(stats.phoneCount)} de {formatNumber(stats.total)} ({phoneRate.toFixed(1)}%)
+                            </span>
+                        </div>
+                        {nationalPhonePct && (
+                            <div className="flex justify-between text-xs text-gray-500">
+                                <span>Promedio nacional:</span>
+                                <span>{nationalPhonePct}%</span>
+                            </div>
+                        )}
+                        {phoneComparison && (
+                            <div className="text-xs text-gray-500 italic">
+                                {phoneComparison}
+                            </div>
+                        )}
+                    </CollapsibleSection>
+
+                    {/* Vulnerability */}
+                    <CollapsibleSection title="Vulnerabilidades">
+                        <div className="flex justify-between text-xs">
+                            <span className="text-gray-700">Con alguna reportada:</span>
+                            <span className="font-semibold text-gray-900">
+                                {formatNumber(stats.vulnerabilityCount)} de {formatNumber(stats.total)} ({vulnerabilityRate.toFixed(1)}%)
+                            </span>
+                        </div>
+                        {nationalVulnPct && (
+                            <div className="flex justify-between text-xs text-gray-500">
+                                <span>Promedio nacional:</span>
+                                <span>{nationalVulnPct}%</span>
+                            </div>
+                        )}
+                    </CollapsibleSection>
+
+                    {/* Year evolution */}
+                    {sortedYears.length > 0 && (
+                        <CollapsibleSection title="Registros por Año">
+                            {sortedYears.map(([year, count]) => (
+                                <div key={year} className="flex justify-between text-xs">
+                                    <span className="text-gray-700">{year}</span>
+                                    <span className="font-semibold text-gray-900">{formatNumber(count)}</span>
+                                </div>
+                            ))}
+                        </CollapsibleSection>
                     )}
                 </div>
             )}
