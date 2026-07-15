@@ -4,22 +4,26 @@ import { Participant } from '../types';
  * Helper para extraer valor de forma segura desde objeto de API
  * Intenta diferentes convenciones de nombres (exact, PascalCase, camelCase)
  */
+/** Limpia entidades HTML residuales que llegan desde la API (&#x0D;, &#x0A;, &amp;, etc.) */
+const stripHtmlEntities = (s: string): string =>
+    s.replace(/&#x[0-9A-Fa-f]+;/g, '').replace(/&amp;/g, '&').replace(/&nbsp;/g, ' ').trim();
+
 const getValue = (p: any, key: string): string | null => {
     // 1. Intento exacto (prioridad al esquema)
     if (p[key] !== undefined && p[key] !== null && p[key] !== '') {
-        return String(p[key]).trim().replace(/\r/g, '');
+        return stripHtmlEntities(String(p[key]));
     }
 
     // 2. Intento PascalCase (convención .NET común)
     const pascal = key.charAt(0).toUpperCase() + key.slice(1);
     if (p[pascal] !== undefined && p[pascal] !== null && p[pascal] !== '') {
-        return String(p[pascal]).trim().replace(/\r/g, '');
+        return stripHtmlEntities(String(p[pascal]));
     }
 
     // 3. Intento camelCase
     const camel = key.charAt(0).toLowerCase() + key.slice(1);
     if (p[camel] !== undefined && p[camel] !== null && p[camel] !== '') {
-        return String(p[camel]).trim().replace(/\r/g, '');
+        return stripHtmlEntities(String(p[camel]));
     }
 
     return null;
