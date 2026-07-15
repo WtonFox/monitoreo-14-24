@@ -102,70 +102,70 @@ const IndicadoresLayout: React.FC = () => {
 
             {/* Divider */}
             <div className="w-px h-6 bg-gray-200 mx-1 flex-shrink-0" />
-          </div>
 
-          {/* Active More Tab pill — reactive to route changes via useLocation */}
-          {(() => {
-            const currentPath = location.pathname;
-            const activeTab = MORE_TABS.find(t => t.to === currentPath);
-            if (!activeTab) return null;
-            const Icon = activeTab.icon;
-            return (
-              <div className="flex items-center gap-1.5 px-3 py-3 border-b-2 border-blue-600 text-blue-700 text-sm font-medium flex-shrink-0 whitespace-nowrap mr-1">
-                <Icon size={16} />
-                <span>{activeTab.label}</span>
-              </div>
-            );
-          })()}
-
-          {/* More dropdown trigger — OUTSIDE overflow container */}
-          <div className="relative flex-shrink-0">
-            <button
-              ref={moreTriggerRef}
-              onClick={() => setShowMore(prev => !prev)}
-              aria-haspopup="true"
-              aria-expanded={showMore}
-              className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-                MORE_TABS.some(t => t.to === location.pathname)
-                  ? 'border-blue-600 text-blue-700'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              <ChevronDown size={16} />
-              <span>Más indicadores</span>
-              <span className="text-[10px] text-gray-400 font-bold ml-0.5">
-                {MORE_TABS.length}
-              </span>
-            </button>
-
-            {showMore && (
-              <>
-                <div className="fixed inset-0 z-10" onClick={handleCloseMore} />
-                <div
-                  ref={moreDropdownRef}
-                  className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-20 py-1 min-w-[220px]"
-                >
-                  {MORE_TABS.map(tab => (
-                    <NavLink
-                      key={tab.to}
-                      to={tab.to}
-                      end={false}
-                      onClick={handleCloseMore}
-                      className={({ isActive }) =>
-                        `flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors ${
-                          isActive
-                            ? 'bg-blue-50 text-blue-700 font-medium'
-                            : 'text-gray-600 hover:bg-gray-50'
-                        }`
-                      }
-                    >
-                      <tab.icon size={15} />
-                      {tab.label}
-                    </NavLink>
-                  ))}
+            {/* Active More Tab pill — reactive to route changes via useLocation */}
+            {(() => {
+              const currentPath = location.pathname;
+              const activeTab = MORE_TABS.find(t => t.to === currentPath);
+              if (!activeTab) return null;
+              const Icon = activeTab.icon;
+              return (
+                <div className="flex items-center gap-1.5 px-3 py-3 border-b-2 border-blue-600 text-blue-700 text-sm font-medium flex-shrink-0 whitespace-nowrap">
+                  <Icon size={16} />
+                  <span>{activeTab.label}</span>
                 </div>
-              </>
-            )}
+              );
+            })()}
+
+            {/* More dropdown trigger */}
+            <div className="relative flex-shrink-0">
+              <button
+                ref={moreTriggerRef}
+                onClick={() => setShowMore(prev => !prev)}
+                aria-haspopup="true"
+                aria-expanded={showMore}
+                className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                  MORE_TABS.some(t => t.to === location.pathname)
+                    ? 'border-blue-600 text-blue-700'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <ChevronDown size={16} />
+                <span>Más indicadores</span>
+                <span className="text-[10px] text-gray-400 font-bold ml-0.5">
+                  {MORE_TABS.length}
+                </span>
+              </button>
+
+              {showMore && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={handleCloseMore} />
+                  <div
+                    ref={moreDropdownRef}
+                    className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-20 py-1 min-w-[220px]"
+                  >
+                    {MORE_TABS.map(tab => (
+                      <NavLink
+                        key={tab.to}
+                        to={tab.to}
+                        end={false}
+                        onClick={handleCloseMore}
+                        className={({ isActive }) =>
+                          `flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors ${
+                            isActive
+                              ? 'bg-blue-50 text-blue-700 font-medium'
+                              : 'text-gray-600 hover:bg-gray-50'
+                          }`
+                        }
+                      >
+                        <tab.icon size={15} />
+                        {tab.label}
+                      </NavLink>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>
