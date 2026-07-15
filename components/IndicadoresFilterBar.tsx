@@ -7,6 +7,7 @@ interface FilterBarProps {
   showProvince?: boolean;
   showMunicipio?: boolean;
   showSex?: boolean;
+  noContainer?: boolean;
 }
 
 export const IndicadoresFilterBar: React.FC<FilterBarProps> = ({
@@ -14,11 +15,12 @@ export const IndicadoresFilterBar: React.FC<FilterBarProps> = ({
   showProvince = true,
   showMunicipio = true,
   showSex = true,
+  noContainer = false,
 }) => {
   const filters = useIndicadoresFilters();
 
-  return (
-    <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-wrap items-center gap-4">
+  const filterControls = (
+    <>
       {showYear && (
         <div className="flex items-center gap-2">
           <label className="text-sm font-medium text-gray-600">Año:</label>
@@ -61,6 +63,14 @@ export const IndicadoresFilterBar: React.FC<FilterBarProps> = ({
           </select>
         </div>
       )}
+    </>
+  );
+
+  if (noContainer) return filterControls;
+
+  return (
+    <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-wrap items-center gap-4">
+      {filterControls}
     </div>
   );
 };

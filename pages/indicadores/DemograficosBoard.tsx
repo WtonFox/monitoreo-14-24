@@ -16,7 +16,7 @@ const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'
 type ViewMode = 'grid' | 'row'
 
 const DemograficosBoard: React.FC = () => {
-  const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  const [viewMode, setViewMode] = useState<ViewMode>('row');
   const { boardData, filteredData } = useIndicadoresFilters();
   const { demographicData } = boardData;
 
@@ -65,11 +65,9 @@ const DemograficosBoard: React.FC = () => {
         </div>
       </div>
 
-      {/* Filters + View Toggle */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex-1">
-          <IndicadoresFilterBar showYear showProvince showMunicipio showSex />
-        </div>
+      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-wrap items-center gap-3">
+        <IndicadoresFilterBar showYear showProvince showMunicipio showSex noContainer />
+        <div className="ml-auto flex items-center gap-2">
                   <BoardInfo
             title="Demográficos"
             sections={[
@@ -78,13 +76,15 @@ const DemograficosBoard: React.FC = () => {
               { heading: 'Filtros', content: 'Usa los filtros globales (año, provincia, municipio, sexo) para segmentar la población. Los datos se actualizan automáticamente.' },
             ]}
           />
-        <div className="flex bg-gray-100 rounded-lg p-1 flex-shrink-0">
-          <button onClick={() => setViewMode('grid')}
-            className={`p-1.5 rounded ${viewMode === 'grid' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-            title="Vista cuadrícula"><Grid3X3 size={16} /></button>
-          <button onClick={() => setViewMode('row')}
-            className={`p-1.5 rounded ${viewMode === 'row' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-            title="Vista fila"><List size={16} /></button>
+          <div className="h-6 w-px bg-gray-200" />
+          <div className="flex bg-gray-100 rounded-lg p-1">
+            <button onClick={() => setViewMode('row')}
+              className={`p-1.5 rounded ${viewMode === 'row' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+              title="Vista fila"><List size={16} /></button>
+            <button onClick={() => setViewMode('grid')}
+              className={`p-1.5 rounded ${viewMode === 'grid' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+              title="Vista cuadrícula"><Grid3X3 size={16} /></button>
+          </div>
         </div>
       </div>
 
