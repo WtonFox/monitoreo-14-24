@@ -7,7 +7,7 @@
  * Truncate a string to maxLen characters, appending "…" if it exceeds the limit.
  * Preserves the behavior of existing inline `tickShort` helpers (maxLen=14 → trim to 12 + "…").
  */
-export function tickShort(val: string, maxLen = 14): string {
+export function tickShort(val: string, maxLen = 24): string {
   return val.length > maxLen ? val.substring(0, maxLen - 2) + '…' : val;
 }
 
