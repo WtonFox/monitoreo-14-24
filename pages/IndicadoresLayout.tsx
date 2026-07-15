@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { ROUTES } from '../types/routes';
 import {
@@ -46,6 +47,7 @@ const tabClasses = ({ isActive }: { isActive: boolean }) =>
 
 const IndicadoresLayout: React.FC = () => {
   const [showMore, setShowMore] = useState(false);
+  const [menuOrigin, setMenuOrigin] = useState<{ top: number; right: number } | null>(null);
   const { dashboardData } = useDashboard();
   const location = useLocation();
   const moreTriggerRef = useRef<HTMLButtonElement>(null);
@@ -53,6 +55,7 @@ const IndicadoresLayout: React.FC = () => {
 
   const handleCloseMore = useCallback(() => {
     setShowMore(false);
+    setMenuOrigin(null);
     moreTriggerRef.current?.focus();
   }, []);
 
@@ -118,10 +121,19 @@ const IndicadoresLayout: React.FC = () => {
             })()}
 
             {/* More dropdown trigger */}
-            <div className="relative flex-shrink-0">
+            <div className="flex-shrink-0">
               <button
                 ref={moreTriggerRef}
-                onClick={() => setShowMore(prev => !prev)}
+                onClick={() => {
+                  const next = !showMore;
+                  setShowMore(next);
+                  if (next && moreTriggerRef.current) {
+                    const rect = moreTriggerRef.current.getBoundingClientRect();
+                    setMenuOrigin({ top: rect.bottom + 4, right: document.documentElement.clientWidth - rect.right });
+                  } else {
+                    setMenuOrigin(null);
+                  }
+                }}
                 aria-haspopup="true"
                 aria-expanded={showMore}
                 className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
@@ -137,12 +149,13 @@ const IndicadoresLayout: React.FC = () => {
                 </span>
               </button>
 
-              {showMore && (
+              {showMore && menuOrigin && createPortal(
                 <>
                   <div className="fixed inset-0 z-10" onClick={handleCloseMore} />
                   <div
                     ref={moreDropdownRef}
-                    className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-20 py-1 min-w-[220px]"
+                    className="fixed bg-white border border-gray-200 rounded-xl shadow-lg z-20 py-1 min-w-[220px]"
+                    style={{ top: menuOrigin.top, right: menuOrigin.right }}
                   >
                     {MORE_TABS.map(tab => (
                       <NavLink
@@ -163,7 +176,8 @@ const IndicadoresLayout: React.FC = () => {
                       </NavLink>
                     ))}
                   </div>
-                </>
+                </>,
+                document.body
               )}
             </div>
           </div>
