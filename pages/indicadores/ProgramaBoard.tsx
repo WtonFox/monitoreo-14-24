@@ -12,7 +12,7 @@ import { useIndicadoresFilters } from '../../contexts/IndicadoresFiltersContext'
 import { IndicadoresFilterBar } from '../../components/IndicadoresFilterBar'
 import BoardInfo from '../../components/BoardInfo';
 
-const STATUS_COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ff6b6b', '#a855f7', '#ec4899', '#14b8a6', '#f97316', '#64748b'];
+const STATUS_COLORS = ['#2563eb', '#059669', '#d97706', '#dc2626', '#7c3aed', '#0891b2', '#db2777', '#9333ea', '#ca8a04', '#0d9488', '#ea580c', '#4b5563'];
 
 interface TreemapContentProps {
   x?: number;
@@ -23,29 +23,68 @@ interface TreemapContentProps {
   index?: number;
   name?: string;
   value?: number;
+  total?: number;
   [key: string]: unknown;
 }
 
-const CustomTreemapContent: React.FC<TreemapContentProps> = ({ x, y, width, height, index, name, value }) => {
+const CustomTreemapContent: React.FC<TreemapContentProps> = ({ x, y, width, height, index, name, value, total }) => {
+  const [hovered, setHovered] = useState(false);
+
   if (!x || !y || !width || !height || width < 10 || height < 10) return null;
 
-  const fontSize = width > 100 ? 13 : width > 60 ? 10 : 8;
-  const showValue = width > 50 && height > 30;
-  const showName = width > 40 && height > 20;
+  const pct = total && value ? (value / total) * 100 : 0;
+  const color = STATUS_COLORS[(index ?? 0) % STATUS_COLORS.length];
+  const labelSize = width > 110 ? 13 : width > 70 ? 11 : 9;
+  const subSize = width > 90 ? 11 : 9;
+  const showPct = width > 55 && height > 35;
+  const showName = width > 40 && height > 22;
 
   return (
-    <g>
-      <rect x={x} y={y} width={width} height={height} fill={STATUS_COLORS[(index ?? 0) % STATUS_COLORS.length]} stroke="#fff" strokeWidth={2} rx={2} />
+    <g
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{ cursor: 'pointer', transition: 'opacity 0.15s' }}
+    >
+      <rect
+        x={x}
+        y={y}
+        width={width}
+        height={height}
+        fill={color}
+        opacity={hovered ? 0.85 : 1}
+        stroke={hovered ? '#1e293b' : 'rgba(255,255,255,0.6)'}
+        strokeWidth={hovered ? 2 : 1}
+        rx={3}
+      />
       {showName && (
-        <text x={x + width / 2} y={y + height / 2 - (showValue ? 6 : 0)} textAnchor="middle" fill="#fff" fontSize={fontSize} fontWeight={600}>
+        <text
+          x={x + width / 2}
+          y={y + height / 2 - (showPct ? 7 : 0)}
+          textAnchor="middle"
+          fill="#fff"
+          fontSize={labelSize}
+          fontWeight={600}
+          style={{ pointerEvents: 'none' }}
+        >
           {name}
         </text>
       )}
-      {showValue && (
-        <text x={x + width / 2} y={y + height / 2 + 12} textAnchor="middle" fill="rgba(255,255,255,0.85)" fontSize={11}>
-          {formatNumber(value ?? 0)}
+      {showPct && (
+        <text
+          x={x + width / 2}
+          y={y + height / 2 + 12}
+          textAnchor="middle"
+          fill="rgba(255,255,255,0.9)"
+          fontSize={subSize}
+          style={{ pointerEvents: 'none' }}
+        >
+          {formatNumber(value ?? 0)} ({pct.toFixed(1)}%)
         </text>
       )}
+      {/* Native tooltip for rich hover info */}
+      <title>
+        {name}: {formatNumber(value ?? 0)} de {formatNumber(total ?? 0)} participantes ({pct.toFixed(1)}%)
+      </title>
     </g>
   );
 };
@@ -125,16 +164,21 @@ const ProgramaBoard: React.FC = () => {
       {/* Charts */}
       <div className={chartClass(viewMode)}>
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <h3 className="text-lg font-bold text-gray-800 mb-4">Distribución por Estado</h3>
-          <div className="h-96 w-full">
+          <h3 className="text-lg font-bold text-gray-800 mb-4">
+            Distribución por Estado
+            <span className="text-sm font-normal text-gray-400 ml-2">
+              {formatNumber(filteredData.length)} participantes
+            </span>
+          </h3>
+          <div className="h-80 w-full">
             {programData.statusDistribution.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <Treemap
                   data={programData.statusDistribution}
                   dataKey="value"
                   nameKey="name"
-                  aspectRatio={4 / 3}
-                  content={<CustomTreemapContent />}
+                  aspectRatio={1}
+                  content={<CustomTreemapContent total={filteredData.length} />}
                 />
               </ResponsiveContainer>
             ) : <div className="flex h-full items-center justify-center text-gray-400">Sin datos de estado</div>}
