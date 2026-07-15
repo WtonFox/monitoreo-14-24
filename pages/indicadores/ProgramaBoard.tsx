@@ -2,7 +2,6 @@ import React, { useState } from 'react'
 import { formatNumber, formatPercentage } from '../../utils/formatters'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  Treemap,
 } from 'recharts'
 import { Activity, Award, Heart, Phone, Grid3X3, List } from 'lucide-react'
 import BoardShell from '../../components/BoardShell'
@@ -12,83 +11,7 @@ import { useIndicadoresFilters } from '../../contexts/IndicadoresFiltersContext'
 import { IndicadoresFilterBar } from '../../components/IndicadoresFilterBar'
 import BoardInfo from '../../components/BoardInfo';
 
-const STATUS_COLORS = ['#2563eb', '#059669', '#d97706', '#dc2626', '#7c3aed', '#0891b2', '#db2777', '#9333ea', '#ca8a04', '#0d9488', '#ea580c', '#4b5563'];
-
-interface TreemapContentProps {
-  x?: number;
-  y?: number;
-  width?: number;
-  height?: number;
-  depth?: number;
-  index?: number;
-  name?: string;
-  value?: number;
-  total?: number;
-  [key: string]: unknown;
-}
-
-const CustomTreemapContent: React.FC<TreemapContentProps> = ({ x, y, width, height, index, name, value, total }) => {
-  const [hovered, setHovered] = useState(false);
-
-  if (!x || !y || !width || !height || width < 10 || height < 10) return null;
-
-  const pct = total && value ? (value / total) * 100 : 0;
-  const color = STATUS_COLORS[(index ?? 0) % STATUS_COLORS.length];
-  const labelSize = width > 110 ? 13 : width > 70 ? 11 : 9;
-  const subSize = width > 90 ? 11 : 9;
-  const showPct = width > 55 && height > 35;
-  const showName = width > 40 && height > 22;
-
-  return (
-    <g
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{ cursor: 'pointer', transition: 'opacity 0.15s' }}
-    >
-      <rect
-        x={x}
-        y={y}
-        width={width}
-        height={height}
-        fill={color}
-        opacity={hovered ? 0.85 : 1}
-        stroke={hovered ? '#1e293b' : 'rgba(255,255,255,0.6)'}
-        strokeWidth={hovered ? 2 : 1}
-        rx={3}
-      />
-      {showName && (
-        <text
-          x={x + width / 2}
-          y={y + height / 2 - (showPct ? 7 : 0)}
-          textAnchor="middle"
-          fill="#fff"
-          fontSize={labelSize}
-          fontWeight={600}
-          style={{ pointerEvents: 'none' }}
-        >
-          {name}
-        </text>
-      )}
-      {showPct && (
-        <text
-          x={x + width / 2}
-          y={y + height / 2 + 12}
-          textAnchor="middle"
-          fill="rgba(255,255,255,0.9)"
-          fontSize={subSize}
-          style={{ pointerEvents: 'none' }}
-        >
-          {formatNumber(value ?? 0)} ({pct.toFixed(1)}%)
-        </text>
-      )}
-      {/* Native tooltip for rich hover info */}
-      <title>
-        {name}: {formatNumber(value ?? 0)} de {formatNumber(total ?? 0)} participantes ({pct.toFixed(1)}%)
-      </title>
-    </g>
-  );
-};
-
+const STATUS_BAR_COLOR = '#3b82f6';
 type ViewMode = 'grid' | 'row'
 
 const ProgramaBoard: React.FC = () => {
@@ -173,13 +96,13 @@ const ProgramaBoard: React.FC = () => {
           <div className="h-80 w-full">
             {programData.statusDistribution.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <Treemap
-                  data={programData.statusDistribution}
-                  dataKey="value"
-                  nameKey="name"
-                  aspectRatio={1}
-                  content={<CustomTreemapContent total={filteredData.length} />}
-                />
+                <BarChart data={programData.statusDistribution} layout="vertical" margin={{ left: 10, right: 30 }}>
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                  <XAxis type="number" tickFormatter={formatNumber} />
+                  <YAxis dataKey="name" type="category" width={160} tick={<YAxisTick />} />
+                  <Tooltip formatter={(v: unknown) => formatNumber(Number(v))} />
+                  <Bar dataKey="value" fill={STATUS_BAR_COLOR} radius={[0, 4, 4, 0]} name="Participantes" />
+                </BarChart>
               </ResponsiveContainer>
             ) : <div className="flex h-full items-center justify-center text-gray-400">Sin datos de estado</div>}
           </div>
