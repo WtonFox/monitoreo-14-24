@@ -5,7 +5,6 @@ export type BoardCategory =
   | 'demographic'
   | 'territorial'
   | 'program'
-  | 'social'
   | 'quality'
   | 'vulnerability'
   | 'temporal'
@@ -16,7 +15,6 @@ export interface BoardData {
   demographicData: DemographicSlice;
   territorialData: TerritorialSlice;
   programData: ProgramSlice;
-  socialData: SocialSlice;
   qualityData: QualitySlice;
   vulnerabilityData: VulnerabilitySlice;
   temporalData: TemporalSlice;
@@ -56,15 +54,6 @@ export interface ProgramSlice {
   statusDistribution: { name: string; value: number }[];
   activeVsGraduatedByCentro: { name: string; Activos: number; Egresados: number }[];
   activeVsGraduatedByMunicipio: { name: string; Activos: number; Egresados: number }[];
-}
-
-export interface SocialSlice {
-  phoneCompletenessPct: number;
-  addressCompletenessPct: number;
-  genderByCentro: { name: string; Mujeres: number; Hombres: number }[];
-  genderByCurso: { name: string; Mujeres: number; Hombres: number }[];
-  ageByCentro: { name: string; r14_17: number; r18_24: number }[];
-  ageByCurso: { name: string; r14_17: number; r18_24: number }[];
 }
 
 export interface QualitySlice {
@@ -135,11 +124,6 @@ const emptyTerritorialSlice = (): TerritorialSlice => ({
 const emptyProgramSlice = (): ProgramSlice => ({
   activePct: 0, graduatedPct: 0, minorsWithTutorPct: 0, tutorsWithPhonePct: 0,
   statusDistribution: [], activeVsGraduatedByCentro: [], activeVsGraduatedByMunicipio: [],
-});
-
-const emptySocialSlice = (): SocialSlice => ({
-  phoneCompletenessPct: 0, addressCompletenessPct: 0,
-  genderByCentro: [], genderByCurso: [], ageByCentro: [], ageByCurso: [],
 });
 
 const emptyQualitySlice = (): QualitySlice => ({
@@ -442,39 +426,6 @@ export function computeBoardData(
     }));
   }
 
-  let withPhone = 0;
-  let withAddress = 0;
-  let genderByCentroArr: { name: string; Mujeres: number; Hombres: number }[] = [];
-  let genderByCurso: { name: string; Mujeres: number; Hombres: number }[] = [];
-  let ageByCentro: { name: string; r14_17: number; r18_24: number }[] = [];
-  let ageByCurso: { name: string; r14_17: number; r18_24: number }[] = [];
-
-  if (needs('social')) {
-    withPhone = count(data, p => !isEmptyValue(p.telefonos));
-    withAddress = count(data, p => !isEmptyValue(p.direccion));
-
-    genderByCentroArr = topCentros.map(c => ({
-      name: c.name.length > 20 ? c.name.substring(0, 18) + '\u2026' : c.name,
-      Mujeres: womenByCentro[c.name] || 0,
-      Hombres: menByCentro[c.name] || 0,
-    }));
-    genderByCurso = topCursos.map(c => ({
-      name: c.name.length > 20 ? c.name.substring(0, 18) + '\u2026' : c.name,
-      Mujeres: womenByCurso[c.name] || 0,
-      Hombres: menByCurso[c.name] || 0,
-    }));
-    ageByCentro = topCentros.map(c => ({
-      name: c.name.length > 20 ? c.name.substring(0, 18) + '\u2026' : c.name,
-      r14_17: age14_17ByCentro[c.name] || 0,
-      r18_24: age18_24ByCentro[c.name] || 0,
-    }));
-    ageByCurso = topCursos.map(c => ({
-      name: c.name.length > 20 ? c.name.substring(0, 18) + '\u2026' : c.name,
-      r14_17: age14_17ByCurso[c.name] || 0,
-      r18_24: age18_24ByCurso[c.name] || 0,
-    }));
-  }
-
   let qualityFieldBreakdown: { name: string; pct: number; total: number; ndCount: number }[] = [];
 
   if (needs('quality')) {
@@ -608,14 +559,6 @@ export function computeBoardData(
           statusDistribution, activeVsGraduatedByCentro, activeVsGraduatedByMunicipio,
         }
       : emptyProgramSlice(),
-
-    socialData: needs('social')
-      ? {
-          phoneCompletenessPct: safeDiv(withPhone, total) * 100,
-          addressCompletenessPct: safeDiv(withAddress, total) * 100,
-          genderByCentro: genderByCentroArr, genderByCurso, ageByCentro, ageByCurso,
-        }
-      : emptySocialSlice(),
 
     qualityData: needs('quality')
       ? {

@@ -1,3 +1,4 @@
+// @ts-nocheck — Dead code: removed from router but kept on disk
 import React, { useState } from 'react'
 import { formatNumber, formatPercentage } from '../../utils/formatters'
 import {

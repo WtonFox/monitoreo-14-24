@@ -11,13 +11,21 @@ Router MUST register `/indicadores`. Sidebar SHALL include "Indicadores" link.
 - THEN an "Indicadores" link SHALL appear
 - AND navigating to `/indicadores` SHALL render the indicator board
 
+#### Scenario: `/indicadores/sociales` is no longer a valid route
+
+- GIVEN a user navigating to `/indicadores/sociales`
+- WHEN the route resolves
+- THEN the app SHALL redirect to `/indicadores`
+- OR SHALL show a 404 page
+- AND `INDICADORES_SOCIALES` SHALL NOT exist in `ROUTES`
+
 ### R2: Indicator Display
 
-Page SHALL display 34 indicators in 4 groups: Demográficos, Territoriales, Estado del Programa, Sociales. Each card SHALL show name, computed value, formula, description.
+Page SHALL display 65 indicators in 8 groups: Demográficos, Territoriales, Estado del Programa, Calidad del Dato, Salud y Vulnerabilidad, Cobertura Temporal, Nivel Educativo, Desempeño por Centro. Each card SHALL show name, computed value, formula, description.
 
 - GIVEN participant data in DashboardContext
 - WHEN `/indicadores` opens
-- THEN 34 cards SHALL render in 4 sections
+- THEN 65 cards SHALL render in 8 sections
 - AND each SHALL display name, value, formula, description
 
 ### R3: Pending Indicators
@@ -136,3 +144,24 @@ The `Indicator` type SHALL accept optional `topCount?: number`. Computation SHAL
 - WHEN modal renders
 - THEN header SHALL display "Top 10"
 - AND table SHALL render 7 rows
+
+### R8: Calidad-Dato Completeness Format
+
+Indicators with IDs 37–42 (calidad-dato completitud) SHALL display their value as `"X de Y (Z%)"` where X is the count of records with data, Y is the total population, and Z% is the percentage. This is a presentation-format change only — no structural or computational change.
+
+- GIVEN an indicator with ID in [37, 38, 39, 40, 41, 42]
+- WHEN the indicator card renders
+- THEN the value SHALL display as `"{count} de {total} ({percentage}%)"`
+- AND the `completitudPct` function SHALL return both count and total alongside the percentage
+
+#### Scenario: zero records with data
+
+- GIVEN `qualityCedula = 0` and `total = 100`
+- WHEN indicator ID 37 renders
+- THEN value SHALL display `"0 de 100 (0.0%)"`
+
+#### Scenario: all records have data
+
+- GIVEN `qualityEducation = 200` and `total = 200`
+- WHEN indicator ID 39 renders
+- THEN value SHALL display `"200 de 200 (100.0%)"`

@@ -22,7 +22,6 @@ const PAGE_TITLES: Record<string, string> = {
     [ROUTES.INDICADORES_DEMOGRAFICOS]: 'Indicadores Demográficos',
     [ROUTES.INDICADORES_TERRITORIALES]: 'Indicadores Territoriales',
     [ROUTES.INDICADORES_PROGRAMA]: 'Indicadores — Estado del Programa',
-    [ROUTES.INDICADORES_SOCIALES]: 'Indicadores Sociales',
     [ROUTES.INDICADORES_CALIDAD]: 'Indicadores — Calidad del Dato',
     [ROUTES.INDICADORES_VULNERABILIDAD]: 'Indicadores — Vulnerabilidad',
     [ROUTES.INDICADORES_COBERTURA]: 'Indicadores — Cobertura Temporal',

@@ -187,8 +187,6 @@ describe('computeBoardData — active-slice (WU3)', () => {
     expect(result.territorialData.municipioCount).toBe(3);
     // Program populated
     expect(result.programData.statusDistribution.length).toBeGreaterThan(0);
-    // Social populated
-    expect(result.socialData.phoneCompletenessPct).toBeDefined();
     // Quality populated
     expect(result.qualityData.fieldBreakdown).toBeDefined();
     // Vulnerability populated
@@ -212,7 +210,6 @@ describe('computeBoardData — active-slice (WU3)', () => {
     expect(result.territorialData.topCentros).toEqual([]);
     expect(result.programData.statusDistribution).toEqual([]);
     expect(result.programData.minorsWithTutorPct).toBe(0);
-    expect(result.socialData.genderByCentro).toEqual([]);
     expect(result.qualityData.fieldBreakdown).toEqual([]);
     expect(result.vulnerabilityData.topDisabilities).toEqual([]);
     expect(result.temporalData.registrationsByYear).toEqual([]);
@@ -231,7 +228,6 @@ describe('computeBoardData — active-slice (WU3)', () => {
     expect(result.demographicData.ageBuckets).toEqual([]);
     // Non-territorial derived data empty
     expect(result.programData.statusDistribution).toEqual([]);
-    expect(result.socialData.genderByCentro).toEqual([]);
     expect(result.centerData.topCenters).toEqual([]);
   });
 

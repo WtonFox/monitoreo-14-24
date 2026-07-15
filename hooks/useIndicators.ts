@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import type { Participant } from '../types';
 import { computeIndicators } from '../utils/indicator-computations';
 
-export type IndicatorCategory = 'demograficos' | 'territoriales' | 'programa' | 'sociales' | 'calidad-dato' | 'vulnerabilidad' | 'cobertura-temporal' | 'nivel-educativo' | 'desempeno-centro';
+export type IndicatorCategory = 'demograficos' | 'territoriales' | 'programa' | 'calidad-dato' | 'vulnerabilidad' | 'cobertura-temporal' | 'nivel-educativo' | 'desempeno-centro';
 
 export interface Indicator {
   id: number;

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Users, MapPin, Activity, Heart, CheckCircle, AlertTriangle, Calendar, GraduationCap, Building2, CheckCircle2, XCircle } from 'lucide-react';
+import { Users, MapPin, Activity, CheckCircle, AlertTriangle, Calendar, GraduationCap, Building2, CheckCircle2, XCircle } from 'lucide-react';
 import type { IndicatorGroup, Indicator, IndicatorCategory } from '../hooks/useIndicators';
 import { formatNumber } from '../utils/formatters';
 import { useIndicadoresFilters } from '../contexts/IndicadoresFiltersContext';
@@ -43,14 +43,6 @@ const CATEGORY_STYLES: Record<
     header: 'text-amber-800 bg-amber-50 border-amber-200',
     bg: 'bg-amber-50/30',
     accent: 'bg-amber-50',
-  },
-  sociales: {
-    bar: 'bg-rose-500',
-    icon: 'text-rose-600',
-    border: 'border-rose-100',
-    header: 'text-rose-800 bg-rose-50 border-rose-200',
-    bg: 'bg-rose-50/30',
-    accent: 'bg-rose-50',
   },
   'calidad-dato': {
     bar: 'bg-violet-500',
@@ -98,7 +90,6 @@ const CATEGORY_ICONS: Record<string, React.FC<{ size?: number; className?: strin
   demograficos: Users,
   territoriales: MapPin,
   programa: Activity,
-  sociales: Heart,
   'calidad-dato': CheckCircle,
   vulnerabilidad: AlertTriangle,
   'cobertura-temporal': Calendar,

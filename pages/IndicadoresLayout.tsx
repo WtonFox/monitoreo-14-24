@@ -2,7 +2,7 @@ import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { ROUTES } from '../types/routes';
 import {
-  LayoutDashboard, Users, MapPin, Activity, Heart,
+  LayoutDashboard, Users, MapPin, Activity,
   CheckCircle, AlertTriangle, Calendar, GraduationCap, Building2,
   TrendingDown, CalendarDays, FileWarning,
   ChevronDown,
@@ -17,7 +17,6 @@ const MAIN_TABS = [
   { to: ROUTES.INDICADORES_DEMOGRAFICOS, label: 'Demográficos', icon: Users },
   { to: ROUTES.INDICADORES_TERRITORIALES, label: 'Territoriales', icon: MapPin },
   { to: ROUTES.INDICADORES_PROGRAMA, label: 'Estado del Programa', icon: Activity },
-  { to: ROUTES.INDICADORES_SOCIALES, label: 'Sociales', icon: Heart },
 ];
 
 // ── New categories (grouped in dropdown) ──

@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import {
-  X, Users, MapPin, Activity, Heart,
+  X, Users, MapPin, Activity,
   CheckCircle2, AlertTriangle, CheckCircle, Calendar, GraduationCap, Building2, XCircle,
 } from 'lucide-react';
 import type { Indicator, IndicatorCategory } from '../hooks/useIndicators';
@@ -17,7 +17,6 @@ const CATEGORY_META: Record<
   demograficos: { icon: Users, primary: '#2563eb', bg: '#eff6ff', light: '#dbeafe' },
   territoriales: { icon: MapPin, primary: '#059669', bg: '#ecfdf5', light: '#d1fae5' },
   programa: { icon: Activity, primary: '#d97706', bg: '#fffbeb', light: '#fef3c7' },
-  sociales: { icon: Heart, primary: '#e11d48', bg: '#fff1f2', light: '#ffe4e6' },
   'calidad-dato': { icon: CheckCircle, primary: '#7c3aed', bg: '#f5f3ff', light: '#ede9fe' },
   vulnerabilidad: { icon: AlertTriangle, primary: '#dc2626', bg: '#fef2f2', light: '#fecaca' },
   'cobertura-temporal': { icon: Calendar, primary: '#0891b2', bg: '#ecfeff', light: '#cffafe' },
@@ -31,7 +30,7 @@ interface IndicatorModalProps {
   onClose: () => void;
 }
 
-const OVERVIEW_CATEGORIES = new Set(['demograficos', 'territoriales', 'programa', 'sociales']);
+const OVERVIEW_CATEGORIES = new Set(['demograficos', 'territoriales', 'programa']);
 const DETAIL_CATEGORIES = new Set(['calidad-dato', 'vulnerabilidad']);
 const TREND_CATEGORIES = new Set(['cobertura-temporal', 'nivel-educativo', 'desempeno-centro']);
 
