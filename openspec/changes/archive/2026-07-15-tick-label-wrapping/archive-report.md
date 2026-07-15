@@ -49,6 +49,9 @@ Replaced axis label truncation (tickShort "…") with multi-line text wrapping i
 | `pages/indicadores/NivelEducativoBoard.tsx` | ✅ Modified |
 | `pages/indicadores/CalidadDatoBoard.tsx` | ✅ Modified |
 
+## Bugfix (added post-archive)
+- **hooks/computeBoardData.ts**: `activeByCentro` and `graduatedByCentro` accumulators were gated by `needsProg` only, but they are also required by `needsCtr`. Changed guard from `needsProg` to `(needsProg || needsCtr)`. This caused "Top Centros" chart to show 0 for Activos/Egresados bars when viewing the dedicated Desempeño por Centro tab.
+
 ## Verification
 - ✅ TypeScript compilation: `tsc --noEmit` — 0 errors
 - ✅ Production build: `vite build` — 0 errors, 1.81s

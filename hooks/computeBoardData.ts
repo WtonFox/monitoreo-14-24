@@ -54,6 +54,11 @@ export interface ProgramSlice {
   statusDistribution: { name: string; value: number }[];
   activeVsGraduatedByCentro: { name: string; Activos: number; Egresados: number }[];
   activeVsGraduatedByMunicipio: { name: string; Activos: number; Egresados: number }[];
+  evolutionByYear: { name: string; Activos: number; Egresados: number; Retirados: number }[];
+  statusByCurso: { name: string; Activos: number; Egresados: number }[];
+  contactabilidadByCentro: { name: string; totalTutores: number; conTelefono: number; pct: number }[];
+  minorsTutorByCentro: { name: string; totalMenores: number; conTutor: number; pct: number }[];
+  avgAgeByStatus: { activeAvg: number; graduatedAvg: number };
 }
 
 export interface QualitySlice {
@@ -124,6 +129,8 @@ const emptyTerritorialSlice = (): TerritorialSlice => ({
 const emptyProgramSlice = (): ProgramSlice => ({
   activePct: 0, graduatedPct: 0, minorsWithTutorPct: 0, tutorsWithPhonePct: 0,
   statusDistribution: [], activeVsGraduatedByCentro: [], activeVsGraduatedByMunicipio: [],
+  evolutionByYear: [], statusByCurso: [], contactabilidadByCentro: [],
+  minorsTutorByCentro: [], avgAgeByStatus: { activeAvg: 0, graduatedAvg: 0 },
 });
 
 const emptyQualitySlice = (): QualitySlice => ({
@@ -203,6 +210,14 @@ export function computeBoardData(
 
   const minors: number[] = [];
   let minorsCount = 0;
+
+  // Accumulators for new program indicators (fortalecer-estado-programa)
+  const yearsAcc: Record<string, Record<string, number>> = {};
+  const cursoAcc: Record<string, Record<string, number>> = {};
+  const contactAcc: Record<string, { totalTutores: number; conTelefono: number }> = {};
+  const minorsAcc: Record<string, { totalMenores: number; conTutor: number }> = {};
+  let activeAgeSum = 0, activeAgeCount = 0;
+  let graduatedAgeSum = 0, graduatedAgeCount = 0;
 
   let qualityCedula = 0, qualityBirthDate = 0, qualityEducation = 0;
   let qualityAllergies = 0, qualityDisabilities = 0, qualityDiseases = 0;
@@ -291,15 +306,49 @@ export function computeBoardData(
         totalActive++;
         if ((needsProg || needsCtr) && p.centro) activeByCentro[p.centro] = (activeByCentro[p.centro] || 0) + 1;
         if (needsProg && p.municipio) activeByMuni[p.municipio] = (activeByMuni[p.municipio] || 0) + 1;
+        if (needsProg && p.edadRegistro > 0) { activeAgeSum += p.edadRegistro; activeAgeCount++; }
       }
       if (isGraduatedStatus(p.estado)) {
         totalGraduated++;
         if ((needsProg || needsCtr) && p.centro) graduatedByCentro[p.centro] = (graduatedByCentro[p.centro] || 0) + 1;
         if (needsProg && p.municipio) graduatedByMuni[p.municipio] = (graduatedByMuni[p.municipio] || 0) + 1;
+        if (needsProg && p.edadRegistro > 0) { graduatedAgeSum += p.edadRegistro; graduatedAgeCount++; }
       }
     }
     if (needsProg && age !== null && age !== undefined && age > 0 && age < 18) {
       minors.push(p.edad);
+    }
+
+    // ── New program indicators: in-loop accumulators ──
+    if (needsProg) {
+      // evolutionByYear: group by year × estado
+      if (p.fechaRegistro) {
+        const year = new Date(p.fechaRegistro).getFullYear();
+        if (!yearsAcc[year]) yearsAcc[year] = {};
+        const estadoKey = p.estado || 'Desconocido';
+        yearsAcc[year][estadoKey] = (yearsAcc[year][estadoKey] || 0) + 1;
+      }
+      // statusByCurso: group by rutaFormativa × estado
+      if (p.rutaFormativa && p.estado) {
+        if (!cursoAcc[p.rutaFormativa]) cursoAcc[p.rutaFormativa] = {};
+        cursoAcc[p.rutaFormativa][p.estado] = (cursoAcc[p.rutaFormativa][p.estado] || 0) + 1;
+      }
+      // contactabilidadByCentro: tutors with phone per center
+      if (p.centro && !!p.tutor && !isEmptyValue(p.tutor)) {
+        if (!contactAcc[p.centro]) contactAcc[p.centro] = { totalTutores: 0, conTelefono: 0 };
+        contactAcc[p.centro].totalTutores++;
+        if (!!p.telefonosResponsable && !isEmptyValue(p.telefonosResponsable)) {
+          contactAcc[p.centro].conTelefono++;
+        }
+      }
+      // minorsTutorByCentro: minors with tutor per center
+      if (p.centro && (p.edad || 0) < 18) {
+        if (!minorsAcc[p.centro]) minorsAcc[p.centro] = { totalMenores: 0, conTutor: 0 };
+        minorsAcc[p.centro].totalMenores++;
+        if (!!p.tutor && !isEmptyValue(p.tutor)) {
+          minorsAcc[p.centro].conTutor++;
+        }
+      }
     }
 
     if (needsQual) {
@@ -436,6 +485,11 @@ export function computeBoardData(
   let statusDistribution: { name: string; value: number }[] = [];
   let activeVsGraduatedByCentro: { name: string; Activos: number; Egresados: number }[] = [];
   let activeVsGraduatedByMunicipio: { name: string; Activos: number; Egresados: number }[] = [];
+  let evolutionByYear: { name: string; Activos: number; Egresados: number; Retirados: number }[] = [];
+  let statusByCurso: { name: string; Activos: number; Egresados: number }[] = [];
+  let contactabilidadByCentro: { name: string; totalTutores: number; conTelefono: number; pct: number }[] = [];
+  let minorsTutorByCentro: { name: string; totalMenores: number; conTutor: number; pct: number }[] = [];
+  let avgAgeByStatus: { activeAvg: number; graduatedAvg: number } = { activeAvg: 0, graduatedAvg: 0 };
 
   if (needs('program')) {
     minorsWithTutor = count(data, p => (p.edad || 0) < 18 && !!p.tutor && !isEmptyValue(p.tutor));
@@ -457,6 +511,60 @@ export function computeBoardData(
       Activos: activeByMuni[m.name] || 0,
       Egresados: graduatedByMuni[m.name] || 0,
     }));
+
+    // New program indicators: post-loop mapping
+    evolutionByYear = Object.entries(yearsAcc)
+      .sort(([a], [b]) => Number(a) - Number(b))
+      .map(([year, statuses]) => {
+        let activos = 0, egresados = 0;
+        for (const [estado, count] of Object.entries(statuses)) {
+          if (isActiveStatus(estado)) activos += count;
+          else if (isGraduatedStatus(estado)) egresados += count;
+        }
+        const total = Object.values(statuses).reduce((s, c) => s + c, 0);
+        return {
+          name: year,
+          Activos: activos,
+          Egresados: egresados,
+          Retirados: total - activos - egresados,
+        };
+      });
+
+    statusByCurso = Object.entries(cursoAcc)
+      .map(([curso, statuses]) => {
+        let activos = 0, egresados = 0;
+        for (const [estado, count] of Object.entries(statuses)) {
+          if (isActiveStatus(estado)) activos += count;
+          else if (isGraduatedStatus(estado)) egresados += count;
+        }
+        return { name: curso, Activos: activos, Egresados: egresados };
+      })
+      .sort((a, b) => (b.Activos + b.Egresados) - (a.Activos + a.Egresados));
+
+    contactabilidadByCentro = Object.entries(contactAcc)
+      .map(([name, data]) => ({
+        name: name.length > 20 ? name.substring(0, 18) + '\u2026' : name,
+        totalTutores: data.totalTutores,
+        conTelefono: data.conTelefono,
+        pct: safeDiv(data.conTelefono, data.totalTutores) * 100,
+      }))
+      .sort((a, b) => b.pct - a.pct)
+      .slice(0, 10);
+
+    minorsTutorByCentro = Object.entries(minorsAcc)
+      .map(([name, data]) => ({
+        name: name.length > 20 ? name.substring(0, 18) + '\u2026' : name,
+        totalMenores: data.totalMenores,
+        conTutor: data.conTutor,
+        pct: safeDiv(data.conTutor, data.totalMenores) * 100,
+      }))
+      .sort((a, b) => b.pct - a.pct)
+      .slice(0, 10);
+
+    avgAgeByStatus = {
+      activeAvg: safeDiv(activeAgeSum, activeAgeCount),
+      graduatedAvg: safeDiv(graduatedAgeSum, graduatedAgeCount),
+    };
   }
 
   let qualityFieldBreakdown: { name: string; pct: number; total: number; ndCount: number }[] = [];
@@ -588,6 +696,8 @@ export function computeBoardData(
           minorsWithTutorPct: minorsCount > 0 ? safeDiv(minorsWithTutor, minorsCount) * 100 : 0,
           tutorsWithPhonePct: tutorsTotalCount > 0 ? safeDiv(tutorsWithPhoneCount, tutorsTotalCount) * 100 : 0,
           statusDistribution, activeVsGraduatedByCentro, activeVsGraduatedByMunicipio,
+          evolutionByYear, statusByCurso, contactabilidadByCentro,
+          minorsTutorByCentro, avgAgeByStatus,
         }
       : emptyProgramSlice(),
 
