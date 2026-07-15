@@ -350,39 +350,7 @@ export const DominicanRepublicMap: React.FC<DominicanRepublicMapProps> = ({
                             </div>
                         </div>
 
-                        {Object.keys(locationStats[hoveredLocation].statusBreakdown).length > 0 && (
-                            <div className="py-1 border-b border-gray-100">
-                                <div className="text-gray-600 mb-1">Estado:</div>
-                                <div className="space-y-1">
-                                    {Object.entries(locationStats[hoveredLocation].statusBreakdown)
-                                        .sort((a, b) => (b[1] as number) - (a[1] as number))
-                                        .slice(0, 3)
-                                        .map(([status, count]) => (
-                                            <div key={status} className="flex justify-between text-xs">
-                                                <span className="text-gray-700">{status}</span>
-                                                <span className="font-semibold text-gray-900">{formatNumber(count as number)}</span>
-                                            </div>
-                                        ))
-                                    }
-                                </div>
-                            </div>
-                        )}
 
-                        {locationStats[hoveredLocation].topCenters.length > 0 && (
-                            <div className="py-1">
-                                <div className="text-gray-600 mb-1">Top Centros:</div>
-                                <div className="space-y-1">
-                                    {locationStats[hoveredLocation].topCenters.map((center, idx) => (
-                                        <div key={idx} className="flex justify-between text-xs items-start">
-                                            <span className="text-gray-700 flex-1 pr-2" title={center.name}>
-                                                {center.name.length > 35 ? center.name.substring(0, 32) + '...' : center.name}
-                                            </span>
-                                            <span className="font-semibold text-gray-900 whitespace-nowrap">{formatNumber(center.count)}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
                     </div>
                 </div>
             )}
