@@ -7,7 +7,8 @@ import {
 import { FileWarning, AlertTriangle, BarChart3, Table as TableIcon, Grid3X3, List, Circle, CheckCircle2 } from 'lucide-react'
 import BoardShell from '../../components/BoardShell'
 import BoardInfo from '../../components/BoardInfo'
-import { tickShort, chartClass } from '../../utils/indicadores-helpers'
+import { chartClass } from '../../utils/indicadores-helpers'
+import { YAxisTick } from '../../utils/indicadores-tick-components'
 import { useIndicadoresFilters } from '../../contexts/IndicadoresFiltersContext'
 import { IndicadoresFilterBar } from '../../components/IndicadoresFilterBar'
 import type { Participant } from '../../types'
@@ -331,9 +332,8 @@ const CalidadNdBoard: React.FC = () => {
                   <YAxis
                     type="category"
                     dataKey="name"
-                    tickFormatter={tickShort}
-                    width={90}
-                    style={{ fontSize: '11px' }}
+                    tick={<YAxisTick />}
+                    width={140}
                   />
                   <Tooltip
                     formatter={(v: unknown) => formatPercentage(Number(v))}

@@ -6,7 +6,8 @@ import {
 } from 'recharts'
 import { AlertTriangle, Grid3X3, List, Accessibility, Heart, Shield } from 'lucide-react'
 import BoardShell from '../../components/BoardShell'
-import { tickShort, chartClass, chartH } from '../../utils/indicadores-helpers'
+import { chartClass, chartH } from '../../utils/indicadores-helpers'
+import { XAxisTick, YAxisTick } from '../../utils/indicadores-tick-components'
 import { useIndicadoresFilters } from '../../contexts/IndicadoresFiltersContext'
 import { IndicadoresFilterBar } from '../../components/IndicadoresFilterBar'
 import BoardInfo from '../../components/BoardInfo';
@@ -108,7 +109,7 @@ const VulnerabilidadBoard: React.FC = () => {
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={prevalenceData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="name" tickFormatter={tickShort} />
+                <XAxis dataKey="name" tick={<XAxisTick />} />
                 <YAxis tickFormatter={v => `${v}%`} domain={[0, 100]} />
                 <Tooltip formatter={(v: unknown) => formatPercentage(Number(v))} />
                 <Legend />
@@ -145,7 +146,7 @@ const VulnerabilidadBoard: React.FC = () => {
                 <BarChart data={vulnerabilityData.topDisabilities} layout="vertical" margin={{ left: 10, right: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                   <XAxis type="number" tickFormatter={formatNumber} />
-                  <YAxis dataKey="name" type="category" width={130} tickFormatter={tickShort} style={{ fontSize: '11px' }} />
+                  <YAxis dataKey="name" type="category" width={180} tick={<YAxisTick />} />
                   <Tooltip formatter={(v: unknown) => formatNumber(Number(v))} />
                   <Bar dataKey="value" fill="#dc2626" radius={[0, 4, 4, 0]} />
                 </BarChart>
@@ -162,7 +163,7 @@ const VulnerabilidadBoard: React.FC = () => {
                 <BarChart data={vulnerabilityData.topDiseases} layout="vertical" margin={{ left: 10, right: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                   <XAxis type="number" tickFormatter={formatNumber} />
-                  <YAxis dataKey="name" type="category" width={130} tickFormatter={tickShort} style={{ fontSize: '11px' }} />
+                  <YAxis dataKey="name" type="category" width={180} tick={<YAxisTick />} />
                   <Tooltip formatter={(v: unknown) => formatNumber(Number(v))} />
                   <Bar dataKey="value" fill="#f97316" radius={[0, 4, 4, 0]} />
                 </BarChart>

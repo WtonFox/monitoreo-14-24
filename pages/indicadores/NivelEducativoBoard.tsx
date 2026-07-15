@@ -6,7 +6,8 @@ import {
 } from 'recharts'
 import { GraduationCap, BookOpen, Grid3X3, List } from 'lucide-react'
 import BoardShell from '../../components/BoardShell'
-import { tickShort, chartClass, chartH } from '../../utils/indicadores-helpers'
+import { chartClass, chartH } from '../../utils/indicadores-helpers'
+import { XAxisTick } from '../../utils/indicadores-tick-components'
 import { useIndicadoresFilters } from '../../contexts/IndicadoresFiltersContext'
 import { IndicadoresFilterBar } from '../../components/IndicadoresFilterBar'
 import BoardInfo from '../../components/BoardInfo';
@@ -123,7 +124,7 @@ const NivelEducativoBoard: React.FC = () => {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={educationData.educationByStatus}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="name" tickFormatter={tickShort} />
+                  <XAxis dataKey="name" tick={<XAxisTick />} />
                   <YAxis tickFormatter={formatNumber} />
                   <Tooltip formatter={(v: unknown) => formatNumber(Number(v))} />
                   <Legend />
@@ -142,7 +143,7 @@ const NivelEducativoBoard: React.FC = () => {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={educationData.educationBySex}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="name" tickFormatter={tickShort} />
+                  <XAxis dataKey="name" tick={<XAxisTick />} />
                   <YAxis tickFormatter={formatNumber} />
                   <Tooltip formatter={(v: unknown) => formatNumber(Number(v))} />
                   <Legend />

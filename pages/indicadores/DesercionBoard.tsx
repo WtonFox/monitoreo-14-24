@@ -6,7 +6,8 @@ import {
 import { TrendingDown, Building2, Users, AlertTriangle, MapPin, Grid3X3, List } from 'lucide-react'
 import BoardShell from '../../components/BoardShell'
 import BoardInfo from '../../components/BoardInfo'
-import { tickShort, chartClass, chartH } from '../../utils/indicadores-helpers'
+import { chartClass, chartH } from '../../utils/indicadores-helpers'
+import { YAxisTick } from '../../utils/indicadores-tick-components'
 import { useIndicadoresFilters } from '../../contexts/IndicadoresFiltersContext'
 import { IndicadoresFilterBar } from '../../components/IndicadoresFilterBar'
 import { DOMINICAN_PROVINCES } from '../../constants'
@@ -258,8 +259,8 @@ const DesercionBoard: React.FC = () => {
                 <YAxis
                   dataKey="centro"
                   type="category"
-                  width={160}
-                  tick={{ fontSize: 11 }}
+                  width={180}
+                  tick={<YAxisTick />}
                 />
                 <Tooltip
                   formatter={(v: unknown) => formatPercentage(Number(v))}

@@ -6,7 +6,8 @@ import {
 } from 'recharts'
 import { Activity, Award, Heart, Phone, Grid3X3, List } from 'lucide-react'
 import BoardShell from '../../components/BoardShell'
-import { tickShort, chartClass, chartH } from '../../utils/indicadores-helpers'
+import { chartClass, chartH, tickShort } from '../../utils/indicadores-helpers'
+import { YAxisTick } from '../../utils/indicadores-tick-components'
 import { useIndicadoresFilters } from '../../contexts/IndicadoresFiltersContext'
 import { IndicadoresFilterBar } from '../../components/IndicadoresFilterBar'
 import BoardInfo from '../../components/BoardInfo';
@@ -113,7 +114,7 @@ const ProgramaBoard: React.FC = () => {
                 <BarChart data={programData.activeVsGraduatedByCentro} layout="vertical" margin={{ left: 10, right: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                   <XAxis type="number" tickFormatter={formatNumber} />
-                  <YAxis dataKey="name" type="category" width={130} tickFormatter={tickShort} style={{ fontSize: '11px' }} />
+                  <YAxis dataKey="name" type="category" width={180} tick={<YAxisTick />} />
                   <Tooltip formatter={(v: unknown) => formatNumber(Number(v))} />
                   <Legend />
                   <Bar dataKey="Activos" fill="#00C49F" radius={[0, 4, 4, 0]} />
@@ -132,7 +133,7 @@ const ProgramaBoard: React.FC = () => {
                 <BarChart data={programData.activeVsGraduatedByMunicipio} layout="vertical" margin={{ left: 10, right: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                   <XAxis type="number" tickFormatter={formatNumber} />
-                  <YAxis dataKey="name" type="category" width={130} tickFormatter={tickShort} style={{ fontSize: '11px' }} />
+                  <YAxis dataKey="name" type="category" width={180} tick={<YAxisTick />} />
                   <Tooltip formatter={(v: unknown) => formatNumber(Number(v))} />
                   <Legend />
                   <Bar dataKey="Activos" fill="#00C49F" radius={[0, 4, 4, 0]} />

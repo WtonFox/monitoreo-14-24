@@ -1,11 +1,15 @@
 /**
  * Shared helpers for indicator board components.
  * Extracted from inline definitions across 13 boards.
+ *
+ * For custom axis tick components (text-wrapping), see indicadores-tick-components.tsx.
  */
 
 /**
  * Truncate a string to maxLen characters, appending "…" if it exceeds the limit.
  * Preserves the behavior of existing inline `tickShort` helpers (maxLen=14 → trim to 12 + "…").
+ *
+ * Prefer `YAxisTick` / `XAxisTick` for axis labels — they wrap text instead of truncating.
  */
 export function tickShort(val: string, maxLen = 24): string {
   return val.length > maxLen ? val.substring(0, maxLen - 2) + '…' : val;

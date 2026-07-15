@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { NavLink } from 'react-router-dom';
 import { ROUTES } from '../types/routes';
-import { LayoutDashboard, List, WifiOff, Globe, PauseCircle, PlayCircle, Map as MapIcon, AlertCircle, RefreshCw, CheckCircle2, Activity, BarChart3, Bell } from 'lucide-react';
+import { LayoutDashboard, List, WifiOff, PauseCircle, PlayCircle, Map as MapIcon, AlertCircle, RefreshCw, CheckCircle2, Activity, BarChart3, Bell } from 'lucide-react';
 import { formatNumber } from '../utils/formatters';
 import { CorruptedRecord, SyncStats } from '../hooks/useDashboardData';
 import { useAuth } from '../contexts/AuthContext';
@@ -29,7 +29,6 @@ const MAIN_NAV_ITEMS: NavItem[] = [
     { to: ROUTES.ESTADISTICAS, icon: LayoutDashboard, label: 'Estadísticas' },
     { to: ROUTES.INDICADORES, icon: BarChart3, label: 'Indicadores' },
     { to: ROUTES.ALERTAS, icon: Bell, label: 'Alertas' },
-    { to: ROUTES.IMPACTO_SOCIAL, icon: Globe, label: 'Impacto Social' },
     { to: ROUTES.MAPA_INTERACTIVO, icon: MapIcon, label: 'Mapa Interactivo' },
     { to: ROUTES.PARTICIPANTES, icon: List, label: 'Participantes' },
 ];

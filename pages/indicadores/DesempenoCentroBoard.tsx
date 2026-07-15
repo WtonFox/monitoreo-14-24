@@ -5,7 +5,8 @@ import {
 } from 'recharts'
 import { Building2, Users, TrendingUp, Award, Grid3X3, List } from 'lucide-react'
 import BoardShell from '../../components/BoardShell'
-import { tickShort, chartClass, chartH } from '../../utils/indicadores-helpers'
+import { chartClass, chartH } from '../../utils/indicadores-helpers'
+import { YAxisTick } from '../../utils/indicadores-tick-components'
 import { useIndicadoresFilters } from '../../contexts/IndicadoresFiltersContext'
 import { IndicadoresFilterBar } from '../../components/IndicadoresFilterBar'
 import BoardInfo from '../../components/BoardInfo';
@@ -111,7 +112,7 @@ const DesempenoCentroBoard: React.FC = () => {
                 <BarChart data={centerData.topCenters} layout="vertical" margin={{ left: 10, right: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                   <XAxis type="number" tickFormatter={formatNumber} />
-                  <YAxis dataKey="name" type="category" width={130} tickFormatter={tickShort} style={{ fontSize: '11px' }} />
+                  <YAxis dataKey="name" type="category" width={180} tick={<YAxisTick />} />
                   <Tooltip formatter={(v: unknown) => formatNumber(Number(v))} />
                   <Legend />
                   <Bar dataKey="total" fill="#64748b" radius={[0, 4, 4, 0]} name="Total" />
@@ -131,7 +132,7 @@ const DesempenoCentroBoard: React.FC = () => {
                 <BarChart data={retentionEgresoData} layout="vertical" margin={{ left: 10, right: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                   <XAxis type="number" tickFormatter={formatNumber} />
-                  <YAxis dataKey="name" type="category" width={130} tickFormatter={tickShort} style={{ fontSize: '11px' }} />
+                  <YAxis dataKey="name" type="category" width={180} tick={<YAxisTick />} />
                   <Tooltip formatter={(v: unknown) => formatNumber(Number(v))} />
                   <Legend />
                   <Bar dataKey="Retención" fill="#10b981" stackId="s" radius={[0, 4, 4, 0]} />
@@ -150,7 +151,7 @@ const DesempenoCentroBoard: React.FC = () => {
                 <BarChart data={centerData.genderByCenter} layout="vertical" margin={{ left: 10, right: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                   <XAxis type="number" tickFormatter={formatNumber} />
-                  <YAxis dataKey="name" type="category" width={130} tickFormatter={tickShort} style={{ fontSize: '11px' }} />
+                  <YAxis dataKey="name" type="category" width={180} tick={<YAxisTick />} />
                   <Tooltip formatter={(v: unknown) => formatNumber(Number(v))} />
                   <Legend />
                   <Bar dataKey="Mujeres" fill="#00C49F" stackId="s" radius={[0, 4, 4, 0]} />
@@ -169,7 +170,7 @@ const DesempenoCentroBoard: React.FC = () => {
                 <BarChart data={centerData.avgAgeByCenter} layout="vertical" margin={{ left: 10, right: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                   <XAxis type="number" domain={[0, 'dataMax + 2']} />
-                  <YAxis dataKey="name" type="category" width={130} tickFormatter={tickShort} style={{ fontSize: '11px' }} />
+                  <YAxis dataKey="name" type="category" width={180} tick={<YAxisTick />} />
                   <Tooltip formatter={(v: unknown) => (Number(v)).toFixed(1)} />
                   <Legend />
                   <Bar dataKey="avgAge" fill="#64748b" radius={[0, 4, 4, 0]} name="Edad Prom." />
