@@ -88,7 +88,7 @@ const getMonday = (d: Date): Date => {
 // ── Component ──
 
 const RegistroDiarioBoard: React.FC = () => {
-  const { filteredData } = useIndicadoresFilters();
+  const { filteredData, isDataLoading } = useIndicadoresFilters();
   const [viewMode, setViewMode] = useState<'grid' | 'row'>('row');
   const [now, setNow] = useState(() => new Date());
 
@@ -255,6 +255,10 @@ const RegistroDiarioBoard: React.FC = () => {
   }, [filteredData, dateFrom, dateTo, now]);
 
   // ── Empty state ──
+  if (isDataLoading) {
+    return <BoardShell loading />;
+  }
+
   if (filteredData.length === 0) {
     return <BoardShell empty />;
   }
@@ -575,3 +579,4 @@ const RegistroDiarioBoard: React.FC = () => {
 };
 
 export default RegistroDiarioBoard;
+

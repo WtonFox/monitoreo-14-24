@@ -17,8 +17,12 @@ type ViewMode = 'grid' | 'row'
 
 const DemograficosBoard: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('row');
-  const { boardData, filteredData } = useIndicadoresFilters();
+  const { boardData, filteredData, isDataLoading } = useIndicadoresFilters();
   const { demographicData } = boardData;
+
+  if (isDataLoading) {
+    return <BoardShell loading />;
+  }
 
   if (filteredData.length === 0) {
     return <BoardShell empty />;

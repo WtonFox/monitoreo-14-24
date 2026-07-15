@@ -159,18 +159,19 @@ export function computeBoardData(
   const needs = (cat: BoardCategory): boolean =>
     activeBoard === 'all' || activeBoard === cat;
 
-  const women = count(data, p => isWomen(p.sexo));
-  const men = count(data, p => isMen(p.sexo));
-  const unknownSex = count(data, p => !isWomen(p.sexo) && !isMen(p.sexo));
-  const knownSexTotal = women + men;
-  const womenPct = safeDiv(women, knownSexTotal) * 100;
-  const menPct = safeDiv(men, knownSexTotal) * 100;
-  const unknownSexPct = safeDiv(unknownSex, knownSexTotal) * 100;
+  const needsDemo = needs('demographic');
+  const needsTerr = needs('territorial');
+  const needsProg = needs('program');
+  const needsQual = needs('quality');
+  const needsVuln = needs('vulnerability');
+  const needsTemp = needs('temporal');
+  const needsEdu  = needs('education');
+  const needsCtr  = needs('center');
+  const needsTop  = needsTerr || needsProg || needsCtr;
+  const needsStatus = needsProg || needsCtr;
 
-  const ageRegData = data.filter(p => p.edadRegistro > 0);
-  const avgAgeReg = ageRegData.length > 0
-    ? ageRegData.reduce((s, p) => s + p.edadRegistro, 0) / ageRegData.length
-    : 0;
+  let women = 0, men = 0, unknownSex = 0;
+  let ageRegSum = 0, ageRegCount = 0;
 
   const buckets: Record<string, number> = { '14-17': 0, '18-20': 0, '21-24': 0, '25+': 0, Unknown: 0 };
   const womenBucket: Record<string, number> = { '14-17': 0, '18-20': 0, '21-24': 0, '25+': 0, Unknown: 0 };
@@ -179,25 +180,29 @@ export function computeBoardData(
   const municipioCount: Record<string, number> = {};
   const centroCount: Record<string, number> = {};
   const cursoCount: Record<string, number> = {};
-  const statusCount: Record<string, number> = {};
 
   const womenByMuni: Record<string, number> = {};
+  const womenByCentro: Record<string, number> = {};
+  const menByCentro: Record<string, number> = {};
+
+  let totalActive = 0, totalGraduated = 0;
   const activeByCentro: Record<string, number> = {};
   const graduatedByCentro: Record<string, number> = {};
   const activeByMuni: Record<string, number> = {};
   const graduatedByMuni: Record<string, number> = {};
-  const womenByCentro: Record<string, number> = {};
-  const menByCentro: Record<string, number> = {};
+  const statusCount: Record<string, number> = {};
+
   const womenByCurso: Record<string, number> = {};
   const menByCurso: Record<string, number> = {};
-  const age14_17ByCentro: Record<string, number> = {};
-  const age18_24ByCentro: Record<string, number> = {};
   const age14_17ByCurso: Record<string, number> = {};
   const age18_24ByCurso: Record<string, number> = {};
+  const age14_17ByCentro: Record<string, number> = {};
+  const age18_24ByCentro: Record<string, number> = {};
+  const centroAgeSum: Record<string, number> = {};
+  const centroAgeCount: Record<string, number> = {};
 
-  let totalActive = 0;
-  let totalGraduated = 0;
   const minors: number[] = [];
+  let minorsCount = 0;
 
   let qualityCedula = 0, qualityBirthDate = 0, qualityEducation = 0;
   let qualityAllergies = 0, qualityDisabilities = 0, qualityDiseases = 0;
@@ -220,13 +225,19 @@ export function computeBoardData(
   const educationMenCount: Record<string, number> = {};
   const centroEducationLevelCounts: Record<string, Record<string, number>> = {};
 
-  const centroAgeSum: Record<string, number> = {};
-  const centroAgeCount: Record<string, number> = {};
-
   for (const p of data) {
     const age = p.edad;
     const esMujer = isWomen(p.sexo);
     const esHombre = isMen(p.sexo);
+
+    if (esMujer) women++;
+    else if (esHombre) men++;
+    else unknownSex++;
+
+    if (p.edadRegistro > 0) {
+      ageRegSum += p.edadRegistro;
+      ageRegCount++;
+    }
 
     let bucketKey: string;
     if (age === null || age === undefined || age <= 0 || age > 120) {
@@ -247,103 +258,112 @@ export function computeBoardData(
     if (p.estadoCivil && !isEmptyValue(p.estadoCivil))
       maritalCount[p.estadoCivil] = (maritalCount[p.estadoCivil] || 0) + 1;
 
-    if (p.municipio) {
+    if (needsTop && p.municipio) {
       municipioCount[p.municipio] = (municipioCount[p.municipio] || 0) + 1;
-      if (esMujer) womenByMuni[p.municipio] = (womenByMuni[p.municipio] || 0) + 1;
+      if (needsTerr && esMujer) womenByMuni[p.municipio] = (womenByMuni[p.municipio] || 0) + 1;
     }
 
-    if (p.centro) {
+    if (needsTop && p.centro) {
       centroCount[p.centro] = (centroCount[p.centro] || 0) + 1;
       if (esMujer) womenByCentro[p.centro] = (womenByCentro[p.centro] || 0) + 1;
       if (esHombre) menByCentro[p.centro] = (menByCentro[p.centro] || 0) + 1;
-      if (age >= 14 && age <= 17) age14_17ByCentro[p.centro] = (age14_17ByCentro[p.centro] || 0) + 1;
-      if (age >= 18 && age <= 24) age18_24ByCentro[p.centro] = (age18_24ByCentro[p.centro] || 0) + 1;
-      centroAgeSum[p.centro] = (centroAgeSum[p.centro] || 0) + (p.edadRegistro || 0);
-      centroAgeCount[p.centro] = (centroAgeCount[p.centro] || 0) + (p.edadRegistro > 0 ? 1 : 0);
+      if (needsCtr) {
+        if (age >= 14 && age <= 17) age14_17ByCentro[p.centro] = (age14_17ByCentro[p.centro] || 0) + 1;
+        if (age >= 18 && age <= 24) age18_24ByCentro[p.centro] = (age18_24ByCentro[p.centro] || 0) + 1;
+        centroAgeSum[p.centro] = (centroAgeSum[p.centro] || 0) + (p.edadRegistro || 0);
+        centroAgeCount[p.centro] = (centroAgeCount[p.centro] || 0) + (p.edadRegistro > 0 ? 1 : 0);
+      }
     }
 
-    if (p.rutaFormativa) {
+    if (needsTop && p.rutaFormativa) {
       cursoCount[p.rutaFormativa] = (cursoCount[p.rutaFormativa] || 0) + 1;
-      if (esMujer) womenByCurso[p.rutaFormativa] = (womenByCurso[p.rutaFormativa] || 0) + 1;
-      if (esHombre) menByCurso[p.rutaFormativa] = (menByCurso[p.rutaFormativa] || 0) + 1;
-      if (age >= 14 && age <= 17) age14_17ByCurso[p.rutaFormativa] = (age14_17ByCurso[p.rutaFormativa] || 0) + 1;
-      if (age >= 18 && age <= 24) age18_24ByCurso[p.rutaFormativa] = (age18_24ByCurso[p.rutaFormativa] || 0) + 1;
+      if (needsTerr) {
+        if (esMujer) womenByCurso[p.rutaFormativa] = (womenByCurso[p.rutaFormativa] || 0) + 1;
+        if (esHombre) menByCurso[p.rutaFormativa] = (menByCurso[p.rutaFormativa] || 0) + 1;
+        if (age >= 14 && age <= 17) age14_17ByCurso[p.rutaFormativa] = (age14_17ByCurso[p.rutaFormativa] || 0) + 1;
+        if (age >= 18 && age <= 24) age18_24ByCurso[p.rutaFormativa] = (age18_24ByCurso[p.rutaFormativa] || 0) + 1;
+      }
     }
 
-    const st = p.estado;
-    if (st) {
-      statusCount[st] = (statusCount[st] || 0) + 1;
-      if (isActiveStatus(st)) {
+    if (needsStatus && p.estado) {
+      statusCount[p.estado] = (statusCount[p.estado] || 0) + 1;
+      if (isActiveStatus(p.estado)) {
         totalActive++;
-        if (p.centro) activeByCentro[p.centro] = (activeByCentro[p.centro] || 0) + 1;
-        if (p.municipio) activeByMuni[p.municipio] = (activeByMuni[p.municipio] || 0) + 1;
+        if (needsProg && p.centro) activeByCentro[p.centro] = (activeByCentro[p.centro] || 0) + 1;
+        if (needsProg && p.municipio) activeByMuni[p.municipio] = (activeByMuni[p.municipio] || 0) + 1;
       }
-      if (isGraduatedStatus(st)) {
+      if (isGraduatedStatus(p.estado)) {
         totalGraduated++;
-        if (p.centro) graduatedByCentro[p.centro] = (graduatedByCentro[p.centro] || 0) + 1;
-        if (p.municipio) graduatedByMuni[p.municipio] = (graduatedByMuni[p.municipio] || 0) + 1;
+        if (needsProg && p.centro) graduatedByCentro[p.centro] = (graduatedByCentro[p.centro] || 0) + 1;
+        if (needsProg && p.municipio) graduatedByMuni[p.municipio] = (graduatedByMuni[p.municipio] || 0) + 1;
+      }
+    }
+    if (needsProg && age !== null && age !== undefined && age > 0 && age < 18) {
+      minors.push(p.edad);
+    }
+
+    if (needsQual) {
+      if (hasValue(p.cedula)) qualityCedula++;
+      if (hasValue(p.fechaNacimiento)) qualityBirthDate++;
+      if (hasValue(p.nivelEstudio)) qualityEducation++;
+      if (hasValue(p.alergias)) qualityAllergies++;
+      if (hasValue(p.discapacidades)) qualityDisabilities++;
+      if (hasValue(p.enfermedades)) qualityDiseases++;
+    }
+
+    if (needsVuln) {
+      if (hasValue(p.discapacidades)) {
+        vulnerabilityDisabilities++;
+        p.discapacidades!.split(',').forEach(d => {
+          const s = d.trim();
+          if (s && !isEmptyValue(s)) disabledCountMap[s] = (disabledCountMap[s] || 0) + 1;
+        });
+      }
+      if (hasValue(p.enfermedades)) {
+        vulnerabilityDiseases++;
+        p.enfermedades!.split(',').forEach(e => {
+          const s = e.trim();
+          if (s && !isEmptyValue(s)) diseaseCountMap[s] = (diseaseCountMap[s] || 0) + 1;
+        });
+      }
+      if (hasValue(p.alergias)) {
+        vulnerabilityAllergies++;
+        p.alergias!.split(',').forEach(a => {
+          const s = a.trim();
+          if (s && !isEmptyValue(s)) allergyCountMap[s] = (allergyCountMap[s] || 0) + 1;
+        });
+      }
+      if (hasValue(p.programasSociales)) {
+        vulnerabilitySocialPrograms++;
+        p.programasSociales!.split(',').forEach(pr => {
+          const s = pr.trim();
+          if (s && !isEmptyValue(s)) socialProgramCountMap[s] = (socialProgramCountMap[s] || 0) + 1;
+        });
+      }
+      if (hasValue(p.vulnerabilidades)) {
+        vulnerabilityVulnerabilities++;
       }
     }
 
-    if (age !== null && age !== undefined && age > 0 && age < 18) minors.push(p.edad);
-
-    if (hasValue(p.cedula)) qualityCedula++;
-    if (hasValue(p.fechaNacimiento)) qualityBirthDate++;
-    if (hasValue(p.nivelEstudio)) qualityEducation++;
-    if (hasValue(p.alergias)) qualityAllergies++;
-    if (hasValue(p.discapacidades)) qualityDisabilities++;
-    if (hasValue(p.enfermedades)) qualityDiseases++;
-
-    if (hasValue(p.discapacidades)) {
-      vulnerabilityDisabilities++;
-      p.discapacidades!.split(',').forEach(d => {
-        const s = d.trim();
-        if (s && !isEmptyValue(s)) disabledCountMap[s] = (disabledCountMap[s] || 0) + 1;
-      });
-    }
-    if (hasValue(p.enfermedades)) {
-      vulnerabilityDiseases++;
-      p.enfermedades!.split(',').forEach(e => {
-        const s = e.trim();
-        if (s && !isEmptyValue(s)) diseaseCountMap[s] = (diseaseCountMap[s] || 0) + 1;
-      });
-    }
-    if (hasValue(p.alergias)) {
-      vulnerabilityAllergies++;
-      p.alergias!.split(',').forEach(a => {
-        const s = a.trim();
-        if (s && !isEmptyValue(s)) allergyCountMap[s] = (allergyCountMap[s] || 0) + 1;
-      });
-    }
-    if (hasValue(p.programasSociales)) {
-      vulnerabilitySocialPrograms++;
-      p.programasSociales!.split(',').forEach(pr => {
-        const s = pr.trim();
-        if (s && !isEmptyValue(s)) socialProgramCountMap[s] = (socialProgramCountMap[s] || 0) + 1;
-      });
-    }
-    if (hasValue(p.vulnerabilidades)) {
-      vulnerabilityVulnerabilities++;
+    if (needsTemp) {
+      if (p.fechaRegistro) {
+        const d = new Date(p.fechaRegistro);
+        const y = d.getFullYear();
+        yearCounts[y] = (yearCounts[y] || 0) + 1;
+        const q = Math.floor(d.getMonth() / 3) + 1;
+        quarterCounts[`Q${q}`] = (quarterCounts[`Q${q}`] || 0) + 1;
+      }
+      if (p.fechaRegistro && p.fechaInclusion) {
+        const diff = (new Date(p.fechaInclusion).getTime() - new Date(p.fechaRegistro).getTime()) / (1000 * 60 * 60 * 24);
+        if (diff >= 0) { totalDaysToInclusion += diff; countWithInclusion++; }
+      }
     }
 
-    if (p.fechaRegistro) {
-      const d = new Date(p.fechaRegistro);
-      const y = d.getFullYear();
-      yearCounts[y] = (yearCounts[y] || 0) + 1;
-      const q = Math.floor(d.getMonth() / 3) + 1;
-      quarterCounts[`Q${q}`] = (quarterCounts[`Q${q}`] || 0) + 1;
-    }
-    if (p.fechaRegistro && p.fechaInclusion) {
-      const diff = (new Date(p.fechaInclusion).getTime() - new Date(p.fechaRegistro).getTime()) / (1000 * 60 * 60 * 24);
-      if (diff >= 0) { totalDaysToInclusion += diff; countWithInclusion++; }
-    }
-
-    if (p.nivelEstudio && !isEmptyValue(p.nivelEstudio)) {
+    if (needsEdu && p.nivelEstudio && !isEmptyValue(p.nivelEstudio)) {
       educationCounts[p.nivelEstudio] = (educationCounts[p.nivelEstudio] || 0) + 1;
-      const se = p.estado;
-      if (se) {
-        if (isActiveStatus(se)) educationActiveStatus[p.nivelEstudio] = (educationActiveStatus[p.nivelEstudio] || 0) + 1;
-        if (isGraduatedStatus(se)) educationGraduatedStatus[p.nivelEstudio] = (educationGraduatedStatus[p.nivelEstudio] || 0) + 1;
+      if (p.estado) {
+        if (isActiveStatus(p.estado)) educationActiveStatus[p.nivelEstudio] = (educationActiveStatus[p.nivelEstudio] || 0) + 1;
+        if (isGraduatedStatus(p.estado)) educationGraduatedStatus[p.nivelEstudio] = (educationGraduatedStatus[p.nivelEstudio] || 0) + 1;
       }
       if (esMujer) educationWomenCount[p.nivelEstudio] = (educationWomenCount[p.nivelEstudio] || 0) + 1;
       if (esHombre) educationMenCount[p.nivelEstudio] = (educationMenCount[p.nivelEstudio] || 0) + 1;
@@ -354,7 +374,15 @@ export function computeBoardData(
     }
   }
 
-  const minorsCount = minors.length;
+  // ── Post-loop: compute derived values ──
+
+  const knownSexTotal = women + men;
+  const womenPct = safeDiv(women, knownSexTotal) * 100;
+  const menPct = safeDiv(men, knownSexTotal) * 100;
+  const unknownSexPct = safeDiv(unknownSex, knownSexTotal) * 100;
+  const avgAgeReg = ageRegCount > 0 ? ageRegSum / ageRegCount : 0;
+
+  minorsCount = minors.length;
 
   let ageBuckets: { name: string; value: number }[] = [];
   let maritalStatus: { name: string; value: number }[] = [];
@@ -463,9 +491,7 @@ export function computeBoardData(
       const curr = yearCounts[y];
       return { name: y, growth: prev > 0 ? ((curr - prev) / prev) * 100 : 0 };
     });
-    avgAgeAtRegistration = ageRegData.length > 0
-      ? ageRegData.reduce((s, p) => s + p.edadRegistro, 0) / ageRegData.length
-      : 0;
+    avgAgeAtRegistration = avgAgeReg;
     avgDaysToInclusion = countWithInclusion > 0 ? totalDaysToInclusion / countWithInclusion : 0;
     registrationsByQuarter = Object.entries(quarterCounts)
       .sort(([a], [b]) => a.localeCompare(b))

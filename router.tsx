@@ -16,6 +16,7 @@ import Alertas from './pages/Alertas';
 import Forbidden from './pages/Forbidden';
 
 import IndicadoresLayout from './pages/IndicadoresLayout';
+import LoadingSkeleton from './components/LoadingSkeleton';
 
 const Indicadores = React.lazy(() => import('./pages/Indicadores'));
 const DemograficosBoard = React.lazy(() => import('./pages/indicadores/DemograficosBoard'));
@@ -88,11 +89,7 @@ export const router = createHashRouter([
           {
             index: true,
             element: (
-              <Suspense fallback={
-                <div className="flex items-center justify-center h-64 text-gray-400">
-                  Cargando indicadores...
-                </div>
-              }>
+              <Suspense fallback={<LoadingSkeleton variant="page" label="Cargando indicadores..." />}>
                 <Indicadores />
               </Suspense>
             ),
@@ -100,7 +97,7 @@ export const router = createHashRouter([
           {
             path: 'demograficos',
             element: (
-              <Suspense fallback={<div className="p-8 text-center text-gray-400">Cargando...</div>}>
+              <Suspense fallback={<LoadingSkeleton variant="board" />}>
                 <DemograficosBoard />
               </Suspense>
             ),
@@ -108,7 +105,7 @@ export const router = createHashRouter([
           {
             path: 'territoriales',
             element: (
-              <Suspense fallback={<div className="p-8 text-center text-gray-400">Cargando...</div>}>
+              <Suspense fallback={<LoadingSkeleton variant="board" />}>
                 <TerritorialesBoard />
               </Suspense>
             ),
@@ -116,7 +113,7 @@ export const router = createHashRouter([
           {
             path: 'programa',
             element: (
-              <Suspense fallback={<div className="p-8 text-center text-gray-400">Cargando...</div>}>
+              <Suspense fallback={<LoadingSkeleton variant="board" />}>
                 <ProgramaBoard />
               </Suspense>
             ),
@@ -128,7 +125,7 @@ export const router = createHashRouter([
           {
             path: 'calidad-dato',
             element: (
-              <Suspense fallback={<div className="p-8 text-center text-gray-400">Cargando...</div>}>
+              <Suspense fallback={<LoadingSkeleton variant="board" />}>
                 <CalidadDatoBoard />
               </Suspense>
             ),
@@ -136,7 +133,7 @@ export const router = createHashRouter([
           {
             path: 'vulnerabilidad',
             element: (
-              <Suspense fallback={<div className="p-8 text-center text-gray-400">Cargando...</div>}>
+              <Suspense fallback={<LoadingSkeleton variant="board" />}>
                 <VulnerabilidadBoard />
               </Suspense>
             ),
@@ -144,7 +141,7 @@ export const router = createHashRouter([
           {
             path: 'cobertura-temporal',
             element: (
-              <Suspense fallback={<div className="p-8 text-center text-gray-400">Cargando...</div>}>
+              <Suspense fallback={<LoadingSkeleton variant="board" />}>
                 <CoberturaBoard />
               </Suspense>
             ),
@@ -152,7 +149,7 @@ export const router = createHashRouter([
           {
             path: 'nivel-educativo',
             element: (
-              <Suspense fallback={<div className="p-8 text-center text-gray-400">Cargando...</div>}>
+              <Suspense fallback={<LoadingSkeleton variant="board" />}>
                 <NivelEducativoBoard />
               </Suspense>
             ),
@@ -160,7 +157,7 @@ export const router = createHashRouter([
           {
             path: 'desempeno-centro',
             element: (
-              <Suspense fallback={<div className="p-8 text-center text-gray-400">Cargando...</div>}>
+              <Suspense fallback={<LoadingSkeleton variant="board" />}>
                 <DesempenoCentroBoard />
               </Suspense>
             ),
@@ -168,7 +165,7 @@ export const router = createHashRouter([
           {
             path: 'centros-sin-menores',
             element: (
-              <Suspense fallback={<div className="p-8 text-center text-gray-400">Cargando...</div>}>
+              <Suspense fallback={<LoadingSkeleton variant="board" />}>
                 <CentrosSinMenoresBoard />
               </Suspense>
             ),
@@ -176,7 +173,7 @@ export const router = createHashRouter([
           {
             path: 'desercion',
             element: (
-              <Suspense fallback={<div className="p-8 text-center text-gray-400">Cargando...</div>}>
+              <Suspense fallback={<LoadingSkeleton variant="board" />}>
                 <DesercionBoard />
               </Suspense>
             ),
@@ -184,7 +181,7 @@ export const router = createHashRouter([
           {
             path: 'registro-diario',
             element: (
-              <Suspense fallback={<div className="p-8 text-center text-gray-400">Cargando...</div>}>
+              <Suspense fallback={<LoadingSkeleton variant="board" />}>
                 <RegistroDiarioBoard />
               </Suspense>
             ),
@@ -192,7 +189,7 @@ export const router = createHashRouter([
           {
             path: 'calidad-nd',
             element: (
-              <Suspense fallback={<div className="p-8 text-center text-gray-400">Cargando...</div>}>
+              <Suspense fallback={<LoadingSkeleton variant="board" />}>
                 <CalidadNdBoard />
               </Suspense>
             ),

@@ -1,5 +1,6 @@
 import React from 'react';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Loader } from 'lucide-react';
+import LoadingSkeleton from './LoadingSkeleton';
 
 interface BoardShellProps {
   title?: string;
@@ -7,6 +8,7 @@ interface BoardShellProps {
   children?: React.ReactNode;
   empty?: boolean;
   emptyMessage?: string;
+  loading?: boolean;
 }
 
 /**
@@ -19,7 +21,12 @@ const BoardShell: React.FC<BoardShellProps> = ({
   children,
   empty = false,
   emptyMessage,
+  loading = false,
 }) => {
+  if (loading) {
+    return <LoadingSkeleton variant="board" />;
+  }
+
   if (empty) {
     return (
       <div className="p-6 max-w-7xl mx-auto w-full">

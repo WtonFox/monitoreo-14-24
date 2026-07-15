@@ -28,7 +28,7 @@ interface ComputedMetrics {
 }
 
 const CentrosSinMenoresBoard: React.FC = () => {
-  const { filteredData } = useIndicadoresFilters();
+  const { filteredData, isDataLoading } = useIndicadoresFilters();
   const [viewMode, setViewMode] = useState<'grid' | 'row'>('row');
 
   const {
@@ -107,6 +107,10 @@ const CentrosSinMenoresBoard: React.FC = () => {
   }, [filteredData]);
 
   // ── Empty state: no data at all ──
+  if (isDataLoading) {
+    return <BoardShell loading />;
+  }
+
   if (filteredData.length === 0) {
     return <BoardShell empty />;
   }
@@ -271,3 +275,4 @@ const CentrosSinMenoresBoard: React.FC = () => {
 };
 
 export default CentrosSinMenoresBoard;
+

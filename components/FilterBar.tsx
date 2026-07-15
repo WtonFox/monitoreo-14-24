@@ -1,6 +1,6 @@
 import React from 'react';
 import { DOMINICAN_PROVINCES } from '../constants';
-import { Filter, ChevronDown, X, Sliders } from 'lucide-react';
+import { Filter, ChevronDown, X, Sliders, Eye, EyeOff } from 'lucide-react';
 
 interface FilterBarProps {
     selectedProvince: string;
@@ -15,6 +15,8 @@ interface FilterBarProps {
     availableMunicipiosForProvince: string[];
     filteredCount: number;
     hasActiveFilters: boolean;
+    showLabels?: boolean;
+    onToggleLabels?: () => void;
 }
 
 export const FilterBar: React.FC<FilterBarProps> = ({
@@ -29,7 +31,9 @@ export const FilterBar: React.FC<FilterBarProps> = ({
     availableStatuses,
     availableMunicipiosForProvince,
     filteredCount,
-    hasActiveFilters
+    hasActiveFilters,
+    showLabels = false,
+    onToggleLabels,
 }) => {
     return (
         <div className="px-4 py-3 md:px-6 bg-white border-t border-gray-200 flex flex-col sm:flex-row flex-wrap gap-3 items-stretch sm:items-center shadow-sm">
@@ -100,6 +104,14 @@ export const FilterBar: React.FC<FilterBarProps> = ({
             </div>
 
             <div className="w-full sm:flex-1 text-center sm:text-right text-xs text-gray-400 mt-1 sm:mt-0">
+                <button
+                    onClick={onToggleLabels}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all mr-3 ${showLabels ? 'bg-blue-600 text-white shadow-sm' : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300'}`}
+                    title={showLabels ? 'Ocultar etiquetas en gráficas' : 'Mostrar etiquetas en gráficas'}
+                >
+                    {showLabels ? <Eye size={14} /> : <EyeOff size={14} />}
+                    {showLabels ? 'Ocultar Etiquetas' : 'Mostrar Etiquetas'}
+                </button>
                 Registros en Vista: {filteredCount.toLocaleString()}
             </div>
         </div>

@@ -3,7 +3,8 @@ import { useIndicators } from '../hooks/useIndicators';
 import { IndicatorsBoard } from '../components/IndicatorsBoard';
 import { IndicadoresFilterBar } from '../components/IndicadoresFilterBar';
 import { useIndicadoresFilters } from '../contexts/IndicadoresFiltersContext';
-import { HelpCircle, X, CheckCircle2, AlertTriangle, XCircle } from 'lucide-react';
+import { HelpCircle, X, CheckCircle2, AlertTriangle, XCircle, Loader } from 'lucide-react';
+import LoadingSkeleton from '../components/LoadingSkeleton';
 
 // ── Info modal content ──
 
@@ -110,7 +111,9 @@ const Indicadores: React.FC = () => {
 
       <IndicadoresFilterBar />
 
-      {filters.filteredData.length === 0 ? (
+      {filters.isDataLoading ? (
+        <LoadingSkeleton variant="page" label="Cargando indicadores..." />
+      ) : filters.filteredData.length === 0 ? (
         <div className="h-64 flex flex-col items-center justify-center text-gray-400 bg-white rounded-xl border border-dashed border-gray-300">
           <p>No hay datos para los filtros seleccionados.</p>
         </div>

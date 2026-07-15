@@ -29,6 +29,7 @@ const Estadisticas: React.FC = () => {
   } = useFiltersContext();
 
   const [showAdvancedFilters, setShowAdvancedFilters] = useState<boolean>(false);
+  const [showLabels, setShowLabels] = useState<boolean>(false);
 
   return (
     <>
@@ -46,6 +47,8 @@ const Estadisticas: React.FC = () => {
         availableMunicipiosForProvince={availableMunicipiosForProvince}
         filteredCount={filteredData.length}
         hasActiveFilters={hasActiveFilters}
+        showLabels={showLabels}
+        onToggleLabels={() => setShowLabels(prev => !prev)}
       />
 
       {/* Main padded content */}
@@ -57,6 +60,7 @@ const Estadisticas: React.FC = () => {
             data={filteredData}
             selectedProvince={selectedProvince}
             selectedMunicipio={selectedMunicipio}
+            showLabels={showLabels}
           />
         ) : (
           <div className="h-64 flex flex-col items-center justify-center text-gray-400 bg-white rounded-xl border border-dashed border-gray-300">

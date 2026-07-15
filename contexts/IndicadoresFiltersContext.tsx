@@ -39,6 +39,7 @@ interface IndicadoresFiltersContextValue extends FilterState {
   filteredData: Participant[];
   boardData: BoardData;
   isStale: boolean;
+  isDataLoading: boolean;
 }
 
 const DEFAULT_FILTERS: FilterState = {
@@ -54,7 +55,8 @@ export const IndicadoresFiltersProvider: React.FC<{
   children: ReactNode;
   allYears: string[];
   rawData: Participant[];
-}> = ({ children, allYears, rawData }) => {
+  isSyncing?: boolean;
+}> = ({ children, allYears, rawData, isSyncing = false }) => {
   const [year, setYearState] = useState(DEFAULT_FILTERS.year);
   const [province, setProvinceState] = useState(DEFAULT_FILTERS.province);
   const [municipio, setMunicipioState] = useState(DEFAULT_FILTERS.municipio);
@@ -100,6 +102,9 @@ export const IndicadoresFiltersProvider: React.FC<{
 
   const boardData = useIndicatorBoards(filteredData, activeBoard);
 
+  // True only during initial data load (no data yet AND sync in progress)
+  const isDataLoading = rawData.length === 0 && isSyncing;
+
   const value = useMemo<IndicadoresFiltersContextValue>(() => ({
     year, province, municipio, sex,
     setYear: setYearState,
@@ -111,10 +116,11 @@ export const IndicadoresFiltersProvider: React.FC<{
     filteredData,
     boardData,
     isStale,
+    isDataLoading,
   }), [
     year, province, municipio, sex,
     setProvince, allYears, availableMunicipios,
-    filteredData, boardData, isStale,
+    filteredData, boardData, isStale, isDataLoading,
   ]);
 
   return (

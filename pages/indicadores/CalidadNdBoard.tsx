@@ -68,7 +68,7 @@ const barColor = (pct: number): string => {
 const CalidadNdBoard: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('general');
   const [layoutMode, setLayoutMode] = useState<'grid' | 'row'>('row');
-  const { filteredData } = useIndicadoresFilters();
+  const { filteredData, isDataLoading } = useIndicadoresFilters();
 
   const computed: ComputedMetrics = useMemo(() => {
     const total = filteredData.length;
@@ -150,6 +150,10 @@ const CalidadNdBoard: React.FC = () => {
   }, [filteredData, viewMode]);
 
   // ── Empty state ──
+  if (isDataLoading) {
+    return <BoardShell loading />;
+  }
+
   if (filteredData.length === 0) {
     return <BoardShell empty />;
   }
@@ -443,3 +447,4 @@ const CalidadNdBoard: React.FC = () => {
 };
 
 export default CalidadNdBoard;
+

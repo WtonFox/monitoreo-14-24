@@ -82,7 +82,7 @@ const tabClasses = ({ isActive }: { isActive: boolean }) =>
 const IndicadoresLayout: React.FC = () => {
   const [showMore, setShowMore] = useState(false);
   const [menuOrigin, setMenuOrigin] = useState<{ top: number; right: number } | null>(null);
-  const { dashboardData } = useDashboard();
+  const { dashboardData, isSyncing } = useDashboard();
   const location = useLocation();
   const moreTriggerRef = useRef<HTMLButtonElement>(null);
   const moreDropdownRef = useRef<HTMLDivElement>(null);
@@ -228,7 +228,7 @@ const IndicadoresLayout: React.FC = () => {
 
       {/* Page Content */}
       <div className="flex-1">
-        <IndicadoresFiltersProvider allYears={allYears} rawData={dashboardData}>
+        <IndicadoresFiltersProvider allYears={allYears} rawData={dashboardData} isSyncing={isSyncing}>
           <Outlet />
         </IndicadoresFiltersProvider>
       </div>

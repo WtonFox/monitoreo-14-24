@@ -4,7 +4,7 @@ import {
   BarChart, Bar, PieChart, Pie, Cell,
 } from 'recharts';
 import { Participant } from '../types';
-import { Eye, EyeOff, Calendar, CalendarDays, BarChart2 } from 'lucide-react';
+import { Calendar, CalendarDays } from 'lucide-react';
 import { DominicanRepublicMap } from './DominicanRepublicMap';
 import { PROVINCE_MUNICIPALITIES } from '../constants';
 import { formatNumber } from '../utils/formatters';
@@ -17,12 +17,12 @@ interface ChartsSectionProps {
   data: Participant[];
   selectedProvince: string;
   selectedMunicipio: string;
+  showLabels?: boolean;
 }
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ff6b6b'];
 
-export const ChartsSection: React.FC<ChartsSectionProps> = ({ data, selectedProvince, selectedMunicipio }) => {
-  const [showLabels, setShowLabels] = useState<boolean>(false);
+export const ChartsSection: React.FC<ChartsSectionProps> = ({ data, selectedProvince, selectedMunicipio, showLabels = false }) => {
   const [mapViewMode, setMapViewMode] = useState<'pin' | 'polygon'>('polygon');
   const [registrationViewMode, setRegistrationViewMode] = useState<'monthly' | 'annual'>('monthly');
   const [inclusionViewMode, setInclusionViewMode] = useState<'monthly' | 'annual'>('monthly');
@@ -146,20 +146,6 @@ export const ChartsSection: React.FC<ChartsSectionProps> = ({ data, selectedProv
 
   return (
     <div className="space-y-6 mb-8">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-2">
-        <h2 className="text-gray-800 font-bold flex items-center gap-2">
-          <BarChart2 className="text-blue-600" size={20} />
-          Visualización de Datos
-        </h2>
-        <button
-          onClick={() => setShowLabels(!showLabels)}
-          className={`w-full sm:w-auto flex justify-center items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all shadow-sm ${showLabels ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300'}`}
-        >
-          {showLabels ? <Eye size={16} /> : <EyeOff size={16} />}
-          {showLabels ? 'Ocultar Etiquetas' : 'Mostrar Etiquetas'}
-        </button>
-      </div>
-
       <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
           <h3 className="text-lg font-bold text-gray-800">Evolución de Registros ({registrationViewMode === 'monthly' ? 'Mensual' : 'Anual'})</h3>
@@ -177,7 +163,7 @@ export const ChartsSection: React.FC<ChartsSectionProps> = ({ data, selectedProv
                 <YAxis tickFormatter={formatNumber} style={{ fontSize: '11px' }} />
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <Tooltip formatter={(value: unknown) => [formatNumber(Number(value)), "Registros"]} />
-                {(showLabels || true) && <Legend />}
+                {showLabels && <Legend />}
                 <Area type="monotone" dataKey="Registros" stroke="#3b82f6" fillOpacity={1} fill="url(#colorReg)" label={showLabels ? { position: 'top', fontSize: 10, formatter: (value: unknown) => formatNumber(Number(value)) } : false} />
               </AreaChart>
             </ResponsiveContainer>
@@ -204,7 +190,7 @@ export const ChartsSection: React.FC<ChartsSectionProps> = ({ data, selectedProv
                 <YAxis tickFormatter={formatNumber} style={{ fontSize: '11px' }} />
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <Tooltip formatter={(value: unknown) => [formatNumber(Number(value)), "Inclusiones"]} />
-                {(showLabels || true) && <Legend />}
+                {showLabels && <Legend />}
                 <Area type="monotone" dataKey="Inclusiones" stroke="#10b981" fillOpacity={1} fill="url(#colorInc)" label={showLabels ? { position: 'top', fontSize: 10, formatter: (value: unknown) => formatNumber(Number(value)) } : false} />
               </AreaChart>
             </ResponsiveContainer>

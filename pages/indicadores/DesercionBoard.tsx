@@ -40,7 +40,7 @@ const DesercionBoard: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('general');
   const [layoutMode, setLayoutMode] = useState<'grid' | 'row'>('row');
   const [localProvince, setLocalProvince] = useState('todos');
-  const { filteredData } = useIndicadoresFilters();
+  const { filteredData, isDataLoading } = useIndicadoresFilters();
 
   const {
     tasaGeneral,
@@ -102,6 +102,10 @@ const DesercionBoard: React.FC = () => {
   }, [filteredData, viewMode, localProvince]);
 
   // ── Empty state ──
+  if (isDataLoading) {
+    return <BoardShell loading />;
+  }
+
   if (filteredData.length === 0) {
     return <BoardShell empty />;
   }
@@ -349,3 +353,4 @@ const DesercionBoard: React.FC = () => {
 };
 
 export default DesercionBoard;
+
