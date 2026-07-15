@@ -5,7 +5,7 @@ import {
 } from 'recharts';
 import { Target, Grid3X3, List, AlertTriangle, Users, BookOpen, GraduationCap, MapPin, Shield, Heart } from 'lucide-react';
 import BoardShell from '../../components/BoardShell';
-import { tickShort, chartClass, chartH } from '../../utils/indicadores-helpers';
+import { chartClass, chartH } from '../../utils/indicadores-helpers';
 import { useIndicadoresFilters } from '../../contexts/IndicadoresFiltersContext';
 import { IndicadoresFilterBar } from '../../components/IndicadoresFilterBar';
 import BoardInfo from '../../components/BoardInfo';
@@ -119,7 +119,7 @@ const ImpactoBoard: React.FC = () => {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={indicadores.vulnByProgramStatus.groups}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="group" tickFormatter={tickShort} />
+                  <XAxis dataKey="group" angle={-20} textAnchor="end" height={60} />
                   <YAxis tickFormatter={v => `${v}%`} domain={[0, 100]} />
                   <Tooltip formatter={(v: unknown) => formatPercentage(Number(v))} />
                   <Legend />
@@ -140,7 +140,7 @@ const ImpactoBoard: React.FC = () => {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={indicadores.programsByGraduation.groups}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="group" tickFormatter={tickShort} />
+                  <XAxis dataKey="group" />
                   <YAxis tickFormatter={v => `${v}%`} domain={[0, 100]} />
                   <Tooltip formatter={(v: unknown) => formatPercentage(Number(v))} />
                   <Legend />
@@ -161,7 +161,7 @@ const ImpactoBoard: React.FC = () => {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={indicadores.genderByRetention.groups}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="group" tickFormatter={tickShort} />
+                  <XAxis dataKey="group" />
                   <YAxis tickFormatter={v => `${v}%`} domain={[0, 100]} />
                   <Tooltip formatter={(v: unknown) => formatPercentage(Number(v))} />
                   <Legend />
@@ -252,7 +252,7 @@ const ImpactoBoard: React.FC = () => {
                 <BarChart data={indicadores.educationByPrograms.groups} layout="vertical" margin={{ left: 80, right: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                   <XAxis type="number" tickFormatter={formatNumber} />
-                  <YAxis dataKey="group" type="category" width={140} tickFormatter={tickShort} style={{ fontSize: '11px' }} />
+                  <YAxis dataKey="group" type="category" width={180} style={{ fontSize: '11px' }} />
                   <Tooltip formatter={(v: unknown) => formatNumber(Number(v))} />
                   <Bar dataKey="value" fill="#22c55e" radius={[0, 4, 4, 0]} name="Participantes" />
                 </BarChart>
@@ -271,7 +271,7 @@ const ImpactoBoard: React.FC = () => {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={indicadores.multiVulnConcentration.groups}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="group" tickFormatter={tickShort} />
+                  <XAxis dataKey="group" />
                   <YAxis tickFormatter={formatNumber} />
                   <Tooltip formatter={(v: unknown) => formatNumber(Number(v))} />
                   <Legend />

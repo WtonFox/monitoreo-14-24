@@ -87,10 +87,10 @@ export function useIndicadoresImpacto(data: Participant[]): CompositeIndicators 
       'vuln-by-status',
       'Vulnerabilidad × Estado del Programa',
       [
-        { group: 'Vulnerable — Activo', value: vulnActive, pct: safeDiv(vulnActive, vulnTotal) * 100 },
-        { group: 'Vulnerable — Egresado', value: vulnGrad, pct: safeDiv(vulnGrad, vulnTotal) * 100 },
-        { group: 'No vulnerable — Activo', value: nonVulnActive, pct: safeDiv(nonVulnActive, nonVulnTotal) * 100 },
-        { group: 'No vulnerable — Egresado', value: nonVulnGrad, pct: safeDiv(nonVulnGrad, nonVulnTotal) * 100 },
+        { group: 'Vuln: Activo', value: vulnActive, pct: safeDiv(vulnActive, vulnTotal) * 100 },
+        { group: 'Vuln: Egresado', value: vulnGrad, pct: safeDiv(vulnGrad, vulnTotal) * 100 },
+        { group: 'No vuln: Activo', value: nonVulnActive, pct: safeDiv(nonVulnActive, nonVulnTotal) * 100 },
+        { group: 'No vuln: Egresado', value: nonVulnGrad, pct: safeDiv(nonVulnGrad, nonVulnTotal) * 100 },
       ],
       vulnTotal > 0,
     );
