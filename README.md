@@ -2,6 +2,14 @@
 
 Plataforma de analisis y visualizacion de datos para monitorear el impacto del programa social **Oportunidad 14-24** en Republica Dominicana. Proporciona una interfaz interactiva para visualizar estadisticas, mapas geograficos de cobertura y metricas de impacto social.
 
+## Security
+
+Do not commit `.env`. Copy `.env.example` and replace `VITE_API_TOKEN` with the value from the API administrator.
+
+The committed `.env.example` value `YOUR_BEARER_TOKEN_HERE` is a placeholder, not a credential.
+
+See `openspec/changes/project-health-sweep/specs/credential-incident-containment/spec.md` for the historical incident and rotation procedure.
+
 ## Caracteristicas Principales
 
 - **Tablero de Estadisticas:** Visualizacion de participantes por genero, edad, provincia y estado
@@ -31,6 +39,34 @@ npm run dev
 ```
 
 La aplicacion estara disponible en `http://localhost:3000`.
+
+## Seguridad y Despliegue
+
+### Content-Security-Policy
+
+El `index.html` incluye un `<meta>` tag de Content-Security-Policy permisivo que permite:
+- Scripts inline y desde `cdn.tailwindcss.com` y `esm.sh`
+- Estilos inline y desde `fonts.googleapis.com` y `unpkg.com`
+- Conexiones a `'self'` y la API (`presidenciamonitoreo1424api.gabsocial.gob.do`)
+
+**Limitación actual**: El meta tag no soporta `report-only` y debe ser permisivo por las dependencias CDN. Para hardening en producción:
+1. Migrar Tailwind CSS a compilación local (vía PostCSS plugin)
+2. Migrar dependencias de `esm.sh` al bundle (ya están en `package.json`)
+3. Agregar headers HTTP `Content-Security-Policy` en `vercel.json` con una política más estricta
+
+### Dependencias CDN
+
+La app actualmente carga desde:
+- `https://cdn.tailwindcss.com` — Tailwind CSS (runtime)
+- `https://fonts.googleapis.com` / `https://fonts.gstatic.com` — Google Fonts (Inter)
+- `https://unpkg.com` — Leaflet CSS
+- `https://esm.sh` — React, Recharts, Lucide React (import map)
+
+El objetivo a largo plazo es servir todos estos assets desde el propio bundle para eliminar dependencias externas y permitir una CSP estricta.
+
+### Vercel Project Settings
+
+Ver `openspec/changes/project-health-sweep/notes/vercel-audit.md` para la auditoría completa de configuración de Vercel.
 
 ## Integracion con .NET
 

@@ -22,6 +22,9 @@ interface MonitoreoDB extends DBSchema {
       version: string;
       duplicated?: number;
       corrupted?: number;
+      lastSyncedPage?: number;
+      lastSyncedRecordCount?: number;
+      syncTimestamp?: number;
     };
   };
 }

@@ -3,15 +3,8 @@ import { NavLink } from 'react-router-dom';
 import { ROUTES } from '../types/routes';
 import { LayoutDashboard, List, WifiOff, Globe, PauseCircle, PlayCircle, Map as MapIcon, AlertCircle, RefreshCw, CheckCircle2, Activity, BarChart3 } from 'lucide-react';
 import { formatNumber } from '../utils/formatters';
-import { CorruptedRecord } from '../hooks/useDashboardData';
+import { CorruptedRecord, SyncStats } from '../hooks/useDashboardData';
 import { useAuth } from '../contexts/AuthContext';
-
-interface SyncStats {
-    loaded: number;
-    errors: number;
-    corrupted: number;
-    progress: number;
-}
 
 interface SidebarProps {
     syncStats: SyncStats;
@@ -108,7 +101,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <div className="p-6 border-b border-gray-100 flex justify-between items-center">
                 <div className="flex items-center gap-3">
                     <img
-                        src="/op-1424.jpg"
+                        src={import.meta.env.BASE_URL + "op-1424.jpg"}
                         alt="Logo 14/24"
                         className="w-12 h-12 rounded-lg object-contain bg-white shadow-sm border border-gray-100"
                     />
@@ -118,7 +111,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     </div>
                 </div>
                 {/* Mobile Close Button */}
-                <button onClick={onClose} className="md:hidden text-gray-400 hover:text-gray-600">
+                <button onClick={onClose} className="md:hidden text-gray-400 hover:text-gray-600" aria-label="Cerrar menú">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                 </button>
             </div>
@@ -161,6 +154,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                 ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100'
                                 : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50 disabled:opacity-50'
                                 }`}
+                            aria-label={isPaused ? "Reanudar sincronización" : "Pausar sincronización"}
                         >
                             {isPaused ? <PlayCircle size={12} /> : <PauseCircle size={12} />}
                             {isPaused ? "REANUDAR" : "PAUSAR"}
@@ -169,6 +163,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         <button
                             onClick={onManualRefresh}
                             className="flex items-center justify-center gap-1.5 text-[10px] font-bold py-2 bg-white text-gray-700 border border-gray-200 rounded-lg hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors"
+                            aria-label="Reiniciar sincronización"
                         >
                             <RefreshCw size={12} />
                             REINICIAR

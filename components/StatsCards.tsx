@@ -32,25 +32,25 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ data, totalItems }) => {
   const withDiscapacidadData = data.filter(p =>
     p.discapacidades !== null && p.discapacidades !== 'N/D' && p.discapacidades !== 'N/A'
   );
-  const discapacitados = withDiscapacidadData.filter(p => p.discapacidades !== 'Ninguna');
-  const discapacitadosCount = discapacitados.length;
+  const discapacitadosCount = withDiscapacidadData.filter(p => p.discapacidades !== 'Ninguna').length;
 
   // 3. Registrados con enfermedad — universo con dato
   const withEnfermedadesData = data.filter(p =>
     p.enfermedades !== null && p.enfermedades !== 'N/D' && p.enfermedades !== 'N/A'
   );
-  const enfermos = withEnfermedadesData.filter(p => p.enfermedades !== 'Ninguna');
-  const enfermosCount = enfermos.length;
+  const enfermosCount = withEnfermedadesData.filter(p => p.enfermedades !== 'Ninguna').length;
 
-  // 4. Programa Social — estudiantes con algún programa registrado
-  const withPrograma = data.filter(p =>
-    p.programasSociales !== null && p.programasSociales !== 'N/A' && p.programasSociales !== 'N/D' && p.programasSociales !== 'Ninguna'
-  ).length;
+  // 4. Programa Social — universo con dato (excluye N/A/N/D/null), luego filtrar Ninguna
+  const withProgramaData = data.filter(p =>
+    p.programasSociales !== null && p.programasSociales !== 'N/A' && p.programasSociales !== 'N/D'
+  );
+  const withPrograma = withProgramaData.filter(p => p.programasSociales !== 'Ninguna').length;
 
-  // 5. Vulnerabilidad — estudiantes con vulnerabilidad registrada
-  const withVulnerabilidad = data.filter(p =>
-    p.vulnerabilidades !== null && p.vulnerabilidades !== 'N/A' && p.vulnerabilidades !== 'N/D' && p.vulnerabilidades !== 'Ninguna'
-  ).length;
+  // 5. Vulnerabilidad — universo con dato, luego filtrar Ninguna
+  const withVulnerabilidadData = data.filter(p =>
+    p.vulnerabilidades !== null && p.vulnerabilidades !== 'N/A' && p.vulnerabilidades !== 'N/D'
+  );
+  const withVulnerabilidad = withVulnerabilidadData.filter(p => p.vulnerabilidades !== 'Ninguna').length;
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-6">

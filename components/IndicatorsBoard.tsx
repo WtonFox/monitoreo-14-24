@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Users, MapPin, Activity, Heart, CheckCircle, AlertTriangle, Calendar, GraduationCap, Building2, CheckCircle2, XCircle } from 'lucide-react';
 import type { IndicatorGroup, Indicator, IndicatorCategory } from '../hooks/useIndicators';
+import { formatNumber } from '../utils/formatters';
 import { useIndicadoresFilters } from '../contexts/IndicadoresFiltersContext';
 import { IndicatorModal } from './IndicatorModal';
 
@@ -117,6 +118,13 @@ interface IndicatorsBoardProps {
 // Single indicator tile
 // ---------------------------------------------------------------------------
 
+const handleKeyDown = (e: React.KeyboardEvent, action: () => void) => {
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault();
+    action();
+  }
+};
+
 const IndicatorTile: React.FC<{
   indicator: Indicator;
   styles: (typeof CATEGORY_STYLES)[IndicatorCategory];
@@ -128,6 +136,10 @@ const IndicatorTile: React.FC<{
   return (
     <div
       onClick={onClick}
+      onKeyDown={(e) => handleKeyDown(e, onClick)}
+      tabIndex={0}
+      role="button"
+      aria-label={indicator.name}
       className={`
         relative flex bg-white rounded-xl shadow-sm border cursor-pointer
         transition-all hover:shadow-md hover:-translate-y-0.5 active:scale-[0.99]
@@ -162,18 +174,34 @@ const IndicatorTile: React.FC<{
         </div>
 
         {/* Name */}
-        <p className="text-sm font-semibold text-gray-700 pr-20 mb-3 leading-snug">
+        <p className="text-sm font-semibold text-gray-700 pr-24 mb-3 leading-snug">
           {indicator.name}
         </p>
 
-        {/* Value with subtle category-tinted background */}
-        <div
-          className={`inline-block px-2.5 py-0.5 rounded-lg text-base font-bold text-gray-900 mb-3 ${
-            isPending ? 'bg-gray-50' : isNotViable ? 'bg-gray-50' : styles.accent
-          }`}
-        >
-          {indicator.value}
-        </div>
+        {/* Value or structured top-items list */}
+        {indicator.topItems && indicator.topItems.length > 0 ? (
+          <div className={`space-y-1.5 mb-3 w-full pr-8 p-2.5 rounded-lg ${styles.accent}`}>
+            {indicator.topItems.slice(0, 5).map((item, i) => (
+              <div key={i} className="flex justify-between items-center gap-2 text-xs">
+                <span className="font-medium text-gray-700 min-w-0 break-words">
+                  {i + 1}. {item.name}
+                </span>
+                <span className="font-bold text-gray-900 tabular-nums whitespace-nowrap flex-shrink-0">
+                  {formatNumber(item.value)}
+                  {item.pct !== undefined ? ` (${item.pct.toFixed(1)}%)` : ''}
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div
+            className={`inline-block px-2.5 py-0.5 rounded-lg text-base font-bold text-gray-900 mb-3 ${
+              isPending ? 'bg-gray-50' : isNotViable ? 'bg-gray-50' : styles.accent
+            }`}
+          >
+            {indicator.value}
+          </div>
+        )}
 
         {/* Formula */}
         <p className="text-[11px] text-gray-400 font-mono mb-1.5">{indicator.formula}</p>

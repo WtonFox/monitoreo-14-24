@@ -1,0 +1,35 @@
+App.tsx(1,38): error TS6133: 'useCallback' is declared but its value is never read.
+components/ChartsSection.tsx(4,41): error TS6133: 'Label' is declared but its value is never read.
+components/ChartsSection.tsx(496,36): error TS6133: 'entry' is declared but its value is never read.
+components/ChartsSection.tsx(628,43): error TS6133: 'entry' is declared but its value is never read.
+components/ColumnSelector.tsx(1,17): error TS6133: 'useState' is declared but its value is never read.
+components/DataTable.tsx(1,38): error TS6133: 'useMemo' is declared but its value is never read.
+components/DataTable.tsx(68,35): error TS6133: 'onExport' is declared but its value is never read.
+components/DominicanRepublicMap.tsx(51,22): error TS6133: 'isLoading' is declared but its value is never read.
+components/ErrorBoundary.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+components/IndicatorsBoard.tsx(205,9): error TS6133: 'count' is declared but its value is never read.
+components/MapSection.tsx(5,10): error TS6133: 'Maximize2' is declared but its value is never read.
+components/MapSection.tsx(5,21): error TS6133: 'Minimize2' is declared but its value is never read.
+components/MapSection.tsx(5,39): error TS6133: 'MapIcon' is declared but its value is never read.
+components/Sidebar.tsx(4,114): error TS6133: 'CheckCircle2' is declared but its value is never read.
+components/Sidebar.tsx(53,5): error TS6133: 'criticalConnectionError' is declared but its value is never read.
+components/Sidebar.tsx(59,13): error TS6133: 'user' is declared but its value is never read.
+components/StatsCards.tsx(14,9): error TS6133: 'totalAge' is declared but its value is never read.
+components/SystemStatusSection.tsx(5,5): error TS6133: 'AlertTriangle' is declared but its value is never read.
+components/SystemStatusSection.tsx(23,5): error TS6133: 'Legend' is declared but its value is never read.
+hooks/useGeoJSON.ts(9,11): error TS6196: 'GeoJSONStore' is declared but never used.
+hooks/useIndicatorBoards.ts(3,1): error TS6192: All imports in import declaration are unused.
+hooks/useIndicators.ts(44,7): error TS6133: 'safeDiv' is declared but its value is never read.
+hooks/useMapStats.ts(3,10): error TS6133: 'REGION_PROVINCES' is declared but its value is never read.
+hooks/useTableData.ts(17,52): error TS6133: 'dashboardDataLength' is declared but its value is never read.
+pages/indicadores/CalidadDatoBoard.tsx(14,7): error TS6133: 'COLORS' is declared but its value is never read.
+pages/indicadores/CalidadNdBoard.tsx(7,92): error TS6133: 'CheckCircle2' is declared but its value is never read.
+pages/indicadores/CentrosSinMenoresBoard.tsx(15,11): error TS6196: 'ComputedMetrics' is declared but never used.
+pages/indicadores/CentrosSinMenoresBoard.tsx(37,5): error TS6133: 'centrosData' is declared but its value is never read.
+pages/indicadores/CoberturaBoard.tsx(9,10): error TS6133: 'tickShort' is declared but its value is never read.
+pages/indicadores/CoberturaBoard.tsx(156,61): error TS6133: 'i' is declared but its value is never read.
+pages/indicadores/DesercionBoard.tsx(9,10): error TS6133: 'tickShort' is declared but its value is never read.
+pages/indicadores/DesercionBoard.tsx(9,33): error TS6133: 'chartH' is declared but its value is never read.
+pages/indicadores/RegistroDiarioBoard.tsx(58,10): error TS6133: 'y' is declared but its value is never read.
+pages/indicadores/VulnerabilidadBoard.tsx(14,7): error TS6133: 'COLORS' is declared but its value is never read.
+services/exporter.ts(3,23): error TS6133: 'PaginationResult' is declared but its value is never read.

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { X, Filter, Trash2 } from 'lucide-react';
 import { AdvancedFilterState, AGE_GROUPS } from '../types';
 
@@ -23,6 +23,22 @@ export const AdvancedFiltersModal: React.FC<AdvancedFiltersModalProps> = ({
     availableEstadoCivil = [],
     availableNivelEstudio = []
 }) => {
+    const closeRef = useRef<HTMLButtonElement>(null);
+
+    useEffect(() => {
+        if (isOpen) {
+            closeRef.current?.focus();
+            const handleKeyDown = (e: KeyboardEvent) => {
+                if (e.key === 'Escape') {
+                    e.stopPropagation();
+                    onClose();
+                }
+            };
+            document.addEventListener('keydown', handleKeyDown);
+            return () => document.removeEventListener('keydown', handleKeyDown);
+        }
+    }, [isOpen, onClose]);
+
     if (!isOpen) return null;
 
     const handleFilterChange = (key: keyof AdvancedFilterState, value: string) => {
@@ -44,7 +60,12 @@ export const AdvancedFiltersModal: React.FC<AdvancedFiltersModalProps> = ({
     const hasActiveFilters = Object.values(filters).some(v => v !== '');
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Filtros Avanzados"
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+        >
             <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
 
                 {/* Header */}
@@ -59,6 +80,7 @@ export const AdvancedFiltersModal: React.FC<AdvancedFiltersModalProps> = ({
                         </div>
                     </div>
                     <button
+                        ref={closeRef}
                         onClick={onClose}
                         className="p-2 hover:bg-white hover:bg-opacity-20 rounded-lg transition-colors"
                     >

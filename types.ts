@@ -4,8 +4,8 @@ export interface Participant {
   apellidos: string | null;
   cedula: string | null;
   edad: number;
-  fechaNacimiento: string;
-  fechaRegistro: string;
+  fechaNacimiento: string | null;
+  fechaRegistro: string | null;
   fechaInclusion: string | null;
   tutor: string | null;
   cedulaTutor: string | null;

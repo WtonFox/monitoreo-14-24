@@ -118,7 +118,7 @@ export const useFilters = (data: Participant[]): UseFiltersResult => {
 
             // Filtros avanzados
             const matchYearIngreso = advancedFilters.yearIngreso
-                ? new Date(item.fechaRegistro).getFullYear().toString() === advancedFilters.yearIngreso
+                ? item.fechaRegistro && new Date(item.fechaRegistro).getFullYear().toString() === advancedFilters.yearIngreso
                 : true;
 
             const matchYearInclusion = advancedFilters.yearInclusion

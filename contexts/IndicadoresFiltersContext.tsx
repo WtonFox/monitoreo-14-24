@@ -1,8 +1,27 @@
 import React, { createContext, useContext, useState, useCallback, useMemo, useDeferredValue, type ReactNode } from 'react';
+import { useLocation } from 'react-router-dom';
 import type { Participant } from '../types';
-import type { BoardData } from '../hooks/useIndicatorBoards';
+import type { BoardData, BoardCategory } from '../hooks/useIndicatorBoards';
 import { useIndicatorBoards } from '../hooks/useIndicatorBoards';
 import { PROVINCE_MUNICIPALITIES } from '../constants';
+import { ROUTES } from '../types/routes';
+
+// ── Route to board mapping ──
+
+const routeBoardMap: Record<string, BoardCategory | 'all'> = {
+  [ROUTES.INDICADORES]: 'all',
+  [ROUTES.INDICADORES_DEMOGRAFICOS]: 'demographic',
+  [ROUTES.INDICADORES_TERRITORIALES]: 'territorial',
+  [ROUTES.INDICADORES_PROGRAMA]: 'program',
+  [ROUTES.INDICADORES_SOCIALES]: 'social',
+  [ROUTES.INDICADORES_CALIDAD]: 'quality',
+  [ROUTES.INDICADORES_VULNERABILIDAD]: 'vulnerability',
+  [ROUTES.INDICADORES_COBERTURA]: 'temporal',
+  [ROUTES.INDICADORES_NIVEL_EDUCATIVO]: 'education',
+  [ROUTES.INDICADORES_DESEMPENO_CENTRO]: 'center',
+};
+
+// ── Types ──
 
 interface FilterState {
   year: string;
@@ -42,6 +61,9 @@ export const IndicadoresFiltersProvider: React.FC<{
   const [municipio, setMunicipioState] = useState(DEFAULT_FILTERS.municipio);
   const [sex, setSexState] = useState(DEFAULT_FILTERS.sex);
 
+  const location = useLocation();
+  const activeBoard = routeBoardMap[location.pathname] ?? undefined;
+
   const setProvince = useCallback((v: string) => {
     setProvinceState(v);
     setMunicipioState('todos');
@@ -77,7 +99,7 @@ export const IndicadoresFiltersProvider: React.FC<{
     return data;
   }, [rawData, deferredFilters]);
 
-  const boardData = useIndicatorBoards(filteredData);
+  const boardData = useIndicatorBoards(filteredData, activeBoard);
 
   const value = useMemo<IndicadoresFiltersContextValue>(() => ({
     year, province, municipio, sex,

@@ -1,7 +1,23 @@
 import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
-import { Participant, PaginationResult } from '../types';
+import { Participant } from '../types';
 import { fetchParticipants } from './api';
+import { sanitizeParticipant } from '../utils/dataUtils';
+import { downloadBlob } from '../utils/exportUtils';
+
+export interface ExportReceipt {
+  totalRecordsExpected: number;
+  totalRecordsDownloaded: number;
+  failedPages: number[];
+  partialFailure: boolean;
+}
+
+const FORMULA_DANGER_CHARS = new Set(['=', '+', '-', '@']);
+
+export function sanitizeFormula(value: unknown): unknown {
+  if (typeof value !== 'string' || value.length === 0) return value;
+  return FORMULA_DANGER_CHARS.has(value[0]) ? `'${value}` : value;
+}
 
 export interface ExportProgress {
   currentPage: number;
@@ -11,6 +27,11 @@ export interface ExportProgress {
   percentage: number;
   isComplete: boolean;
   error?: string;
+  failedPages?: number[];
+  totalRecordsExpected?: number;
+  totalRecordsDownloaded?: number;
+  partialFailure?: boolean;
+  warning?: string;
 }
 
 export type ExportFormat = 'csv' | 'xlsx' | 'json';
@@ -21,12 +42,13 @@ export type ExportFormat = 'csv' | 'xlsx' | 'json';
 async function fetchAllData(
   onProgress?: (progress: ExportProgress) => void,
   signal?: AbortSignal
-): Promise<Participant[]> {
+): Promise<{ data: Participant[]; receipt: ExportReceipt }> {
   const allData: Participant[] = [];
   const BATCH_SIZE = 1000;
   let currentPage = 1;
   let hasMore = true;
   let totalRecords = 0;
+  const failedPages: number[] = [];
 
   // Primera petición para obtener el total
   const firstBatch = await fetchParticipants(1, BATCH_SIZE);
@@ -85,22 +107,35 @@ async function fetchAllData(
 
     } catch (error) {
       console.error(`Error fetching page ${currentPage}:`, error);
-      // Continuar con la siguiente página en caso de error
+      failedPages.push(currentPage);
       currentPage++;
     }
   }
 
-  // Progreso completado
+  const partialFailure = failedPages.length > 0;
+  const totalRecordsDownloaded = allData.length;
+
+  // Progreso completado con receipt
   onProgress?.({
     currentPage: totalPages,
     totalPages,
-    recordsProcessed: allData.length,
-    totalRecords: allData.length,
-    percentage: 100,
-    isComplete: true
+    recordsProcessed: totalRecordsDownloaded,
+    totalRecords,
+    percentage: partialFailure ? Math.round((totalRecordsDownloaded / totalRecords) * 100) : 100,
+    isComplete: true,
+    failedPages,
+    totalRecordsExpected: totalRecords,
+    totalRecordsDownloaded,
+    partialFailure,
+    warning: partialFailure
+      ? `Exportación incompleta: se esperaban ${totalRecords} registros, se descargaron ${totalRecordsDownloaded}. Páginas con error: ${failedPages.join(', ')}.`
+      : undefined
   });
 
-  return allData;
+  return {
+    data: allData,
+    receipt: { totalRecordsExpected: totalRecords, totalRecordsDownloaded, failedPages, partialFailure }
+  };
 }
 
 /**
@@ -112,47 +147,66 @@ export async function exportToCSV(
 ): Promise<void> {
   try {
     // Descargar todos los datos
-    const data = await fetchAllData(onProgress, signal);
+    const { data, receipt } = await fetchAllData(onProgress, signal);
 
-    // Preparar datos para CSV (campos planos)
-    const csvData = data.map(item => ({
-      ID: item.id,
-      'Cédula': item.cedula || '',
-      Nombres: item.nombres || '',
-      Apellidos: item.apellidos || '',
-      Edad: item.edad,
-      'Fecha Nacimiento': item.fechaNacimiento,
-      'Fecha Registro': item.fechaRegistro,
-      'Fecha Inclusión': item.fechaInclusion || '',
-      Tutor: item.tutor || '',
-      'Cédula Tutor': item.cedulaTutor || '',
-      Vulnerabilidades: item.vulnerabilidades || '',
-      Estado: item.estado || '',
-      Sexo: item.sexo || '',
-      Provincia: item.provincia || '',
-      Municipio: item.municipio || '',
-      Centro: item.centro || '',
-      'Dirección': item.direccion || '',
-      'Ruta Formativa': item.rutaFormativa || '',
-      'Teléfonos': item.telefonos || '',
-      'Teléfonos Responsable': item.telefonosResponsable || '',
-      'Edad Registro': item.edadRegistro,
-      'Estado Civil': item.estadoCivil || '',
-      'Nivel Estudio': item.nivelEstudio || '',
-      'Alergias': item.alergias || '',
-      'Discapacidades': item.discapacidades || '',
-      'Enfermedades': item.enfermedades || '',
-      'Programas Sociales': item.programasSociales || ''
-    }));
+    // Sanitizar cada registro antes de exportar
+    const csvData = data.map((item, idx) => {
+      const clean = sanitizeParticipant(item, idx);
+      return {
+        ID: clean.id,
+        'Cédula': clean.cedula || '',
+        Nombres: clean.nombres || '',
+        Apellidos: clean.apellidos || '',
+        Edad: clean.edad,
+        'Fecha Nacimiento': clean.fechaNacimiento || '',
+        'Fecha Registro': clean.fechaRegistro || '',
+        'Fecha Inclusión': clean.fechaInclusion || '',
+        Tutor: clean.tutor || '',
+        'Cédula Tutor': clean.cedulaTutor || '',
+        Vulnerabilidades: clean.vulnerabilidades || '',
+        Estado: clean.estado || '',
+        Sexo: clean.sexo || '',
+        Provincia: clean.provincia || '',
+        Municipio: clean.municipio || '',
+        Centro: clean.centro || '',
+        'Dirección': clean.direccion || '',
+        'Ruta Formativa': clean.rutaFormativa || '',
+        'Teléfonos': clean.telefonos || '',
+        'Teléfonos Responsable': clean.telefonosResponsable || '',
+        'Edad Registro': clean.edadRegistro,
+        'Estado Civil': clean.estadoCivil || '',
+        'Nivel Estudio': clean.nivelEstudio || '',
+        'Alergias': clean.alergias || '',
+        'Discapacidades': clean.discapacidades || '',
+        'Enfermedades': clean.enfermedades || '',
+        'Programas Sociales': clean.programasSociales || ''
+      };
+    });
+
+    // Neutralizar fórmula injection en valores de texto
+    const csvRows = csvData.map(row => {
+      const sanitized: Record<string, unknown> = {};
+      for (const [k, v] of Object.entries(row)) {
+        sanitized[k] = sanitizeFormula(v);
+      }
+      return sanitized;
+    });
 
     // Generar CSV con papaparse
-    const csv = Papa.unparse(csvData, {
+    const csv = Papa.unparse(csvRows, {
       delimiter: ';',
       header: true
     });
 
+    // Agregar advertencia si la exportación fue parcial
+    let content = csv;
+    if (receipt.partialFailure) {
+      const warn = `# ADVERTENCIA: Exportación incompleta. Se esperaban ${receipt.totalRecordsExpected} registros, se descargaron ${receipt.totalRecordsDownloaded}. Páginas con error: ${receipt.failedPages.join(', ')}.\n`;
+      content = warn + content;
+    }
+
     // Agregar BOM para Excel UTF-8
-    const csvWithBOM = '\uFEFF' + csv;
+    const csvWithBOM = '\uFEFF' + content;
 
     // Crear blob y descargar
     const blob = new Blob([csvWithBOM], { type: 'text/csv;charset=utf-8;' });
@@ -173,42 +227,69 @@ export async function exportToExcel(
 ): Promise<void> {
   try {
     // Descargar todos los datos
-    const data = await fetchAllData(onProgress, signal);
+    const { data, receipt } = await fetchAllData(onProgress, signal);
 
-    // Preparar datos para Excel
-    const excelData = data.map(item => ({
-      'ID': item.id,
-      'Cédula': item.cedula || '',
-      'Nombres': item.nombres || '',
-      'Apellidos': item.apellidos || '',
-      'Edad': item.edad,
-      'Fecha Nacimiento': item.fechaNacimiento,
-      'Fecha Registro': item.fechaRegistro,
-      'Fecha Inclusión': item.fechaInclusion || '',
-      'Tutor': item.tutor || '',
-      'Cédula Tutor': item.cedulaTutor || '',
-      'Vulnerabilidades': item.vulnerabilidades || '',
-      'Estado': item.estado || '',
-      'Sexo': item.sexo || '',
-      'Provincia': item.provincia || '',
-      'Municipio': item.municipio || '',
-      'Centro': item.centro || '',
-      'Dirección': item.direccion || '',
-      'Ruta Formativa': item.rutaFormativa || '',
-      'Teléfonos': item.telefonos || '',
-      'Teléfonos Responsable': item.telefonosResponsable || '',
-      'Edad Registro': item.edadRegistro,
-      'Estado Civil': item.estadoCivil || '',
-      'Nivel Estudio': item.nivelEstudio || '',
-      'Alergias': item.alergias || '',
-      'Discapacidades': item.discapacidades || '',
-      'Enfermedades': item.enfermedades || '',
-      'Programas Sociales': item.programasSociales || ''
-    }));
+    // Sanitizar cada registro antes de exportar
+    const excelData = data.map((item, idx) => {
+      const clean = sanitizeParticipant(item, idx);
+      return {
+        'ID': clean.id,
+        'Cédula': clean.cedula || '',
+        'Nombres': clean.nombres || '',
+        'Apellidos': clean.apellidos || '',
+        'Edad': clean.edad,
+        'Fecha Nacimiento': clean.fechaNacimiento || '',
+        'Fecha Registro': clean.fechaRegistro || '',
+        'Fecha Inclusión': clean.fechaInclusion || '',
+        'Tutor': clean.tutor || '',
+        'Cédula Tutor': clean.cedulaTutor || '',
+        'Vulnerabilidades': clean.vulnerabilidades || '',
+        'Estado': clean.estado || '',
+        'Sexo': clean.sexo || '',
+        'Provincia': clean.provincia || '',
+        'Municipio': clean.municipio || '',
+        'Centro': clean.centro || '',
+        'Dirección': clean.direccion || '',
+        'Ruta Formativa': clean.rutaFormativa || '',
+        'Teléfonos': clean.telefonos || '',
+        'Teléfonos Responsable': clean.telefonosResponsable || '',
+        'Edad Registro': clean.edadRegistro,
+        'Estado Civil': clean.estadoCivil || '',
+        'Nivel Estudio': clean.nivelEstudio || '',
+        'Alergias': clean.alergias || '',
+        'Discapacidades': clean.discapacidades || '',
+        'Enfermedades': clean.enfermedades || '',
+        'Programas Sociales': clean.programasSociales || ''
+      };
+    });
+
+    // Neutralizar fórmula injection en valores de texto
+    const excelRows = excelData.map(row => {
+      const sanitized: Record<string, unknown> = {};
+      for (const [k, v] of Object.entries(row)) {
+        sanitized[k] = sanitizeFormula(v);
+      }
+      return sanitized;
+    });
 
     // Crear workbook
     const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.json_to_sheet(excelData);
+
+    // Crear hoja con o sin advertencia de exportación parcial
+    let ws: XLSX.WorkSheet;
+    if (receipt.partialFailure) {
+      const headers = Object.keys(excelRows[0]);
+      const warnText = `ADVERTENCIA: Exportación incompleta. Se esperaban ${receipt.totalRecordsExpected} registros, se descargaron ${receipt.totalRecordsDownloaded}. Páginas con error: ${receipt.failedPages.join(', ')}.`;
+      const aoa = [
+        [warnText],
+        headers,
+        ...excelRows.map(row => headers.map(h => (row as any)[h]))
+      ];
+      ws = XLSX.utils.aoa_to_sheet(aoa);
+      ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: headers.length - 1 } }];
+    } else {
+      ws = XLSX.utils.json_to_sheet(excelRows);
+    }
 
     // Ajustar ancho de columnas
     const colWidths = [
@@ -268,16 +349,26 @@ export async function exportToJSON(
 ): Promise<void> {
   try {
     // Descargar todos los datos
-    const data = await fetchAllData(onProgress, signal);
+    const { data, receipt } = await fetchAllData(onProgress, signal);
+
+    // Sanitizar cada registro antes de exportar
+    const sanitizedData = data.map((item, idx) => sanitizeParticipant(item, idx));
 
     // Crear estructura JSON con metadata
     const jsonData = {
       metadata: {
         exportDate: new Date().toISOString(),
-        totalRecords: data.length,
-        version: '1.0'
+        totalRecords: sanitizedData.length,
+        version: '1.0',
+        ...(receipt.partialFailure ? {
+          warning: `Exportación incompleta: se esperaban ${receipt.totalRecordsExpected} registros, se descargaron ${receipt.totalRecordsDownloaded}. Páginas con error: ${receipt.failedPages.join(', ')}.`,
+          totalRecordsExpected: receipt.totalRecordsExpected,
+          totalRecordsDownloaded: receipt.totalRecordsDownloaded,
+          failedPages: receipt.failedPages,
+          partialFailure: true
+        } : {})
       },
-      participants: data
+      participants: sanitizedData
     };
 
     // Convertir a JSON con formato
@@ -293,17 +384,4 @@ export async function exportToJSON(
   }
 }
 
-/**
- * Helper para descargar blob como archivo
- */
-function downloadBlob(blob: Blob, filename: string): void {
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
 
-  // Limpiar objeto URL después de un tiempo
-  setTimeout(() => URL.revokeObjectURL(link.href), 100);
-}
