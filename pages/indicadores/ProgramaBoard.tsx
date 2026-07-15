@@ -2,17 +2,54 @@ import React, { useState } from 'react'
 import { formatNumber, formatPercentage } from '../../utils/formatters'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  PieChart, Pie, Cell,
+  Treemap,
 } from 'recharts'
 import { Activity, Award, Heart, Phone, Grid3X3, List } from 'lucide-react'
 import BoardShell from '../../components/BoardShell'
-import { chartClass, chartH, tickShort } from '../../utils/indicadores-helpers'
+import { chartClass, chartH } from '../../utils/indicadores-helpers'
 import { YAxisTick } from '../../utils/indicadores-tick-components'
 import { useIndicadoresFilters } from '../../contexts/IndicadoresFiltersContext'
 import { IndicadoresFilterBar } from '../../components/IndicadoresFilterBar'
 import BoardInfo from '../../components/BoardInfo';
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ff6b6b'];
+const STATUS_COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ff6b6b', '#a855f7', '#ec4899', '#14b8a6', '#f97316', '#64748b'];
+
+interface TreemapContentProps {
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+  depth?: number;
+  index?: number;
+  name?: string;
+  value?: number;
+  [key: string]: unknown;
+}
+
+const CustomTreemapContent: React.FC<TreemapContentProps> = ({ x, y, width, height, index, name, value }) => {
+  if (!x || !y || !width || !height || width < 10 || height < 10) return null;
+
+  const fontSize = width > 100 ? 13 : width > 60 ? 10 : 8;
+  const showValue = width > 50 && height > 30;
+  const showName = width > 40 && height > 20;
+
+  return (
+    <g>
+      <rect x={x} y={y} width={width} height={height} fill={STATUS_COLORS[(index ?? 0) % STATUS_COLORS.length]} stroke="#fff" strokeWidth={2} rx={2} />
+      {showName && (
+        <text x={x + width / 2} y={y + height / 2 - (showValue ? 6 : 0)} textAnchor="middle" fill="#fff" fontSize={fontSize} fontWeight={600}>
+          {name}
+        </text>
+      )}
+      {showValue && (
+        <text x={x + width / 2} y={y + height / 2 + 12} textAnchor="middle" fill="rgba(255,255,255,0.85)" fontSize={11}>
+          {formatNumber(value ?? 0)}
+        </text>
+      )}
+    </g>
+  );
+};
+
 type ViewMode = 'grid' | 'row'
 
 const ProgramaBoard: React.FC = () => {
@@ -89,18 +126,16 @@ const ProgramaBoard: React.FC = () => {
       <div className={chartClass(viewMode)}>
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
           <h3 className="text-lg font-bold text-gray-800 mb-4">Distribución por Estado</h3>
-          <div className={`h-${chartH} w-full`}>
+          <div className="h-96 w-full">
             {programData.statusDistribution.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={programData.statusDistribution} cx="50%" cy="50%" labelLine={false}
-                    label={({ name, percent, value }: any) => `${tickShort(name)}: ${formatNumber(value)} (${((percent || 0) * 100).toFixed(0)}%)`}
-                    outerRadius={80} fill="#8884d8" dataKey="value">
-                    {programData.statusDistribution.map((_, i) => (<Cell key={i} fill={COLORS[i % COLORS.length]} />))}
-                  </Pie>
-                  <Tooltip formatter={(v: unknown) => formatNumber(Number(v))} />
-                  <Legend />
-                </PieChart>
+                <Treemap
+                  data={programData.statusDistribution}
+                  dataKey="value"
+                  nameKey="name"
+                  aspectRatio={4 / 3}
+                  content={<CustomTreemapContent />}
+                />
               </ResponsiveContainer>
             ) : <div className="flex h-full items-center justify-center text-gray-400">Sin datos de estado</div>}
           </div>
