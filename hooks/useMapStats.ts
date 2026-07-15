@@ -6,6 +6,7 @@ import {
     normalizeLocationName,
     findRegion
 } from '../utils/geoUtils';
+import { hasValue } from '../utils/normalize';
 
 export interface LocationStats {
     total: number;
@@ -13,6 +14,10 @@ export interface LocationStats {
     statusBreakdown: Record<string, number>;
     ageRanges: { min: number; max: number; avg: number };
     topCenters: { name: string; count: number }[];
+    educationBreakdown: Record<string, number>;
+    phoneCount: number;
+    vulnerabilityCount: number;
+    yearCounts: Record<string, number>;
 }
 
 export const useMapStats = (
@@ -62,6 +67,10 @@ export const useMapStats = (
             ageSum: number;
             ageCount: number;
             centers: Record<string, number>;
+            educationBreakdown: Record<string, number>;
+            phoneCount: number;
+            vulnerabilityCount: number;
+            yearCounts: Record<string, number>;
         }> = {};
 
         // ── Single pass: O(records) ──
@@ -85,6 +94,10 @@ export const useMapStats = (
                     ageSum: 0,
                     ageCount: 0,
                     centers: {},
+                    educationBreakdown: {},
+                    phoneCount: 0,
+                    vulnerabilityCount: 0,
+                    yearCounts: {},
                 };
             }
 
@@ -114,6 +127,27 @@ export const useMapStats = (
             // Centers (accumulated in first pass instead of filtering)
             const center = p.centro || 'Sin asignar';
             s.centers[center] = (s.centers[center] || 0) + 1;
+
+            // Education
+            if (p.nivelEstudio && hasValue(p.nivelEstudio)) {
+                s.educationBreakdown[p.nivelEstudio] = (s.educationBreakdown[p.nivelEstudio] || 0) + 1;
+            }
+
+            // Phone contactability
+            if (hasValue(p.telefonos)) {
+                s.phoneCount++;
+            }
+
+            // Vulnerability (any reported)
+            if (hasValue(p.discapacidades) || hasValue(p.enfermedades) || hasValue(p.alergias)) {
+                s.vulnerabilityCount++;
+            }
+
+            // Year counts (by registro year)
+            if (p.fechaRegistro) {
+                const y = new Date(p.fechaRegistro).getFullYear().toString();
+                s.yearCounts[y] = (s.yearCounts[y] || 0) + 1;
+            }
         });
 
         // ── Post-process: compute avg age and topCenters from accumulators ──
@@ -132,13 +166,7 @@ export const useMapStats = (
         });
 
         // Strip accumulator fields before returning
-        const result: Record<string, {
-            total: number;
-            genderBreakdown: { M: number; F: number; other: number };
-            statusBreakdown: Record<string, number>;
-            ageRanges: { min: number; max: number; avg: number };
-            topCenters: { name: string; count: number }[];
-        }> = {};
+        const result: Record<string, LocationStats> = {};
 
         Object.keys(stats).forEach(loc => {
             const { ageSum, ageCount, centers: _centers, ...clean } = stats[loc];
