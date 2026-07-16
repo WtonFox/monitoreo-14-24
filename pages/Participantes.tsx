@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useDashboard } from '../contexts/DashboardContext';
 import { DataTable } from '../components/DataTable';
 import type { FiltersConfig } from '../components/DataTable';
@@ -6,6 +6,10 @@ import { DEFAULT_PAGE_SIZE } from '../constants';
 import { useParticipantesFilters } from '../hooks/useParticipantesFilters';
 import { useMassExport } from '../hooks/useMassExport';
 import { MassExportModal } from '../components/MassExportModal';
+import { ParticipantesFiltersModal } from '../components/ParticipantesFiltersModal';
+import type { ParticipantesFiltersState } from '../components/ParticipantesFiltersModal';
+import { ParticipantDetailModal } from '../components/ParticipantDetailModal';
+import type { Participant } from '../types';
 
 const Participantes: React.FC = () => {
   const { dashboardData } = useDashboard();
@@ -14,8 +18,31 @@ const Participantes: React.FC = () => {
 
   const [pageIndex, setPageIndex] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
-  // Resetear a página 1 cuando cambia cualquier filtro
+  // Loading state
+  const [dataLoaded, setDataLoaded] = useState(false);
+  useEffect(() => {
+    if (dashboardData.length > 0) setDataLoaded(true);
+  }, [dashboardData]);
+  const isLoading = !dataLoaded;
+
+  // Modal state
+  const [selectedParticipant, setSelectedParticipant] = useState<Participant | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleRowClick = (participant: Participant) => {
+    setSelectedParticipant(participant);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    // Keep participant data for fade-out, clear after animation
+    setTimeout(() => setSelectedParticipant(null), 200);
+  };
+
+  // Resetear a página 1 cuando cambia cualquier filtro o sort
   useEffect(() => {
     setPageIndex(1);
   }, [
@@ -30,6 +57,8 @@ const Participantes: React.FC = () => {
     filters.filterAgeGroup,
     filters.filterEstadoCivil,
     filters.filterNivelEstudio,
+    filters.sortColumn,
+    filters.sortDirection,
   ]);
 
   const totalPages = Math.ceil(filters.filteredData.length / pageSize);
@@ -37,6 +66,33 @@ const Participantes: React.FC = () => {
   const pagedData = useMemo(() => {
     return filters.filteredData.slice(startIndex, startIndex + pageSize);
   }, [filters.filteredData, pageIndex, pageSize]);
+
+  // ── Modal de filtros avanzados ──
+  const modalFilters: ParticipantesFiltersState = {
+    filterProvincia: filters.filterProvincia,
+    filterMunicipio: filters.filterMunicipio,
+    filterCentro: filters.filterCentro,
+    filterSexo: filters.filterSexo,
+    filterEstado: filters.filterEstado,
+    filterAnioIngreso: filters.filterAnioIngreso,
+    filterAnioInclusion: filters.filterAnioInclusion,
+    filterAgeGroup: filters.filterAgeGroup,
+    filterEstadoCivil: filters.filterEstadoCivil,
+    filterNivelEstudio: filters.filterNivelEstudio,
+  };
+
+  const handleModalFiltersChange = useCallback((newFilters: ParticipantesFiltersState) => {
+    if (newFilters.filterProvincia !== filters.filterProvincia) filters.setFilterProvincia(newFilters.filterProvincia);
+    if (newFilters.filterMunicipio !== filters.filterMunicipio) filters.setFilterMunicipio(newFilters.filterMunicipio);
+    if (newFilters.filterCentro !== filters.filterCentro) filters.setFilterCentro(newFilters.filterCentro);
+    if (newFilters.filterSexo !== filters.filterSexo) filters.setFilterSexo(newFilters.filterSexo);
+    if (newFilters.filterEstado !== filters.filterEstado) filters.setFilterEstado(newFilters.filterEstado);
+    if (newFilters.filterAnioIngreso !== filters.filterAnioIngreso) filters.setFilterAnioIngreso(newFilters.filterAnioIngreso);
+    if (newFilters.filterAnioInclusion !== filters.filterAnioInclusion) filters.setFilterAnioInclusion(newFilters.filterAnioInclusion);
+    if (newFilters.filterAgeGroup !== filters.filterAgeGroup) filters.setFilterAgeGroup(newFilters.filterAgeGroup);
+    if (newFilters.filterEstadoCivil !== filters.filterEstadoCivil) filters.setFilterEstadoCivil(newFilters.filterEstadoCivil);
+    if (newFilters.filterNivelEstudio !== filters.filterNivelEstudio) filters.setFilterNivelEstudio(newFilters.filterNivelEstudio);
+  }, [filters]);
 
   const tableFilters: FiltersConfig = useMemo(() => ({
     searchTerm: filters.searchTerm,
@@ -73,6 +129,10 @@ const Participantes: React.FC = () => {
     hasActiveFilters: filters.hasActiveFilters,
     clearFilter: filters.clearFilter,
     clearAll: filters.clearAll,
+    sortColumn: filters.sortColumn,
+    sortDirection: filters.sortDirection,
+    setSortColumn: filters.setSortColumn,
+    setSortDirection: filters.setSortDirection,
   }), [
     filters.searchTerm,
     filters.filterProvincia,
@@ -97,6 +157,10 @@ const Participantes: React.FC = () => {
     filters.hasActiveFilters,
     filters.clearFilter,
     filters.clearAll,
+    filters.sortColumn,
+    filters.sortDirection,
+    filters.setSortColumn,
+    filters.setSortDirection,
   ]);
 
   return (
@@ -107,7 +171,7 @@ const Participantes: React.FC = () => {
         pageSize={pageSize}
         totalItems={filters.filteredData.length}
         totalPages={totalPages}
-        loading={false}
+        loading={isLoading}
         isExporting={massExport.isMassExporting}
         exportProgress={massExport.massExportProgress ? {
           current: massExport.massExportProgress.currentPage,
@@ -119,8 +183,17 @@ const Participantes: React.FC = () => {
         onExport={() => {}}
         onCancelExport={massExport.cancelMassExport}
         onOpenMassExport={massExport.openMassExportModal}
+        onRowClick={handleRowClick}
+        onOpenAdvancedFilters={() => setShowAdvancedFilters(true)}
+        activeAdvancedFilterCount={filters.activeFilterCount}
         allFilteredData={filters.filteredData}
         filters={tableFilters}
+      />
+
+      <ParticipantDetailModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        participant={selectedParticipant}
       />
 
       <MassExportModal
@@ -129,6 +202,21 @@ const Participantes: React.FC = () => {
         progress={massExport.massExportProgress}
         onExport={massExport.handleMassExport}
         onCancel={massExport.cancelMassExport}
+      />
+
+      <ParticipantesFiltersModal
+        isOpen={showAdvancedFilters}
+        onClose={() => setShowAdvancedFilters(false)}
+        filters={modalFilters}
+        onFiltersChange={handleModalFiltersChange}
+        availableProvincias={filters.availableProvincias}
+        availableMunicipios={filters.availableMunicipios}
+        availableCentros={filters.availableCentros}
+        availableEstados={filters.availableEstados}
+        availableAniosIngreso={filters.availableAniosIngreso}
+        availableAniosInclusion={filters.availableAniosInclusion}
+        availableEstadoCivil={filters.availableEstadoCivil}
+        availableNivelEstudio={filters.availableNivelEstudio}
       />
     </div>
   );

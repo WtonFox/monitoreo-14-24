@@ -4,8 +4,8 @@ export const API_ENDPOINT = '/api/estadisticasPresidencia/getParticipantsStatics
 // Ideally this should be in an environment variable, but for this demo it is included here as requested.
 export const API_TOKEN = (import.meta.env.VITE_API_TOKEN || '').trim();
 
-export const PAGE_SIZES = [10, 20, 50, 100];
-export const DEFAULT_PAGE_SIZE = 10;
+export const PAGE_SIZES = [25, 50, 100, 200, 250];
+export const DEFAULT_PAGE_SIZE = 25;
 
 // Static lists to ensure UI is usable even before data loads completely
 export const DOMINICAN_PROVINCES = [

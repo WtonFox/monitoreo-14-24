@@ -34,6 +34,10 @@ export interface UseParticipantesFiltersResult {
   availableEstadoCivil: string[];
   availableNivelEstudio: string[];
   filteredData: Participant[];
+  sortColumn: string;
+  sortDirection: 'asc' | 'desc';
+  setSortColumn: (col: string) => void;
+  setSortDirection: (dir: 'asc' | 'desc') => void;
   hasActiveFilters: boolean;
   activeFilterCount: number;
   clearAll: () => void;
@@ -45,24 +49,61 @@ export interface UseParticipantesFiltersResult {
  * Recibe dashboardData como parámetro (NO usa useDashboard internamente)
  * para mantener testabilidad y consistencia con useFilters(data).
  */
+const STORAGE_KEY = 'participantes_filters_v1';
+
+function loadInitialState(): Record<string, unknown> {
+  try {
+    const saved = sessionStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      return JSON.parse(saved);
+    }
+  } catch {
+    sessionStorage.removeItem(STORAGE_KEY);
+  }
+  return {};
+}
+
 export const useParticipantesFilters = (data: Participant[]): UseParticipantesFiltersResult => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterProvincia, setFilterProvincia] = useState('todas');
-  const [filterMunicipio, setFilterMunicipio] = useState('todos');
-  const [filterCentro, setFilterCentro] = useState('todos');
-  const [filterSexo, setFilterSexo] = useState('todos');
-  const [filterEstado, setFilterEstado] = useState('');
-  const [filterAnioIngreso, setFilterAnioIngreso] = useState('');
-  const [filterAnioInclusion, setFilterAnioInclusion] = useState('');
-  const [filterAgeGroup, setFilterAgeGroup] = useState('');
-  const [filterEstadoCivil, setFilterEstadoCivil] = useState('');
-  const [filterNivelEstudio, setFilterNivelEstudio] = useState('');
+  const initial = loadInitialState();
+
+  const [searchTerm, setSearchTerm] = useState((initial.searchTerm as string) ?? '');
+  const [filterProvincia, setFilterProvincia] = useState((initial.filterProvincia as string) ?? 'todas');
+  const [filterMunicipio, setFilterMunicipio] = useState((initial.filterMunicipio as string) ?? 'todos');
+  const [filterCentro, setFilterCentro] = useState((initial.filterCentro as string) ?? 'todos');
+  const [filterSexo, setFilterSexo] = useState((initial.filterSexo as string) ?? 'todos');
+  const [filterEstado, setFilterEstado] = useState((initial.filterEstado as string) ?? '');
+  const [filterAnioIngreso, setFilterAnioIngreso] = useState((initial.filterAnioIngreso as string) ?? '');
+  const [filterAnioInclusion, setFilterAnioInclusion] = useState((initial.filterAnioInclusion as string) ?? '');
+  const [filterAgeGroup, setFilterAgeGroup] = useState((initial.filterAgeGroup as string) ?? '');
+  const [filterEstadoCivil, setFilterEstadoCivil] = useState((initial.filterEstadoCivil as string) ?? '');
+  const [filterNivelEstudio, setFilterNivelEstudio] = useState((initial.filterNivelEstudio as string) ?? '');
+
+  const [sortColumn, setSortColumn] = useState((initial.sortColumn as string) ?? '');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>((initial.sortDirection as 'asc' | 'desc') ?? 'asc');
 
   // Al cambiar provincia, resetear municipio y centro
   useEffect(() => {
     setFilterMunicipio('todos');
     setFilterCentro('todos');
   }, [filterProvincia]);
+
+  // Persistir filtros en sessionStorage
+  useEffect(() => {
+    const state = {
+      searchTerm, filterProvincia, filterMunicipio, filterCentro, filterSexo,
+      filterEstado, filterAnioIngreso, filterAnioInclusion, filterAgeGroup,
+      filterEstadoCivil, filterNivelEstudio, sortColumn, sortDirection,
+    };
+    try {
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch {
+      // sessionStorage puede llenarse, ignorar silenciosamente
+    }
+  }, [
+    searchTerm, filterProvincia, filterMunicipio, filterCentro, filterSexo,
+    filterEstado, filterAnioIngreso, filterAnioInclusion, filterAgeGroup,
+    filterEstadoCivil, filterNivelEstudio, sortColumn, sortDirection,
+  ]);
 
   // --- Available lists ---
 
@@ -171,7 +212,7 @@ export const useParticipantesFilters = (data: Participant[]): UseParticipantesFi
   // --- Filtered data (AND entre todos los filtros) ---
 
   const filteredData = useMemo(() => {
-    return data.filter(item => {
+    let result = data.filter(item => {
       // Search text
       const matchSearch = searchTerm
         ? (() => {
@@ -236,6 +277,28 @@ export const useParticipantesFilters = (data: Participant[]): UseParticipantesFi
         matchNivelEstudio
       );
     });
+
+    // Apply sorting
+    if (sortColumn) {
+      result = [...result].sort((a, b) => {
+        let aVal: string;
+        let bVal: string;
+
+        if (sortColumn === 'fullName') {
+          // Sort by apellidos for fullName
+          aVal = String(a.apellidos ?? '');
+          bVal = String(b.apellidos ?? '');
+        } else {
+          aVal = String(a[sortColumn as keyof Participant] ?? '');
+          bVal = String(b[sortColumn as keyof Participant] ?? '');
+        }
+
+        const cmp = aVal.localeCompare(bVal, 'es', { numeric: true });
+        return sortDirection === 'asc' ? cmp : -cmp;
+      });
+    }
+
+    return result;
   }, [
     data,
     searchTerm,
@@ -249,6 +312,8 @@ export const useParticipantesFilters = (data: Participant[]): UseParticipantesFi
     filterAgeGroup,
     filterEstadoCivil,
     filterNivelEstudio,
+    sortColumn,
+    sortDirection,
   ]);
 
   // --- Derived state ---
@@ -283,6 +348,7 @@ export const useParticipantesFilters = (data: Participant[]): UseParticipantesFi
   // --- Actions ---
 
   const clearAll = () => {
+    sessionStorage.removeItem(STORAGE_KEY);
     setSearchTerm('');
     setFilterProvincia('todas');
     setFilterMunicipio('todos');
@@ -368,6 +434,10 @@ export const useParticipantesFilters = (data: Participant[]): UseParticipantesFi
     availableEstadoCivil,
     availableNivelEstudio,
     filteredData,
+    sortColumn,
+    sortDirection,
+    setSortColumn,
+    setSortDirection,
     hasActiveFilters,
     activeFilterCount,
     clearAll,
