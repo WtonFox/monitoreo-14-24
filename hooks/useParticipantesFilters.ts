@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Participant } from '../types';
 import { PROVINCE_MUNICIPALITIES, AGE_GROUPS } from '../constants';
+import { useFilterWorker } from './useFilterWorker';
 
 export interface UseParticipantesFiltersResult {
   searchTerm: string;
@@ -209,112 +210,41 @@ export const useParticipantesFilters = (data: Participant[]): UseParticipantesFi
     return Array.from(values).sort();
   }, [data]);
 
-  // --- Filtered data (AND entre todos los filtros) ---
+  // --- Filtered data: offloaded to Web Worker, sort stays on main thread ---
 
+  const { filteredData: unsortedFiltered } = useFilterWorker(data, {
+    search: searchTerm,
+    provincia: filterProvincia,
+    municipio: filterMunicipio,
+    centro: filterCentro,
+    sexo: filterSexo,
+    estado: filterEstado,
+    yearIngreso: filterAnioIngreso,
+    yearInclusion: filterAnioInclusion,
+    ageGroup: filterAgeGroup,
+    estadoCivil: filterEstadoCivil,
+    nivelEstudio: filterNivelEstudio,
+  });
+
+  // Sort on main thread (trivial cost, no benefit from offloading)
   const filteredData = useMemo(() => {
-    let result = data.filter(item => {
-      // Search text
-      const matchSearch = searchTerm
-        ? (() => {
-            const term = searchTerm.toLowerCase();
-            return (
-              (item.nombres?.toLowerCase().includes(term) || false) ||
-              (item.apellidos?.toLowerCase().includes(term) || false) ||
-              (item.cedula?.includes(term) || false) ||
-              (item.provincia?.toLowerCase().includes(term) || false) ||
-              (item.municipio?.toLowerCase().includes(term) || false) ||
-              (item.centro?.toLowerCase().includes(term) || false) ||
-              (item.estado?.toLowerCase().includes(term) || false) ||
-              (item.estadoCivil?.toLowerCase().includes(term) || false) ||
-              (item.nivelEstudio?.toLowerCase().includes(term) || false) ||
-              (item.rutaFormativa?.toLowerCase().includes(term) || false)
-            );
-          })()
-        : true;
+    if (!sortColumn) return unsortedFiltered;
+    return [...unsortedFiltered].sort((a, b) => {
+      let aVal: string;
+      let bVal: string;
 
-      const matchProv = filterProvincia === 'todas' || item.provincia === filterProvincia;
-      const matchMun = filterMunicipio === 'todos' || item.municipio === filterMunicipio;
-      const matchCentro = filterCentro === 'todos' || item.centro === filterCentro;
-      const matchSexo = filterSexo === 'todos' || item.sexo?.toLowerCase() === filterSexo;
-      const matchEstado = !filterEstado || item.estado === filterEstado;
+      if (sortColumn === 'fullName') {
+        aVal = String(a.apellidos ?? '');
+        bVal = String(b.apellidos ?? '');
+      } else {
+        aVal = String(a[sortColumn as keyof Participant] ?? '');
+        bVal = String(b[sortColumn as keyof Participant] ?? '');
+      }
 
-      const matchAnioIngreso = !filterAnioIngreso
-        ? true
-        : (item.fechaRegistro && new Date(item.fechaRegistro).getFullYear().toString() === filterAnioIngreso) || false;
-
-      const matchAnioInclusion = !filterAnioInclusion
-        ? true
-        : (item.fechaInclusion && new Date(item.fechaInclusion).getFullYear().toString() === filterAnioInclusion) || false;
-
-      const matchAge = !filterAgeGroup
-        ? true
-        : (() => {
-            const age = item.edad;
-            switch (filterAgeGroup) {
-              case '14-17': return age >= 14 && age <= 17;
-              case '18-20': return age >= 18 && age <= 20;
-              case '21-24': return age >= 21 && age <= 24;
-              case '25-29': return age >= 25 && age <= 29;
-              case '30+': return age >= 30;
-              default: return true;
-            }
-          })();
-
-      const matchEstadoCivil = !filterEstadoCivil || item.estadoCivil === filterEstadoCivil;
-      const matchNivelEstudio = !filterNivelEstudio || item.nivelEstudio === filterNivelEstudio;
-
-      return (
-        matchSearch &&
-        matchProv &&
-        matchMun &&
-        matchCentro &&
-        matchSexo &&
-        matchEstado &&
-        matchAnioIngreso &&
-        matchAnioInclusion &&
-        matchAge &&
-        matchEstadoCivil &&
-        matchNivelEstudio
-      );
+      const cmp = aVal.localeCompare(bVal, 'es', { numeric: true });
+      return sortDirection === 'asc' ? cmp : -cmp;
     });
-
-    // Apply sorting
-    if (sortColumn) {
-      result = [...result].sort((a, b) => {
-        let aVal: string;
-        let bVal: string;
-
-        if (sortColumn === 'fullName') {
-          // Sort by apellidos for fullName
-          aVal = String(a.apellidos ?? '');
-          bVal = String(b.apellidos ?? '');
-        } else {
-          aVal = String(a[sortColumn as keyof Participant] ?? '');
-          bVal = String(b[sortColumn as keyof Participant] ?? '');
-        }
-
-        const cmp = aVal.localeCompare(bVal, 'es', { numeric: true });
-        return sortDirection === 'asc' ? cmp : -cmp;
-      });
-    }
-
-    return result;
-  }, [
-    data,
-    searchTerm,
-    filterProvincia,
-    filterMunicipio,
-    filterCentro,
-    filterSexo,
-    filterEstado,
-    filterAnioIngreso,
-    filterAnioInclusion,
-    filterAgeGroup,
-    filterEstadoCivil,
-    filterNivelEstudio,
-    sortColumn,
-    sortDirection,
-  ]);
+  }, [unsortedFiltered, sortColumn, sortDirection]);
 
   // --- Derived state ---
 

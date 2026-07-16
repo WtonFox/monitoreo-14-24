@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { Participant, AdvancedFilterState } from '../types';
 import { PROVINCE_MUNICIPALITIES } from '../constants';
+import { filterData, type FilterWorkerFilters } from '../workers/filterWorker';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -129,6 +130,52 @@ function hasActiveFilters(
 }
 
 // ---------------------------------------------------------------------------
+// Async worker utility (optional opt-in path)
+// ---------------------------------------------------------------------------
+
+async function computeWithWorker(
+    data: Participant[],
+    province: string,
+    status: string,
+    municipio: string,
+    advanced: AdvancedFilterState
+): Promise<Participant[]> {
+    if (typeof Worker === 'undefined') {
+        return computeFilteredData(data, province, status, municipio, advanced);
+    }
+    try {
+        const worker = new Worker(
+            new URL('../workers/filterWorker.ts', import.meta.url),
+            { type: 'module' }
+        );
+        return await new Promise<Participant[]>((resolve, reject) => {
+            worker.onmessage = (e) => {
+                const msg = e.data;
+                worker.terminate();
+                if (msg.error) reject(new Error(msg.error));
+                else resolve(msg.filtered as Participant[]);
+            };
+            worker.onerror = () => { worker.terminate(); reject(new Error('Worker error')); };
+            setTimeout(() => { worker.terminate(); reject(new Error('Worker timeout')); }, 5000);
+            const filters: FilterWorkerFilters = {
+                provincia: province || undefined,
+                estado: status || undefined,
+                municipio: municipio || undefined,
+                yearIngreso: advanced.yearIngreso || undefined,
+                yearInclusion: advanced.yearInclusion || undefined,
+                ageGroup: advanced.ageGroup || undefined,
+                sexo: advanced.sexo || undefined,
+                estadoCivil: advanced.estadoCivil || undefined,
+                nivelEstudio: advanced.nivelEstudio || undefined,
+            };
+            worker.postMessage({ data, filters });
+        });
+    } catch {
+        return computeFilteredData(data, province, status, municipio, advanced);
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Store
 // ---------------------------------------------------------------------------
 
@@ -166,6 +213,7 @@ interface FilterState {
     setAdvancedFilters: (filters: AdvancedFilterState) => void;
     clearAllFilters: () => void;
     setData: (data: Participant[]) => void;
+    setDataViaWorker: (data: Participant[]) => Promise<void>;
 }
 
 function recompute(state: FilterState): Partial<FilterState> {
@@ -182,7 +230,7 @@ function recompute(state: FilterState): Partial<FilterState> {
     };
 }
 
-export const useFilterStore = create<FilterState>((set) => ({
+export const useFilterStore = create<FilterState>((set, get) => ({
     selectedProvince: '',
     selectedStatus: '',
     selectedMunicipio: '',
@@ -243,6 +291,29 @@ export const useFilterStore = create<FilterState>((set) => ({
         set(state => {
             const next = { ...state, dashboardData: data };
             return { ...next, ...recompute(next) };
+        });
+    },
+
+    setDataViaWorker: async (data) => {
+        const state = get();
+        const filtered = await computeWithWorker(
+            data, state.selectedProvince, state.selectedStatus,
+            state.selectedMunicipio, state.advancedFilters
+        );
+        set(state => {
+            const next = { ...state, dashboardData: data };
+            return {
+                ...next,
+                filteredData: filtered,
+                // Other derived fields still computed synchronously
+                availableStatuses: computeAvailableStatuses(data),
+                availableYears: computeAvailableYears(data),
+                availableEstadoCivil: computeAvailableEstadoCivil(data),
+                availableNivelEstudio: computeAvailableNivelEstudio(data),
+                availableMunicipios: computeAvailableMunicipios(data),
+                availableMunicipiosForProvince: computeAvailableMunicipiosForProvince(next.selectedProvince),
+                hasActiveFilters: hasActiveFilters(next.selectedProvince, next.selectedStatus, next.selectedMunicipio, next.advancedFilters),
+            };
         });
     },
 }));

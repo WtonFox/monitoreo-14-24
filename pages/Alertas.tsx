@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect, useCallback } from 'react';
+import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   AlertTriangle, Bell, XCircle, Users, MapPin, Building2,
@@ -11,6 +11,7 @@ import { useAlerts, type Alert, type AlertSeverity, type AlertCategory, type Tre
 import { formatNumber, formatPercentage } from '../utils/formatters';
 import { ROUTES } from '../types/routes';
 import { DOMINICAN_PROVINCES, PROVINCE_MUNICIPALITIES } from '../constants';
+import { useFilterWorker } from '../hooks/useFilterWorker';
 
 // ── Severity config ──
 
@@ -322,23 +323,13 @@ const Alertas: React.FC = () => {
     return PROVINCE_MUNICIPALITIES[provinceFilter] || [];
   }, [provinceFilter]);
 
-  // ── Filter data ──
-  const filteredData = useMemo(() => {
-    let data = dashboardData;
-    if (yearFilter !== 'todas') {
-      data = data.filter(p => p.fechaRegistro && new Date(p.fechaRegistro).getFullYear().toString() === yearFilter);
-    }
-    if (provinceFilter !== 'todas') {
-      data = data.filter(p => p.provincia === provinceFilter);
-    }
-    if (municipioFilter !== 'todas') {
-      data = data.filter(p => p.municipio === municipioFilter);
-    }
-    if (sexFilter !== 'todas') {
-      data = data.filter(p => p.sexo?.toLowerCase() === sexFilter);
-    }
-    return data;
-  }, [dashboardData, yearFilter, provinceFilter, municipioFilter, sexFilter]);
+  // ── Filter data (offloaded to Web Worker) ──
+  const { filteredData } = useFilterWorker(dashboardData, {
+    yearIngreso: yearFilter !== 'todas' ? yearFilter : undefined,
+    provincia: provinceFilter !== 'todas' ? provinceFilter : undefined,
+    municipio: municipioFilter !== 'todas' ? municipioFilter : undefined,
+    sexo: sexFilter !== 'todas' ? sexFilter : undefined,
+  });
 
   // ── Refresh key for manual recalculation ──
   const [refreshKey, setRefreshKey] = useState(0);
