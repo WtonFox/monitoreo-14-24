@@ -388,3 +388,23 @@ Cada sub-agente recibe el spec de esta mejora + los skills relevantes:
 | 08 Comparativo | `sdd-apply` |
 | 09 Perfil expandido | `sdd-apply` |
 | 10 Historial | `sdd-apply` |
+
+---
+
+## Historial de ejecución
+
+| # | Mejora | Estado | Notas |
+|---|---|---|---|
+| 1 | Zustand | ✅ Completado | 4 stores, 3 contexts eliminados |
+| 2 | Web Workers | ✅ Completado | Filtrado off-main-thread + fallback |
+| 3 | Sync Notifications | ✅ Completado | Browser Notification API |
+| 4 | PWA + Service Worker | ✅ Completado | vite-plugin-pwa, instalable offline |
+| 5 | E2E Playwright | ✅ Completado | 25 tests en 4 specs |
+| 6 | Dashboard Configurable | ✅ Completado | 12 widgets toggleables |
+| 7 | PDF Reports | ✅ Completado | jsPDF, logo, branding, flushSync |
+| 8 | Modo Comparativo | ✅ Completado | 7 dimensiones, 8 charts, KPIs con delta |
+| 9 | Perfil Expandido | ✅ Completado | Timeline horizontal con hitos reales |
+| 10 | Historial de Cambios | ⏭️ No implementado | La API no expone modificaciones |
+
+**Merge a `main`**: `d8aba11` — 16 jul 2026
+**Despliegue**: Automático vía Vercel
