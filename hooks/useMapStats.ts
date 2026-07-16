@@ -57,7 +57,7 @@ export const useMapStats = (
 
     // Calcular estadísticas detalladas — SINGLE PASS (R-perf-3)
     // Also computes national rates inside the same pass (no extra iterations)
-    const { locationStats, nationalPhoneRate, nationalVulnerabilityRate } = useMemo(() => {
+    const { locationStats, nationalPhoneRate, nationalVulnerabilityRate, nationalAvgAge, nationalGenderRate, nationalEducationRate, nationalStatusRate } = useMemo(() => {
         const stats: Record<string, {
             total: number;
             genderBreakdown: { M: number; F: number; other: number };
@@ -78,6 +78,11 @@ export const useMapStats = (
         let phoneAcc = 0;
         let vulnAcc = 0;
         let totalAcc = 0;
+        let genderAcc = { M: 0, F: 0, other: 0 };
+        let ageSumAcc = 0;
+        let ageCountAcc = 0;
+        const educationAcc: Record<string, number> = {};
+        const statusAcc: Record<string, number> = {};
 
         data.forEach(p => {
             let key = 'Desconocido';
@@ -151,6 +156,24 @@ export const useMapStats = (
                 vulnAcc++;
             }
 
+            // ── National accumulators ──
+            // Gender
+            if (sex === 'M') genderAcc.M++;
+            else if (sex === 'F') genderAcc.F++;
+            else genderAcc.other++;
+
+            // Age
+            if (p.edad > 0) { ageSumAcc += p.edad; ageCountAcc++; }
+
+            // Education
+            if (p.nivelEstudio && hasValue(p.nivelEstudio)) {
+                educationAcc[p.nivelEstudio] = (educationAcc[p.nivelEstudio] || 0) + 1;
+            }
+
+            // Status
+            const natStatus = p.estado || 'Sin estado';
+            statusAcc[natStatus] = (statusAcc[natStatus] || 0) + 1;
+
             // Year counts (by registro year)
             if (p.fechaRegistro) {
                 const y = new Date(p.fechaRegistro).getFullYear().toString();
@@ -185,6 +208,10 @@ export const useMapStats = (
             locationStats: result,
             nationalPhoneRate: totalAcc > 0 ? phoneAcc / totalAcc : 0,
             nationalVulnerabilityRate: totalAcc > 0 ? vulnAcc / totalAcc : 0,
+            nationalAvgAge: ageCountAcc > 0 ? Math.round(ageSumAcc / ageCountAcc) : 0,
+            nationalGenderRate: genderAcc,
+            nationalEducationRate: educationAcc,
+            nationalStatusRate: statusAcc,
         };
     }, [data, level]);
 
@@ -255,5 +282,9 @@ export const useMapStats = (
         getColor,
         nationalPhoneRate,
         nationalVulnerabilityRate,
+        nationalAvgAge,
+        nationalGenderRate,
+        nationalEducationRate,
+        nationalStatusRate,
     };
 };

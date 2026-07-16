@@ -134,6 +134,89 @@ describe('useMapStats — single-pass optimization (WU4)', () => {
     expect(result.current.locationStats).toEqual({});
   });
 
+  describe('national accumulators (promedios-mapa)', () => {
+    it('computes nationalAvgAge correctly with mixed valid/invalid ages', () => {
+      const data: Participant[] = [
+        makeParticipant({ id: 1, edad: 25, provincia: 'Santo Domingo' }),
+        makeParticipant({ id: 2, edad: 0, provincia: 'Santiago' }),
+        makeParticipant({ id: 3, edad: 35, provincia: 'La Vega' }),
+        makeParticipant({ id: 4, edad: null as unknown as number, provincia: 'Duarte' }),
+      ];
+
+      const { result } = renderHook(() => useMapStats(data, 'province', null));
+
+      // avg = (25 + 35) / 2 = 30
+      expect(result.current.nationalAvgAge).toBe(30);
+    });
+
+    it('nationalAvgAge is 0 when all ages are invalid', () => {
+      const data: Participant[] = [
+        makeParticipant({ id: 1, edad: 0, provincia: 'Santo Domingo' }),
+        makeParticipant({ id: 2, edad: 0, provincia: 'Santiago' }),
+      ];
+
+      const { result } = renderHook(() => useMapStats(data, 'province', null));
+      expect(result.current.nationalAvgAge).toBe(0);
+    });
+
+    it('computes nationalGenderRate with M/F/other distribution', () => {
+      const data: Participant[] = [
+        makeParticipant({ id: 1, sexo: 'M', provincia: 'Santo Domingo' }),
+        makeParticipant({ id: 2, sexo: 'F', provincia: 'Santiago' }),
+        makeParticipant({ id: 3, sexo: 'M', provincia: 'La Vega' }),
+        makeParticipant({ id: 4, sexo: 'F', provincia: 'Duarte' }),
+        makeParticipant({ id: 5, sexo: 'X', provincia: 'San Pedro' }),
+      ];
+
+      const { result } = renderHook(() => useMapStats(data, 'province', null));
+
+      expect(result.current.nationalGenderRate).toEqual({ M: 2, F: 2, other: 1 });
+    });
+
+    it('computes nationalEducationRate correctly', () => {
+      const data: Participant[] = [
+        makeParticipant({ id: 1, nivelEstudio: 'Bachiller', provincia: 'Santo Domingo' }),
+        makeParticipant({ id: 2, nivelEstudio: 'Bachiller', provincia: 'Santiago' }),
+        makeParticipant({ id: 3, nivelEstudio: 'Universitario', provincia: 'La Vega' }),
+        makeParticipant({ id: 4, nivelEstudio: '', provincia: 'Duarte' }),
+        makeParticipant({ id: 5, nivelEstudio: 'N/D', provincia: 'San Pedro' }),
+      ];
+
+      const { result } = renderHook(() => useMapStats(data, 'province', null));
+
+      expect(result.current.nationalEducationRate).toEqual({
+        Bachiller: 2,
+        Universitario: 1,
+      });
+    });
+
+    it('computes nationalStatusRate correctly', () => {
+      const data: Participant[] = [
+        makeParticipant({ id: 1, estado: 'Identificado', provincia: 'Santo Domingo' }),
+        makeParticipant({ id: 2, estado: 'Identificado', provincia: 'Santiago' }),
+        makeParticipant({ id: 3, estado: 'Egresado', provincia: 'La Vega' }),
+        makeParticipant({ id: 4, estado: null as unknown as string, provincia: 'Duarte' }),
+      ];
+
+      const { result } = renderHook(() => useMapStats(data, 'province', null));
+
+      expect(result.current.nationalStatusRate).toEqual({
+        Identificado: 2,
+        Egresado: 1,
+        'Sin estado': 1,
+      });
+    });
+
+    it('returns neutral values for empty data', () => {
+      const { result } = renderHook(() => useMapStats([], 'province', null));
+
+      expect(result.current.nationalAvgAge).toBe(0);
+      expect(result.current.nationalGenderRate).toEqual({ M: 0, F: 0, other: 0 });
+      expect(result.current.nationalEducationRate).toEqual({});
+      expect(result.current.nationalStatusRate).toEqual({});
+    });
+  });
+
   it('computes topCenters sorted by count descending, limited to 3', () => {
     const data: Participant[] = [
       makeParticipant({ id: 1, provincia: 'Santo Domingo', centro: 'Centro A' }),

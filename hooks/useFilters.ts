@@ -136,6 +136,8 @@ export const useFilters = (data: Participant[]): UseFiltersResult => {
                         case '14-17': return age >= 14 && age <= 17;
                         case '18-20': return age >= 18 && age <= 20;
                         case '21-24': return age >= 21 && age <= 24;
+                        case '25-29': return age >= 25 && age <= 29;
+                        case '30+': return age >= 30;
                         default: return true;
                     }
                 })()

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { X, Filter, Trash2 } from 'lucide-react';
-import { AdvancedFilterState, AGE_GROUPS } from '../types';
+import { AdvancedFilterState } from '../types';
+import { AGE_GROUPS } from '../constants';
 
 interface AdvancedFiltersModalProps {
     isOpen: boolean;

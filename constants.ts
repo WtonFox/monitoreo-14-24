@@ -63,6 +63,16 @@ export const PROVINCE_MUNICIPALITIES: Record<string, string[]> = {
   "Valverde": ["Mao", "Esperanza", "Laguna Salada"]
 };
 
+// Age groups for filtering
+export const AGE_GROUPS = [
+  { value: '', label: 'Todos' },
+  { value: '14-17', label: '14-17 años' },
+  { value: '18-20', label: '18-20 años' },
+  { value: '21-24', label: '21-24 años' },
+  { value: '25-29', label: '25-29 años' },
+  { value: '30+', label: '30+ años' },
+];
+
 // Standard Regions of Planning (Regiones Únicas de Planificación)
 export const REGION_PROVINCES: Record<string, string[]> = {
   "Cibao Norte": ["Santiago", "Puerto Plata", "Espaillat"],

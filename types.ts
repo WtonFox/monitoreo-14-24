@@ -51,10 +51,4 @@ export interface AdvancedFilterState {
   nivelEstudio: string;
 }
 
-export const AGE_GROUPS = [
-  { value: '', label: 'Todos' },
-  { value: '14-17', label: '14-17 años' },
-  { value: '18-20', label: '18-20 años' },
-  { value: '21-24', label: '21-24 años' }
-];
 

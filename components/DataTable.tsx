@@ -1,10 +1,14 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Participant } from '../types';
-import { Download, Search, ChevronLeft, ChevronRight, ChevronDown, FileJson, FileSpreadsheet, FileText, XCircle, Settings } from 'lucide-react';
+import {
+  Download, Search, ChevronLeft, ChevronRight, ChevronDown,
+  FileJson, FileSpreadsheet, FileText, X, XCircle, Settings
+} from 'lucide-react';
 import { ColumnSelector, ColumnConfig } from './ColumnSelector';
 import { formatNumber } from '../utils/formatters';
 import { renderCell } from './table/TableCellRenderer';
 import { handleLocalJSON, handleLocalExport, handleLocalXLSX } from './table/tableExportHelpers';
+import { AGE_GROUPS } from '../constants';
 
 interface ExportProgressDisplay {
   current: number;
@@ -13,6 +17,43 @@ interface ExportProgressDisplay {
   warning?: string;
   failedPages?: number[];
   partialFailure?: boolean;
+}
+
+export interface FiltersConfig {
+  searchTerm: string;
+  setSearchTerm: (v: string) => void;
+  filterProvincia: string;
+  setFilterProvincia: (v: string) => void;
+  filterMunicipio: string;
+  setFilterMunicipio: (v: string) => void;
+  filterCentro: string;
+  setFilterCentro: (v: string) => void;
+  filterSexo: string;
+  setFilterSexo: (v: string) => void;
+  filterEstado: string;
+  setFilterEstado: (v: string) => void;
+  filterAnioIngreso: string;
+  setFilterAnioIngreso: (v: string) => void;
+  filterAnioInclusion: string;
+  setFilterAnioInclusion: (v: string) => void;
+  filterAgeGroup: string;
+  setFilterAgeGroup: (v: string) => void;
+  filterEstadoCivil: string;
+  setFilterEstadoCivil: (v: string) => void;
+  filterNivelEstudio: string;
+  setFilterNivelEstudio: (v: string) => void;
+  availableProvincias: string[];
+  availableMunicipios: string[];
+  availableCentros: string[];
+  availableEstados: string[];
+  availableAniosIngreso: string[];
+  availableAniosInclusion: string[];
+  availableEstadoCivil: string[];
+  availableNivelEstudio: string[];
+  activeFilterCount: number;
+  hasActiveFilters: boolean;
+  clearFilter: (key: string) => void;
+  clearAll: () => void;
 }
 
 interface DataTableProps {
@@ -29,20 +70,8 @@ interface DataTableProps {
   onExport: (format: 'csv' | 'json') => void;
   onCancelExport: () => void;
   onOpenMassExport?: () => void;
-  searchTerm: string;
-  onSearchChange: (v: string) => void;
-  filterProvincia: string;
-  onProvinciaChange: (v: string) => void;
-  availableMunicipios: string[];
-  filterMunicipio: string;
-  onMunicipioChange: (v: string) => void;
-  filterCentro: string;
-  onCentroChange: (v: string) => void;
-  uniqueCentros: string[];
-  filterSexo: string;
-  onSexoChange: (v: string) => void;
-  uniqueProvincias: string[];
   allFilteredData?: Participant[];
+  filters: FiltersConfig;
 }
 
 const DEFAULT_COLUMNS: ColumnConfig[] = [
@@ -73,23 +102,63 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
   { id: 'vulnerabilidades', label: 'Vulnerabilidades', visible: false },
 ];
 
+function getActiveFilterPills(f: FiltersConfig) {
+  const pills: { key: string; label: string; value: string }[] = [];
+  if (f.searchTerm) pills.push({ key: 'searchTerm', label: 'Búsqueda', value: f.searchTerm });
+  if (f.filterProvincia !== 'todas') pills.push({ key: 'filterProvincia', label: 'Provincia', value: f.filterProvincia });
+  if (f.filterMunicipio !== 'todos') pills.push({ key: 'filterMunicipio', label: 'Municipio', value: f.filterMunicipio });
+  if (f.filterCentro !== 'todos') pills.push({ key: 'filterCentro', label: 'Centro', value: f.filterCentro });
+  if (f.filterSexo !== 'todos') pills.push({ key: 'filterSexo', label: 'Sexo', value: f.filterSexo === 'f' ? 'Femenino' : 'Masculino' });
+  if (f.filterEstado) pills.push({ key: 'filterEstado', label: 'Estado', value: f.filterEstado });
+  if (f.filterAnioIngreso) pills.push({ key: 'filterAnioIngreso', label: 'Año Ingreso', value: f.filterAnioIngreso });
+  if (f.filterAnioInclusion) pills.push({ key: 'filterAnioInclusion', label: 'Año Inclusión', value: f.filterAnioInclusion });
+  if (f.filterAgeGroup) {
+    const g = AGE_GROUPS.find(ag => ag.value === f.filterAgeGroup);
+    pills.push({ key: 'filterAgeGroup', label: 'Grupo Edad', value: g?.label || f.filterAgeGroup });
+  }
+  if (f.filterEstadoCivil) pills.push({ key: 'filterEstadoCivil', label: 'Estado Civil', value: f.filterEstadoCivil });
+  if (f.filterNivelEstudio) pills.push({ key: 'filterNivelEstudio', label: 'Nivel Estudio', value: f.filterNivelEstudio });
+  return pills;
+}
+
 export const DataTable: React.FC<DataTableProps> = ({
   data, currentPage, totalPages, totalItems, pageSize, loading,
   isExporting, exportProgress,
   onPageChange, onPageSizeChange, onExport, onCancelExport,
   onOpenMassExport,
-  searchTerm, onSearchChange,
-  filterProvincia, onProvinciaChange, availableMunicipios,
-  filterMunicipio, onMunicipioChange,
-  filterCentro, onCentroChange, uniqueCentros,
-  filterSexo, onSexoChange, uniqueProvincias,
-  allFilteredData
+  allFilteredData,
+  filters,
 }) => {
-  const [showExportSection, setShowExportSection] = useState(false);
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [showFormatDropdown, setShowFormatDropdown] = useState(false);
 
   const [columns, setColumns] = useState<ColumnConfig[]>(DEFAULT_COLUMNS);
   const [showColumnSelector, setShowColumnSelector] = useState(false);
+
+  // ── Debounced search ──
+  const [localSearch, setLocalSearch] = useState(filters.searchTerm);
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Sync from external clear/reset
+  useEffect(() => {
+    setLocalSearch(filters.searchTerm);
+  }, [filters.searchTerm]);
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setLocalSearch(value);
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    searchDebounceRef.current = setTimeout(() => {
+      filters.setSearchTerm(value);
+    }, 300);
+  };
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     try {
@@ -122,6 +191,7 @@ export const DataTable: React.FC<DataTableProps> = ({
   };
 
   const visibleColumns = columns.filter(c => c.visible);
+  const activeFilterPills = getActiveFilterPills(filters);
 
   const startItem = totalItems === 0 ? 0 : (currentPage - 1) * pageSize + 1;
   const endItem = Math.min((currentPage - 1) * pageSize + data.length, totalItems);
@@ -172,6 +242,7 @@ export const DataTable: React.FC<DataTableProps> = ({
         </div>
       )}
 
+      {/* ── Search bar + column selector + page size ── */}
       <div className="p-4 border-b border-gray-100">
         <div className="flex items-center gap-2">
           <div className="relative flex-1 min-w-0">
@@ -182,8 +253,8 @@ export const DataTable: React.FC<DataTableProps> = ({
               type="text"
               placeholder="Buscar..."
               className="pl-10 pr-4 h-10 bg-white border border-gray-300 rounded-lg w-full text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm transition-shadow"
-              value={searchTerm}
-              onChange={(e) => onSearchChange(e.target.value)}
+              value={localSearch}
+              onChange={handleSearchChange}
             />
           </div>
 
@@ -218,124 +289,255 @@ export const DataTable: React.FC<DataTableProps> = ({
         </div>
       </div>
 
-      <div className="px-4 py-3 border-b border-gray-100">
-        <div className="bg-white border border-gray-200 rounded-xl shadow-sm">
+      {/* ── Active filter pills ── */}
+      <div className="px-4 py-2 border-b border-gray-100">
+        <div className="flex flex-wrap items-center gap-2">
+          {activeFilterPills.map(pill => (
+            <span
+              key={pill.key}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-medium"
+            >
+              <span className="font-semibold">{pill.label}:</span> {pill.value}
+              <button
+                onClick={() => filters.clearFilter(pill.key)}
+                className="ml-0.5 hover:bg-blue-100 rounded-full p-0.5 transition-colors"
+                title={`Quitar filtro ${pill.label}`}
+              >
+                <X size={12} />
+              </button>
+            </span>
+          ))}
+          {filters.hasActiveFilters && activeFilterPills.length > 0 && (
+            <button
+              onClick={filters.clearAll}
+              className="text-xs text-red-600 hover:text-red-800 font-medium ml-1 transition-colors"
+            >
+              Limpiar todos
+            </button>
+          )}
+          {!filters.hasActiveFilters && (
+            <span className="text-xs text-gray-400">Sin filtros activos</span>
+          )}
+        </div>
+      </div>
+
+      {/* ── Filtros Avanzados (collapsible) ── */}
+      <div className="px-4 border-b border-gray-100">
+        <div className="bg-white border border-gray-200 rounded-xl shadow-sm mb-3">
           <button
-            onClick={() => setShowExportSection(prev => !prev)}
-            className="w-full flex items-center justify-between px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wider hover:bg-gray-50 transition-colors"
+            onClick={() => setShowAdvancedFilters(prev => !prev)}
+            className="w-full flex items-center justify-between px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wider hover:bg-gray-50 transition-colors rounded-xl"
           >
-            <span>Filtros y Datos</span>
+            <span>
+              Filtros Avanzados
+              {filters.activeFilterCount > 0 && (
+                <span className="ml-1.5 bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full text-[10px]">
+                  {filters.activeFilterCount}
+                </span>
+              )}
+            </span>
             <ChevronDown
               size={14}
-              className={`transition-transform ${showExportSection ? '' : '-rotate-90'}`}
+              className={`transition-transform ${showAdvancedFilters ? '' : '-rotate-90'}`}
             />
           </button>
 
-          {showExportSection && (
-            <div className="border-t border-gray-100">
-              {/* Filtros */}
-              <div className="px-4 py-3 space-y-3">
-                <div className="flex items-center gap-2">
+          {showAdvancedFilters && (
+            <div className="border-t border-gray-100 px-4 py-4">
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+                {/* Provincia */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Provincia</label>
                   <select
-                    value={filterProvincia}
-                    onChange={e => onProvinciaChange(e.target.value)}
-                    className="flex-1 border border-gray-300 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-blue-500"
+                    value={filters.filterProvincia}
+                    onChange={e => filters.setFilterProvincia(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="todas">Provincia: Todas</option>
-                    {uniqueProvincias.map(p => (<option key={p} value={p}>{p}</option>))}
+                    <option value="todas">Todas</option>
+                    {filters.availableProvincias.map(p => <option key={p} value={p}>{p}</option>)}
                   </select>
+                </div>
 
+                {/* Municipio (dependiente de provincia) */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Municipio</label>
                   <select
-                    value={filterMunicipio}
-                    onChange={e => onMunicipioChange(e.target.value)}
-                    className="flex-1 border border-gray-300 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-blue-500"
-                    disabled={filterProvincia === 'todas'}
+                    value={filters.filterMunicipio}
+                    onChange={e => filters.setFilterMunicipio(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={filters.filterProvincia === 'todas'}
                   >
-                    <option value="todos">Municipio: Todos</option>
-                    {availableMunicipios.map(m => (<option key={m} value={m}>{m}</option>))}
+                    <option value="todos">Todos</option>
+                    {filters.availableMunicipios.map(m => <option key={m} value={m}>{m}</option>)}
                   </select>
+                </div>
 
+                {/* Centro */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Centro</label>
                   <select
-                    value={filterCentro}
-                    onChange={e => onCentroChange(e.target.value)}
-                    className="flex-1 border border-gray-300 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-blue-500"
+                    value={filters.filterCentro}
+                    onChange={e => filters.setFilterCentro(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="todos">Centro: Todos</option>
-                    {uniqueCentros.map(c => (<option key={c} value={c}>{c}</option>))}
+                    <option value="todos">Todos</option>
+                    {filters.availableCentros.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
+                </div>
 
+                {/* Sexo */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Sexo</label>
                   <select
-                    value={filterSexo}
-                    onChange={e => onSexoChange(e.target.value)}
-                    className="flex-1 border border-gray-300 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-blue-500"
+                    value={filters.filterSexo}
+                    onChange={e => filters.setFilterSexo(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="todos">Sexo: Todos</option>
+                    <option value="todos">Todos</option>
                     <option value="f">Femenino</option>
                     <option value="m">Masculino</option>
                   </select>
                 </div>
-              </div>
 
-              {/* Exportar */}
-              <div className="px-4 py-3 border-t border-gray-100 flex flex-wrap items-center gap-3">
-                <div className="relative">
-                  <button
-                    onClick={() => setShowFormatDropdown(prev => !prev)}
-                    className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm"
+                {/* Estado */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Estado</label>
+                  <select
+                    value={filters.filterEstado}
+                    onChange={e => filters.setFilterEstado(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500"
                   >
-                    <Download size={16} />
-                    Exportar
-                    <ChevronDown size={14} />
-                  </button>
-
-                  {showFormatDropdown && (
-                    <>
-                      <div className="fixed inset-0 z-10" onClick={() => setShowFormatDropdown(false)} />
-                      <div className="absolute left-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-20 py-1 min-w-[180px]">
-                        <button
-                          onClick={() => { setShowFormatDropdown(false); handleLocalExport(allFilteredData || data); }}
-                          className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
-                        >
-                          <FileText size={16} className="text-green-600" />
-                          CSV (Vista actual)
-                        </button>
-                        <button
-                          onClick={() => { setShowFormatDropdown(false); handleLocalXLSX(allFilteredData || data); }}
-                          className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
-                        >
-                          <FileSpreadsheet size={16} className="text-blue-600" />
-                          Excel (XLSX)
-                        </button>
-                        <button
-                          onClick={() => { setShowFormatDropdown(false); handleLocalJSON(allFilteredData || data); }}
-                          className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
-                        >
-                          <FileJson size={16} className="text-purple-600" />
-                          JSON
-                        </button>
-                      </div>
-                    </>
-                  )}
+                    <option value="">Todos</option>
+                    {filters.availableEstados.map(est => <option key={est} value={est}>{est}</option>)}
+                  </select>
                 </div>
 
-                {onOpenMassExport && (
-                  <button
-                    onClick={onOpenMassExport}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm"
+                {/* Año Ingreso */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Año Ingreso</label>
+                  <select
+                    value={filters.filterAnioIngreso}
+                    onChange={e => filters.setFilterAnioIngreso(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500"
                   >
-                    <Download size={16} />
-                    Exportar Todos
-                    {totalItems > 0 && (
-                      <span className="text-[10px] bg-blue-500 px-1.5 py-0.5 rounded-full">
-                        {formatNumber(totalItems)}
-                      </span>
-                    )}
-                  </button>
-                )}
+                    <option value="">Todos</option>
+                    {filters.availableAniosIngreso.map(y => <option key={y} value={y}>{y}</option>)}
+                  </select>
+                </div>
+
+                {/* Año Inclusión */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Año Inclusión</label>
+                  <select
+                    value={filters.filterAnioInclusion}
+                    onChange={e => filters.setFilterAnioInclusion(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Todos</option>
+                    {filters.availableAniosInclusion.map(y => <option key={y} value={y}>{y}</option>)}
+                  </select>
+                </div>
+
+                {/* Grupo Edad */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Grupo Edad</label>
+                  <select
+                    value={filters.filterAgeGroup}
+                    onChange={e => filters.setFilterAgeGroup(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500"
+                  >
+                    {AGE_GROUPS.map(g => <option key={g.value} value={g.value}>{g.label}</option>)}
+                  </select>
+                </div>
+
+                {/* Estado Civil */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Estado Civil</label>
+                  <select
+                    value={filters.filterEstadoCivil}
+                    onChange={e => filters.setFilterEstadoCivil(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Todos</option>
+                    {filters.availableEstadoCivil.map(ec => <option key={ec} value={ec}>{ec}</option>)}
+                  </select>
+                </div>
+
+                {/* Nivel Estudio */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Nivel Estudio</label>
+                  <select
+                    value={filters.filterNivelEstudio}
+                    onChange={e => filters.setFilterNivelEstudio(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Todos</option>
+                    {filters.availableNivelEstudio.map(ne => <option key={ne} value={ne}>{ne}</option>)}
+                  </select>
+                </div>
               </div>
             </div>
           )}
         </div>
+      </div>
+
+      {/* ── Export section ── */}
+      <div className="px-4 pb-3 border-b border-gray-100">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative">
+            <button
+              onClick={() => setShowFormatDropdown(prev => !prev)}
+              className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm"
+            >
+              <Download size={16} />
+              Exportar
+              <ChevronDown size={14} />
+            </button>
+
+            {showFormatDropdown && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setShowFormatDropdown(false)} />
+                <div className="absolute left-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-20 py-1 min-w-[180px]">
+                  <button
+                    onClick={() => { setShowFormatDropdown(false); handleLocalExport(allFilteredData || data); }}
+                    className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
+                  >
+                    <FileText size={16} className="text-green-600" />
+                    CSV (Vista actual)
+                  </button>
+                  <button
+                    onClick={() => { setShowFormatDropdown(false); handleLocalXLSX(allFilteredData || data); }}
+                    className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
+                  >
+                    <FileSpreadsheet size={16} className="text-blue-600" />
+                    Excel (XLSX)
+                  </button>
+                  <button
+                    onClick={() => { setShowFormatDropdown(false); handleLocalJSON(allFilteredData || data); }}
+                    className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
+                  >
+                    <FileJson size={16} className="text-purple-600" />
+                    JSON
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+
+          {onOpenMassExport && (
+            <button
+              onClick={onOpenMassExport}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm"
+            >
+              <Download size={16} />
+              Exportar Todos
+              {totalItems > 0 && (
+                <span className="text-[10px] bg-blue-500 px-1.5 py-0.5 rounded-full">
+                  {formatNumber(totalItems)}
+                </span>
+              )}
+            </button>
+          )}
         </div>
       </div>
 
@@ -408,6 +610,7 @@ export const DataTable: React.FC<DataTableProps> = ({
           </div>
         </div>
       </div>
+    </div>
     </div>
     </div>
   );

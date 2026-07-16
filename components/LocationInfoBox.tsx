@@ -12,6 +12,10 @@ interface LocationInfoBoxProps {
     onClose: () => void;
     nationalPhoneRate?: number;
     nationalVulnerabilityRate?: number;
+    nationalAvgAge?: number;
+    nationalGenderRate?: { M: number; F: number; other: number };
+    nationalEducationRate?: Record<string, number>;
+    nationalStatusRate?: Record<string, number>;
 }
 
 const CollapsibleSection: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
@@ -34,6 +38,10 @@ export const LocationInfoBox: React.FC<LocationInfoBoxProps> = ({
     onClose,
     nationalPhoneRate,
     nationalVulnerabilityRate,
+    nationalAvgAge,
+    nationalGenderRate,
+    nationalEducationRate,
+    nationalStatusRate,
 }) => {
     const percentage = totalParticipants > 0
         ? ((stats.total / totalParticipants) * 100).toFixed(1)
@@ -42,6 +50,7 @@ export const LocationInfoBox: React.FC<LocationInfoBoxProps> = ({
     const isZero = stats.total === 0;
 
     const genderTotal = stats.genderBreakdown.M + stats.genderBreakdown.F + stats.genderBreakdown.other;
+    const natGenderTotal = nationalGenderRate ? nationalGenderRate.M + nationalGenderRate.F + nationalGenderRate.other : 0;
     const malePct = genderTotal > 0 ? ((stats.genderBreakdown.M / genderTotal) * 100).toFixed(1) : '0.0';
     const femalePct = genderTotal > 0 ? ((stats.genderBreakdown.F / genderTotal) * 100).toFixed(1) : '0.0';
 
@@ -127,6 +136,23 @@ export const LocationInfoBox: React.FC<LocationInfoBoxProps> = ({
                         </div>
                     )}
 
+                    {/* Edad — Promedio nacional */}
+                    {nationalAvgAge !== undefined && stats.ageRanges.avg > 0 && (
+                        <div className="py-1 border-b border-gray-100">
+                            <div className="flex justify-between text-xs text-gray-500">
+                                <span>Promedio nacional:</span>
+                                <span>{nationalAvgAge} años</span>
+                            </div>
+                            <div className="text-xs text-gray-500 italic">
+                                {stats.ageRanges.avg > nationalAvgAge
+                                    ? `${(stats.ageRanges.avg - nationalAvgAge).toFixed(1)} años más que el nacional`
+                                    : stats.ageRanges.avg < nationalAvgAge
+                                        ? `${(nationalAvgAge - stats.ageRanges.avg).toFixed(1)} años menos que el nacional`
+                                        : 'Igual al promedio nacional'}
+                            </div>
+                        </div>
+                    )}
+
                     {/* Gender breakdown */}
                     <div className="py-1 border-b border-gray-100">
                         <div className="text-gray-600 mb-1">Género:</div>
@@ -140,6 +166,17 @@ export const LocationInfoBox: React.FC<LocationInfoBoxProps> = ({
                         </div>
                     </div>
 
+                    {/* Género — Promedio nacional */}
+                    {nationalGenderRate && genderTotal > 0 && (
+                        <div className="py-1 border-b border-gray-100">
+                            <div className="text-gray-500 text-xs mb-1">Promedio nacional:</div>
+                            <div className="flex gap-2 text-xs text-gray-500">
+                                <span>M: {natGenderTotal > 0 ? ((nationalGenderRate.M / natGenderTotal) * 100).toFixed(1) : '0.0'}%</span>
+                                <span>F: {natGenderTotal > 0 ? ((nationalGenderRate.F / natGenderTotal) * 100).toFixed(1) : '0.0'}%</span>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Top statuses */}
                     {sortedStatuses.length > 0 && (
                         <div className="py-1 border-b border-gray-100">
@@ -152,6 +189,26 @@ export const LocationInfoBox: React.FC<LocationInfoBoxProps> = ({
                                     </div>
                                 ))}
                             </div>
+                            {nationalStatusRate && Object.keys(nationalStatusRate).length > 0 && (
+                                <div className="mt-1 pt-1 border-t border-gray-100">
+                                    <div className="text-xs text-gray-500 mb-1">Promedio nacional:</div>
+                                    {sortedStatuses.map(([status]) => {
+                                        const hasNational = status in nationalStatusRate;
+                                        const natCount = hasNational ? nationalStatusRate[status] : null;
+                                        const natTotal = Object.values(nationalStatusRate).reduce((s, v) => s + v, 0);
+                                        const natPct = natCount !== null && natTotal > 0 ? ((natCount / natTotal) * 100).toFixed(1) : null;
+                                        const localCount = stats.statusBreakdown[status] || 0;
+                                        const localTotal = Object.values(stats.statusBreakdown).reduce((s, v) => s + v, 0);
+                                        const localPct = localTotal > 0 ? ((localCount / localTotal) * 100).toFixed(1) : '0.0';
+                                        return (
+                                            <div key={status} className="flex justify-between text-xs text-gray-500">
+                                                <span>{status}</span>
+                                                <span>{localPct}% local — {natPct !== null ? `${natPct}% nacional` : 'N/A'}</span>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
                         </div>
                     )}
 
@@ -186,6 +243,25 @@ export const LocationInfoBox: React.FC<LocationInfoBoxProps> = ({
                                     </div>
                                 );
                             })}
+                            {nationalEducationRate && Object.keys(nationalEducationRate).length > 0 && (
+                                <div className="mt-2 pt-2 border-t border-gray-100">
+                                    <div className="text-xs text-gray-500 mb-1">Promedio nacional:</div>
+                                    {sortedEducation.map(([level]) => {
+                                        const hasNational = level in nationalEducationRate;
+                                        const natCount = hasNational ? nationalEducationRate[level] : null;
+                                        const natTotal = Object.values(nationalEducationRate).reduce((s, v) => s + v, 0);
+                                        const natPct = natCount !== null && natTotal > 0 ? ((natCount / natTotal) * 100).toFixed(1) : null;
+                                        const localCount = stats.educationBreakdown[level] || 0;
+                                        const localPct = educationTotal > 0 ? ((localCount / educationTotal) * 100).toFixed(1) : '0.0';
+                                        return (
+                                            <div key={level} className="flex justify-between text-xs text-gray-500">
+                                                <span>{level}</span>
+                                                <span>{localPct}% local — {natPct !== null ? `${natPct}% nacional` : 'N/A'}</span>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
                         </CollapsibleSection>
                     )}
 

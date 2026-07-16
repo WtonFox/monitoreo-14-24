@@ -115,6 +115,10 @@ export const MapSection: React.FC<MapSectionProps> = ({ data }) => {
         getColor,
         nationalPhoneRate,
         nationalVulnerabilityRate,
+        nationalAvgAge,
+        nationalGenderRate,
+        nationalEducationRate,
+        nationalStatusRate,
     } = useMapStats(filteredData, mapLevel, selectedProvince);
 
     return (
@@ -175,6 +179,10 @@ export const MapSection: React.FC<MapSectionProps> = ({ data }) => {
                             onClose={() => setSelectedLocation(null)}
                             nationalPhoneRate={nationalPhoneRate}
                             nationalVulnerabilityRate={nationalVulnerabilityRate}
+                            nationalAvgAge={nationalAvgAge}
+                            nationalGenderRate={nationalGenderRate}
+                            nationalEducationRate={nationalEducationRate}
+                            nationalStatusRate={nationalStatusRate}
                         />
                     ) : (
                         <MapFilters
