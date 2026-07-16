@@ -5,6 +5,9 @@ import { StatsCards } from '../components/StatsCards';
 import { ChartsSection } from '../components/ChartsSection';
 import { FilterBar } from '../components/FilterBar';
 import { AdvancedFiltersModal } from '../components/AdvancedFiltersModal';
+import { Sliders } from 'lucide-react';
+import { DashboardEditor } from '../components/DashboardEditor';
+import { useUiStore } from '../stores/uiStore';
 
 const Estadisticas: React.FC = () => {
   const dashboardData = useParticipantStore(s => s.dashboardData);
@@ -28,6 +31,11 @@ const Estadisticas: React.FC = () => {
 
   const [showAdvancedFilters, setShowAdvancedFilters] = useState<boolean>(false);
   const [showLabels, setShowLabels] = useState<boolean>(false);
+  const [showDashboardEditor, setShowDashboardEditor] = useState<boolean>(false);
+
+  const visibleWidgetIds = useUiStore(s => s.visibleWidgetIds);
+  const toggleWidget = useUiStore(s => s.toggleWidget);
+  const resetWidgets = useUiStore(s => s.resetWidgets);
 
   // ── Estado local para search + centro ──
   const [searchTerm, setSearchTerm] = useState('');
@@ -115,12 +123,24 @@ const Estadisticas: React.FC = () => {
         <StatsCards data={postFilteredData} totalItems={totalRecordsInApi || dashboardData.length} />
 
         {dashboardData.length > 0 ? (
-          <ChartsSection
-            data={postFilteredData}
-            selectedProvince={selectedProvince}
-            selectedMunicipio={advancedFilters.municipio}
-            showLabels={showLabels}
-          />
+          <>
+            <div className="flex justify-end">
+              <button
+                onClick={() => setShowDashboardEditor(true)}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 hover:bg-blue-100 hover:text-blue-800 rounded-lg transition-colors shadow-sm"
+              >
+                <Sliders size={16} />
+                Configurar Dashboard
+              </button>
+            </div>
+            <ChartsSection
+              data={postFilteredData}
+              selectedProvince={selectedProvince}
+              selectedMunicipio={advancedFilters.municipio}
+              showLabels={showLabels}
+              visibleWidgetIds={visibleWidgetIds}
+            />
+          </>
         ) : (
           <div className="h-64 flex flex-col items-center justify-center text-gray-400 bg-white rounded-xl border border-dashed border-gray-300">
             <p>Recopilando datos para gráficas...</p>
@@ -137,6 +157,14 @@ const Estadisticas: React.FC = () => {
         availableMunicipios={availableMunicipios}
         availableEstadoCivil={availableEstadoCivil}
         availableNivelEstudio={availableNivelEstudio}
+      />
+
+      <DashboardEditor
+        isOpen={showDashboardEditor}
+        onClose={() => setShowDashboardEditor(false)}
+        visibleWidgetIds={visibleWidgetIds}
+        onToggleWidget={toggleWidget}
+        onReset={resetWidgets}
       />
     </>
   );
