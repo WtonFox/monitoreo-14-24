@@ -5,6 +5,7 @@ import { Outlet } from 'react-router-dom';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
 import { ErrorScreen } from './components/ErrorScreen';
+import InstallPWA from './components/InstallPWA';
 
 // Stores
 import { useParticipantStore } from './stores/participantStore';
@@ -134,6 +135,8 @@ const App: React.FC = () => {
         </div>
       </main>
 
+      {/* PWA Install Button — fixed bottom-right, only shows when eligible */}
+      <InstallPWA />
     </div>
   );
 };
