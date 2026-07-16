@@ -1,6 +1,7 @@
 import path from 'path';
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
+import https from 'https';
 import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig(({ mode }) => {
@@ -15,15 +16,22 @@ export default defineConfig(({ mode }) => {
         '/api': {
           target: 'https://presidenciamonitoreo1424api.gabsocial.gob.do',
           changeOrigin: true,
-          secure: false, // To prevent SSL certificate issues
+          secure: false,
+          timeout: 30000,
+          agent: new https.Agent({ keepAlive: true, maxSockets: 4 }),
           configure: (proxy, _options) => {
             proxy.on('proxyReq', (proxyReq, req, _res) => {
-              // Log para debugging
-              console.log(
-                `[Proxy] ${req.method} ${req.url} -> ${proxyReq.getHeader('host')}`,
-              );
+              console.log(`[Proxy] ${req.method} ${req.url} -> ${proxyReq.getHeader('host')}`);
             });
-            proxy.on('error', (err, _req, _res) => {
+            proxy.on('proxyRes', (proxyRes, req) => {
+              if (proxyRes.statusCode === 502 || proxyRes.statusCode === 504) {
+                console.warn(`[Proxy] ${req.url} -> ${proxyRes.statusCode} (API timeout)`);
+              }
+            });
+            proxy.on('error', (err, req, res) => {
+              if ((err as NodeJS.ErrnoException).code === 'ECONNRESET') {
+                return; // Silencioso — el retry en useDashboardData lo maneja
+              }
               console.error('[Proxy Error]', err.message);
             });
           },
