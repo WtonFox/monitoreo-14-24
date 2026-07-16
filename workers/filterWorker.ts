@@ -16,6 +16,7 @@ export interface FilterWorkerFilters {
   ageGroup?: string;
   estadoCivil?: string;
   nivelEstudio?: string;
+  rutaFormativa?: string;
 }
 
 interface FilterWorkerRequest {
@@ -125,6 +126,11 @@ export function filterData(data: Participant[], filters: FilterWorkerFilters): P
       ? true
       : item.nivelEstudio === filters.nivelEstudio;
 
+    // Ruta formativa
+    const matchRuta = !filters.rutaFormativa
+      ? true
+      : item.rutaFormativa === filters.rutaFormativa;
+
     return (
       matchSearch &&
       matchProv &&
@@ -136,7 +142,8 @@ export function filterData(data: Participant[], filters: FilterWorkerFilters): P
       matchYearInclusion &&
       matchAge &&
       matchEstadoCivil &&
-      matchNivelEstudio
+      matchNivelEstudio &&
+      matchRuta
     );
   });
 }

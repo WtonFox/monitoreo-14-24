@@ -33,6 +33,7 @@ const RegistroDiarioBoard = React.lazy(() => import('./pages/indicadores/Registr
 const CalidadNdBoard = React.lazy(() => import('./pages/indicadores/CalidadNdBoard'));
 const CalidadIntegradaBoard = React.lazy(() => import('./pages/indicadores/CalidadIntegradaBoard'));
 const ImpactoBoard = React.lazy(() => import('./pages/indicadores/ImpactoBoard'));
+const Comparativo = React.lazy(() => import('./pages/Comparativo'));
 
 export const router = createHashRouter([
   {
@@ -203,6 +204,16 @@ export const router = createHashRouter([
         element: (
           <ProtectedRoute>
             <Alertas />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'comparativo',
+        element: (
+          <ProtectedRoute>
+            <Suspense fallback={<LoadingSkeleton variant="page" label="Cargando modo comparativo..." />}>
+              <Comparativo />
+            </Suspense>
           </ProtectedRoute>
         ),
       },
