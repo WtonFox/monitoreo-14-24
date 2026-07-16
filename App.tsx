@@ -12,6 +12,9 @@ import { useAuthStore } from './stores/authStore';
 import { useFilterStore } from './stores/filterStore';
 import { useUiStore } from './stores/uiStore';
 
+// Hooks
+import { useSyncNotifications } from './hooks/useSyncNotifications';
+
 
 const App: React.FC = () => {
   // View State
@@ -67,6 +70,9 @@ const App: React.FC = () => {
       setLastUpdated(new Date());
     }
   }, [isSyncing, syncStats.progress]);
+
+  // Background sync notifications (progressive enhancement — no-op if Notification API unavailable)
+  useSyncNotifications();
 
   // Refresh Handler
   const handleRefresh = () => {
