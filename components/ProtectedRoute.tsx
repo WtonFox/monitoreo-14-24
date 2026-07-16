@@ -1,6 +1,6 @@
 import React, { type ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuthStore } from '../stores/authStore';
 import { UserRole, ROUTES } from '../types/routes';
 
 // ---------------------------------------------------------------------------
@@ -21,7 +21,10 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children,
   requiredRoles,
 }) => {
-  const { user, isAuthenticated, isAuthReady, hasPermission } = useAuth();
+  const user = useAuthStore(s => s.user);
+  const isAuthenticated = useAuthStore(s => s.isAuthenticated);
+  const isAuthReady = useAuthStore(s => s.isAuthReady);
+  const hasPermission = useAuthStore(s => s.hasPermission);
   const location = useLocation();
 
   // 1. Still checking auth state

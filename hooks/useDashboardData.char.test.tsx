@@ -1,18 +1,15 @@
 /**
  * Characterization tests for useDashboardData — M6a Foundation.
  *
- * Covers WU1 (clearApiCache), WU2 (single provider), WU3 (isPausedRef),
+ * Covers WU1 (clearApiCache), WU3 (isPausedRef),
  * WU4 (checkpoint), WU7 (awaited IndexedDB writes).
  *
  * Mocks the database module to avoid fake-indexeddb setImmediate
  * incompatibility with React Testing Library act().
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { renderHook, act, render } from '@testing-library/react';
-import type { ReactNode } from 'react';
+import { renderHook, act } from '@testing-library/react';
 import type { Participant, PaginationResult } from '../types';
-import { DashboardProvider, useDashboard } from '../contexts/DashboardContext';
-import type { DashboardContextValue } from '../contexts/DashboardContext';
 import { useDashboardData } from './useDashboardData';
 import { validParticipant } from '../tests/helpers/participants';
 
@@ -84,32 +81,6 @@ function emptyPage(): PaginationResult {
   return { items: [], totalItems: 0, currentPage: 1, pageSize: 1 };
 }
 
-/** Minimal context value shape for DashboardProvider tests. */
-function stubContextValue(
-  overrides: Partial<DashboardContextValue> = {},
-): DashboardContextValue {
-  return {
-    dashboardData: [],
-    corruptedItems: [],
-    totalRecordsInApi: 0,
-    isSyncing: false,
-    isPaused: false,
-    syncStats: { loaded: 0, errors: 0, corrupted: 0, duplicated: 0, progress: 0, erroredPages: [] },
-    criticalConnectionError: false,
-    connectionErrorMessage: '',
-    customToken: '',
-    showTokenInput: false,
-    setCustomToken: vi.fn(),
-    setShowTokenInput: vi.fn(),
-    setCriticalConnectionError: vi.fn(),
-    setConnectionErrorMessage: vi.fn(),
-    startSmartSync: vi.fn(),
-    handleManualRefresh: vi.fn(),
-    togglePause: vi.fn(),
-    ...overrides,
-  };
-}
-
 // ── Setup ──────────────────────────────────────────────────────────────
 
 beforeEach(() => {
@@ -144,54 +115,6 @@ describe('WU1 — clearApiCache', () => {
     expect(mockClearApiCache).toHaveBeenCalledOnce();
     // fetchParticipants is called inside setTimeout(1200) → not yet fired
     // Asserting call order requires timer advancement; skip for deterministic test
-  });
-});
-
-describe('WU2 — DashboardProvider single provider', () => {
-  it('renders children when a valid value prop is provided', () => {
-    const value = stubContextValue();
-
-    const { container } = render(
-      <DashboardProvider value={value}>
-        <div data-testid="child">OK</div>
-      </DashboardProvider>,
-    );
-
-    expect(container.querySelector('[data-testid="child"]')).toBeTruthy();
-    expect(container.textContent).toBe('OK');
-  });
-
-  it('passes context value through to consumers', () => {
-    const value = stubContextValue({ totalRecordsInApi: 42 });
-
-    const Consumer = () => {
-      const ctx = useDashboard();
-      return <div data-testid="records">{ctx.totalRecordsInApi}</div>;
-    };
-
-    const { container } = render(
-      <DashboardProvider value={value}>
-        <Consumer />
-      </DashboardProvider>,
-    );
-
-    expect(container.querySelector('[data-testid="records"]')?.textContent).toBe('42');
-  });
-
-  it('throws at dev time when value prop is undefined', () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-
-    expect(() => {
-      render(
-        <DashboardProvider value={undefined as never}>
-          <div />
-        </DashboardProvider>,
-      );
-    }).toThrow(
-      'DashboardProvider requires a value prop',
-    );
-
-    consoleSpy.mockRestore();
   });
 });
 

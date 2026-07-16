@@ -9,7 +9,7 @@ import {
   ChevronDown,
 } from 'lucide-react';
 import { IndicadoresFiltersProvider } from '../contexts/IndicadoresFiltersContext';
-import { useDashboard } from '../contexts/DashboardContext';
+import { useParticipantStore } from '../stores/participantStore';
 
 // ── Original tabs (always visible) ──
 
@@ -82,7 +82,8 @@ const tabClasses = ({ isActive }: { isActive: boolean }) =>
 const IndicadoresLayout: React.FC = () => {
   const [showMore, setShowMore] = useState(false);
   const [menuOrigin, setMenuOrigin] = useState<{ top: number; right: number } | null>(null);
-  const { dashboardData, isSyncing } = useDashboard();
+  const dashboardData = useParticipantStore(s => s.dashboardData);
+  const isSyncing = useParticipantStore(s => s.isSyncing);
   const location = useLocation();
   const moreTriggerRef = useRef<HTMLButtonElement>(null);
   const moreDropdownRef = useRef<HTMLDivElement>(null);

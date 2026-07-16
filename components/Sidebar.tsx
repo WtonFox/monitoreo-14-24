@@ -4,7 +4,8 @@ import { ROUTES } from '../types/routes';
 import { LayoutDashboard, List, WifiOff, PauseCircle, PlayCircle, Map as MapIcon, AlertCircle, RefreshCw, CheckCircle2, Activity, BarChart3, Bell } from 'lucide-react';
 import { formatNumber } from '../utils/formatters';
 import { CorruptedRecord, SyncStats } from '../hooks/useDashboardData';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuthStore } from '../stores/authStore';
+import { useUiStore } from '../stores/uiStore';
 
 interface SidebarProps {
     syncStats: SyncStats;
@@ -13,8 +14,6 @@ interface SidebarProps {
     isPaused: boolean;
     onTogglePause: () => void;
     criticalConnectionError: boolean;
-    isOpen: boolean;
-    onClose: () => void;
     corruptedItems?: CorruptedRecord[];
     onManualRefresh: () => void;
 }
@@ -44,12 +43,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
     isPaused,
     onTogglePause,
     criticalConnectionError,
-    isOpen,
-    onClose,
     corruptedItems = [],
     onManualRefresh
 }) => {
-    const { user, isAuthenticated, hasPermission } = useAuth();
+    const user = useAuthStore(s => s.user);
+    const isAuthenticated = useAuthStore(s => s.isAuthenticated);
+    const hasPermission = useAuthStore(s => s.hasPermission);
+    const isOpen = useUiStore(s => s.isSidebarOpen);
+    const onClose = () => useUiStore.getState().setSidebarOpen(false);
     const hasErrors = syncStats.errors > 0 || syncStats.corrupted > 0;
 
     // Filter nav items based on user role.

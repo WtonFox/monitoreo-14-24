@@ -1,13 +1,14 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { useDashboard } from '../contexts/DashboardContext';
-import { useFiltersContext } from '../contexts/FiltersContext';
+import { useParticipantStore } from '../stores/participantStore';
+import { useFilterStore } from '../stores/filterStore';
 import { StatsCards } from '../components/StatsCards';
 import { ChartsSection } from '../components/ChartsSection';
 import { FilterBar } from '../components/FilterBar';
 import { AdvancedFiltersModal } from '../components/AdvancedFiltersModal';
 
 const Estadisticas: React.FC = () => {
-  const { dashboardData, totalRecordsInApi } = useDashboard();
+  const dashboardData = useParticipantStore(s => s.dashboardData);
+  const totalRecordsInApi = useParticipantStore(s => s.totalRecordsInApi);
   const {
     selectedProvince,
     selectedStatus,
@@ -23,7 +24,7 @@ const Estadisticas: React.FC = () => {
     availableMunicipios,
     availableEstadoCivil,
     availableNivelEstudio,
-  } = useFiltersContext();
+  } = useFilterStore();
 
   const [showAdvancedFilters, setShowAdvancedFilters] = useState<boolean>(false);
   const [showLabels, setShowLabels] = useState<boolean>(false);

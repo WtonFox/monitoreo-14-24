@@ -6,7 +6,7 @@ import {
   HelpCircle, X, ArrowUp, ArrowDown, Minus, RefreshCw,
   Calendar, Filter as FilterIcon,
 } from 'lucide-react';
-import { useDashboard } from '../contexts/DashboardContext';
+import { useParticipantStore } from '../stores/participantStore';
 import { useAlerts, type Alert, type AlertSeverity, type AlertCategory, type TrendDirection } from '../hooks/useAlerts';
 import { formatNumber, formatPercentage } from '../utils/formatters';
 import { ROUTES } from '../types/routes';
@@ -293,7 +293,7 @@ function PillRow<T extends string>({
 // ── Page ──
 
 const Alertas: React.FC = () => {
-  const { dashboardData } = useDashboard();
+  const dashboardData = useParticipantStore(s => s.dashboardData);
   const navigate = useNavigate();
 
   // ── Filters ──

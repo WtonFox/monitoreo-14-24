@@ -1,9 +1,12 @@
 import React from 'react';
-import { useDashboard } from '../contexts/DashboardContext';
+import { useParticipantStore } from '../stores/participantStore';
 import { SystemStatusSection } from '../components/SystemStatusSection';
 
 const Diagnostico: React.FC = () => {
-  const { syncStats, totalRecordsInApi, corruptedItems, isSyncing } = useDashboard();
+  const syncStats = useParticipantStore(s => s.syncStats);
+  const totalRecordsInApi = useParticipantStore(s => s.totalRecordsInApi);
+  const corruptedItems = useParticipantStore(s => s.corruptedItems);
+  const isSyncing = useParticipantStore(s => s.isSyncing);
 
   return (
     <div className="p-6 max-w-7xl mx-auto w-full animate-in fade-in duration-500">

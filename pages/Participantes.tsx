@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { useDashboard } from '../contexts/DashboardContext';
+import { useParticipantStore } from '../stores/participantStore';
 import { DataTable } from '../components/DataTable';
 import type { FiltersConfig } from '../components/DataTable';
 import { DEFAULT_PAGE_SIZE } from '../constants';
@@ -12,7 +12,7 @@ import { ParticipantDetailModal } from '../components/ParticipantDetailModal';
 import type { Participant } from '../types';
 
 const Participantes: React.FC = () => {
-  const { dashboardData } = useDashboard();
+  const dashboardData = useParticipantStore(s => s.dashboardData);
   const filters = useParticipantesFilters(dashboardData);
   const massExport = useMassExport();
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Outlet } from 'react-router-dom';
 
 // Components
@@ -6,47 +6,42 @@ import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
 import { ErrorScreen } from './components/ErrorScreen';
 
-// Hooks
-import { useDashboardData } from './hooks/useDashboardData';
-
-// Contexts
-import { DashboardProvider } from './contexts/DashboardContext';
-import { AuthProvider } from './contexts/AuthContext';
-import { FiltersProvider } from './contexts/FiltersContext';
+// Stores
+import { useParticipantStore } from './stores/participantStore';
+import { useAuthStore } from './stores/authStore';
+import { useFilterStore } from './stores/filterStore';
+import { useUiStore } from './stores/uiStore';
 
 
 const App: React.FC = () => {
   // View State
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
 
-  // Dashboard Data Hook
-  const {
-    dashboardData,
-    corruptedItems,
-    totalRecordsInApi,
-    isSyncing,
-    isPaused,
-    syncStats,
-    criticalConnectionError,
-    connectionErrorMessage,
-    customToken,
-    showTokenInput,
-    setCustomToken,
-    setShowTokenInput,
-    setCriticalConnectionError,
-    setConnectionErrorMessage,
-    startSmartSync,
-    pollForNewData,
-    handleManualRefresh,
-    togglePause
-  } = useDashboardData();
+  // Store subscriptions (selective slices)
+  const dashboardData = useParticipantStore(s => s.dashboardData);
+  const corruptedItems = useParticipantStore(s => s.corruptedItems);
+  const totalRecordsInApi = useParticipantStore(s => s.totalRecordsInApi);
+  const isSyncing = useParticipantStore(s => s.isSyncing);
+  const isPaused = useParticipantStore(s => s.isPaused);
+  const syncStats = useParticipantStore(s => s.syncStats);
+  const criticalConnectionError = useParticipantStore(s => s.criticalConnectionError);
+  const connectionErrorMessage = useParticipantStore(s => s.connectionErrorMessage);
+  const customToken = useParticipantStore(s => s.customToken);
+  const showTokenInput = useParticipantStore(s => s.showTokenInput);
 
-  // Sidebar State for Mobile
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  // UI store
+  const isSidebarOpen = useUiStore(s => s.isSidebarOpen);
+  const setSidebarOpen = useUiStore(s => s.setSidebarOpen);
 
-  // Initial Data Sync
+  // Get store actions (stable references — no re-render on state change)
+  const setCustomToken = useParticipantStore(s => s.setCustomToken);
+  const setShowTokenInput = useParticipantStore(s => s.setShowTokenInput);
+
+  // Initialize auth and cache on mount
   useEffect(() => {
-    startSmartSync();
+    useAuthStore.getState().init();
+    useParticipantStore.getState().initFromCache();
+    useParticipantStore.getState().startSmartSync();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -55,11 +50,16 @@ const App: React.FC = () => {
     const POLL_INTERVAL = 900000;
 
     const intervalId = setInterval(() => {
-      pollForNewData();
+      useParticipantStore.getState().pollForNewData();
     }, POLL_INTERVAL);
 
     return () => clearInterval(intervalId);
-  }, [pollForNewData]);
+  }, []);
+
+  // Sync filter store data whenever dashboardData changes
+  useEffect(() => {
+    useFilterStore.getState().setData(dashboardData);
+  }, [dashboardData]);
 
   // Update last updated timestamp when sync completes
   useEffect(() => {
@@ -70,91 +70,65 @@ const App: React.FC = () => {
 
   // Refresh Handler
   const handleRefresh = () => {
-    handleManualRefresh();
+    useParticipantStore.getState().handleManualRefresh();
     setLastUpdated(new Date());
   };
 
   return (
-    <DashboardProvider value={{
-      dashboardData,
-      corruptedItems,
-      totalRecordsInApi,
-      isSyncing,
-      isPaused,
-      syncStats,
-      criticalConnectionError,
-      connectionErrorMessage,
-      customToken,
-      showTokenInput,
-      setCustomToken,
-      setShowTokenInput,
-      setCriticalConnectionError,
-      setConnectionErrorMessage,
-      startSmartSync,
-      handleManualRefresh,
-      togglePause
-    }}>
-      <AuthProvider>
-        <FiltersProvider>
-          <div className="min-h-screen flex flex-col md:flex-row font-sans text-gray-800 bg-gray-50 relative">
+    <div className="min-h-screen flex flex-col md:flex-row font-sans text-gray-800 bg-gray-50 relative">
 
-            {/* Sidebar */}
-            <Sidebar
-              syncStats={syncStats}
-              totalRecords={totalRecordsInApi}
-              isSyncing={isSyncing}
-              isPaused={isPaused}
-              onTogglePause={togglePause}
-              criticalConnectionError={criticalConnectionError}
-              isOpen={isSidebarOpen}
-              onClose={() => setIsSidebarOpen(false)}
-              corruptedItems={corruptedItems}
-              onManualRefresh={handleRefresh}
-            />
+      {/* Sidebar — isOpen/onClose from useUiStore inside component */}
+      <Sidebar
+        syncStats={syncStats}
+        totalRecords={totalRecordsInApi}
+        isSyncing={isSyncing}
+        isPaused={isPaused}
+        onTogglePause={() => useParticipantStore.getState().togglePause()}
+        criticalConnectionError={criticalConnectionError}
+        corruptedItems={corruptedItems}
+        onManualRefresh={handleRefresh}
+      />
 
-            {/* Mobile Overlay Backdrop */}
-            {isSidebarOpen && (
-              <div
-                className="fixed inset-0 bg-black/50 z-20 md:hidden animate-in fade-in duration-200"
-                onClick={() => setIsSidebarOpen(false)}
+      {/* Mobile Overlay Backdrop */}
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-20 md:hidden animate-in fade-in duration-200"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Main Content */}
+      <main className="flex-1 flex flex-col bg-gray-50 w-full min-h-screen">
+
+        {/* Top Header */}
+        <Header
+          lastUpdated={lastUpdated}
+          onRefresh={handleRefresh}
+          isSyncing={isSyncing}
+          isPaused={isPaused}
+          onToggleSidebar={() => useUiStore.getState().toggleSidebar()}
+        />
+
+        {/* Dashboard Content / Route Pages */}
+        <div className="flex-1 flex flex-col">
+          {criticalConnectionError && dashboardData.length === 0 ? (
+            <div className="p-6 max-w-7xl mx-auto w-full">
+              <ErrorScreen
+                errorMessage={connectionErrorMessage}
+                onRetry={handleRefresh}
+                customToken={customToken}
+                onTokenChange={setCustomToken}
+                showTokenInput={showTokenInput}
+                onToggleTokenInput={() => setShowTokenInput(!showTokenInput)}
               />
-            )}
+            </div>
+          ) : (
+            <Outlet />
+          )}
+        </div>
+      </main>
 
-            {/* Main Content */}
-            <main className="flex-1 flex flex-col bg-gray-50 w-full min-h-screen">
-
-              {/* Top Header */}
-              <Header
-                lastUpdated={lastUpdated}
-                onRefresh={handleRefresh}
-                isSyncing={isSyncing}
-                isPaused={isPaused}
-                onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
-              />
-
-              {/* Dashboard Content / Route Pages */}
-              <div className="flex-1 flex flex-col">
-                {criticalConnectionError && dashboardData.length === 0 ? (
-                  <div className="p-6 max-w-7xl mx-auto w-full">
-                    <ErrorScreen
-                      errorMessage={connectionErrorMessage}
-                      onRetry={handleRefresh}
-                      customToken={customToken}
-                      onTokenChange={setCustomToken}
-                      showTokenInput={showTokenInput}
-                      onToggleTokenInput={() => setShowTokenInput(!showTokenInput)}
-                    />
-                  </div>
-                ) : (
-                  <Outlet />
-                )}
-              </div>
-            </main>
-
-          </div>
-        </FiltersProvider>
-      </AuthProvider>
-    </DashboardProvider>
+    </div>
   );
 };
 
