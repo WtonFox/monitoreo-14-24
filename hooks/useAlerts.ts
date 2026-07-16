@@ -292,13 +292,13 @@ export function useAlerts(data: Participant[]): UseAlertsResult {
           severity: 'critical',
           category: 'operativo',
           title: `Centro sin participantes activos`,
-          description: `"${cm.centro}" (${cm.provincia || 's/provincia'}) tiene ${formatNumber(cm.total)} participantes pero ninguno en estado activo.`,
+          description: `"${cm.centro}" (${cm.provincia || 's/provincia'}) tiene ${formatNumber(cm.total)} participantes pero ninguno en estado Activo, Identificado o En Proceso.`,
           value: '0 activos',
           threshold: '≥1 activo esperado',
           affectedCount: cm.total,
           severityBar: 100,
           topAffected: topCursos.length > 0 ? topCursos : undefined,
-          recommendation: 'Revisar situación del centro y contactar participantes',
+          recommendation: 'Verificar si los participantes fueron egresados, retirados o si el centro está inactivo',
           relatedBoard: ROUTES.INDICADORES_DESEMPENO_CENTRO,
         });
       }

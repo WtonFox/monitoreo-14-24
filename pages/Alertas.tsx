@@ -104,6 +104,17 @@ const InfoModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
               La tendencia histórica compara participantes registrados en los últimos 6 meses contra los anteriores.
             </p>
           </div>
+
+          <div className="bg-indigo-50 rounded-xl p-4 border border-indigo-100">
+            <p className="text-sm text-indigo-800 font-medium mb-1">Estados considerados "Activo"</p>
+            <p className="text-sm text-indigo-700 leading-relaxed">
+              Cuando una alerta menciona participantes <strong>activos</strong>, incluye los estados:
+              <strong> Activo</strong>, <strong>Identificado</strong> y <strong>En Proceso</strong>.
+              Los estados de deserción (Retirado, Desertor, Baja, Cancelado, Inactivo, No admitido, Abandonó)
+              no se consideran activos.
+            </p>
+          </div>
+
           <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
             <p className="text-sm text-blue-800 font-medium mb-1">Próximas mejoras</p>
             <p className="text-sm text-blue-700 leading-relaxed">
@@ -134,7 +145,7 @@ const TrendBadge: React.FC<{ trend: TrendDirection; label: string }> = ({ trend,
   const Icon = TREND_ICON[trend];
   const color = TREND_COLOR[trend];
   return (
-    <div className={`flex items-center gap-1 text-[10px] ${color}`}>
+    <div className={`flex items-center gap-1 text-xs ${color}`}>
       <Icon size={10} />
       <span className="truncate max-w-[200px]">{label}</span>
     </div>
@@ -162,16 +173,16 @@ const AlertCard: React.FC<{ alert: Alert; onNavigate: (route: string) => void }>
         {/* Content */}
         <div className="flex-1 min-w-0 space-y-1.5">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${severityCfg.badge}`}>
+            <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full border ${severityCfg.badge}`}>
               {severityCfg.label}
             </span>
-            <span className="text-[10px] text-gray-400">{CATEGORY_LABELS[alert.category] || alert.category}</span>
+            <span className="text-xs text-gray-400">{CATEGORY_LABELS[alert.category] || alert.category}</span>
             {alert.trend && (
               <TrendBadge trend={alert.trend} label={alert.trendLabel || ''} />
             )}
           </div>
-          <h3 className="text-sm font-semibold text-gray-800">{alert.title}</h3>
-          <p className={`text-xs text-gray-500 ${expanded ? '' : 'line-clamp-2'}`}>{alert.description}</p>
+          <h3 className="text-base font-semibold text-gray-800">{alert.title}</h3>
+          <p className={`text-sm text-gray-500 ${expanded ? '' : 'line-clamp-2'}`}>{alert.description}</p>
           {/* Severity bar */}
           <SeverityBar value={alert.severityBar} color={barColor} />
         </div>
@@ -180,7 +191,7 @@ const AlertCard: React.FC<{ alert: Alert; onNavigate: (route: string) => void }>
         <div className="flex items-center gap-3 flex-shrink-0 self-start">
           <div className="text-right">
             <p className="text-base font-bold text-gray-800">{alert.value}</p>
-            <p className="text-[10px] text-gray-400">umbral: {alert.threshold}</p>
+            <p className="text-xs text-gray-400">umbral: {alert.threshold}</p>
           </div>
           <ChevronRight size={16} className={`text-gray-300 transition-transform flex-shrink-0 ${expanded ? 'rotate-90' : ''}`} />
         </div>
@@ -190,7 +201,7 @@ const AlertCard: React.FC<{ alert: Alert; onNavigate: (route: string) => void }>
       {expanded && (
         <div className="px-4 md:px-5 pb-4 md:pb-5 pt-0 border-t border-gray-100 space-y-3">
           {alert.recommendation && (
-            <div className="flex items-start gap-2 mt-3 text-xs text-gray-600">
+            <div className="flex items-start gap-2 mt-3 text-sm text-gray-600">
               <Shield size={14} className="text-blue-500 mt-0.5 flex-shrink-0" />
               <span><strong>Recomendación:</strong> {alert.recommendation}</span>
             </div>
@@ -198,10 +209,10 @@ const AlertCard: React.FC<{ alert: Alert; onNavigate: (route: string) => void }>
 
           {alert.topAffected && alert.topAffected.length > 0 && (
             <div>
-              <p className="text-[11px] font-semibold text-gray-500 mb-1.5 uppercase tracking-wider">Principales afectados</p>
+              <p className="text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider">Principales afectados</p>
               <div className="space-y-1">
                 {alert.topAffected.map((item, i) => (
-                  <div key={i} className="flex justify-between items-center text-xs text-gray-600 bg-gray-50 rounded-lg px-3 py-1.5">
+                  <div key={i} className="flex justify-between items-center text-sm text-gray-600 bg-gray-50 rounded-lg px-3 py-2">
                     <span className="truncate mr-2">{i + 1}. {item.name}</span>
                     <span className="font-semibold tabular-nums flex-shrink-0">{formatNumber(item.value)}</span>
                   </div>
@@ -211,18 +222,18 @@ const AlertCard: React.FC<{ alert: Alert; onNavigate: (route: string) => void }>
           )}
 
           <div className="flex flex-wrap gap-3 pt-1">
-            <div className="flex items-center gap-1.5 text-xs text-gray-500">
-              <Users size={12} />
+            <div className="flex items-center gap-1.5 text-sm text-gray-500">
+              <Users size={14} />
               <span>{formatNumber(alert.affectedCount)} afectados</span>
             </div>
             {alert.relatedBoard && (
               <button
                 onClick={(e) => { e.stopPropagation(); onNavigate(alert.relatedBoard!); }}
-                className="flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors"
+                className="flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors"
               >
-                <Shield size={12} />
+                <Shield size={14} />
                 Ver board relacionado
-                <ChevronRight size={12} />
+                <ChevronRight size={14} />
               </button>
             )}
           </div>
@@ -247,7 +258,7 @@ function PillRow<T extends string>({
 }) {
   return (
     <div className="flex items-center gap-1.5 flex-wrap">
-      <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mr-1">{label}</span>
+      <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider mr-1">{label}</span>
       <button
         onClick={() => onChange('todas')}
         className={`text-xs px-2.5 py-1 rounded-lg border transition-colors ${
@@ -358,6 +369,16 @@ const Alertas: React.FC = () => {
     setMunicipioFilter('todas');
   };
 
+  // ── Clear filters ──
+  const handleClearFilters = useCallback(() => {
+    setYearFilter('todas');
+    setProvinceFilter('todas');
+    setMunicipioFilter('todas');
+    setSexFilter('todas');
+    setSeverityFilter('todas');
+    setCategoryFilter('todas');
+  }, []);
+
   // ── Recalcular (NO vacía dashboardData — solo fuerza recálculo local) ──
   const handleRecalcular = useCallback(() => {
     setRefreshKey(k => k + 1);
@@ -443,9 +464,20 @@ const Alertas: React.FC = () => {
 
       {/* Filters row */}
       <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-4 shadow-sm">
-        <div className="flex items-center gap-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-          <FilterIcon size={14} />
-          Filtros
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+            <FilterIcon size={14} />
+            Filtros
+          </div>
+          {(yearFilter !== 'todas' || provinceFilter !== 'todas' || municipioFilter !== 'todas' || sexFilter !== 'todas' || severityFilter !== 'todas' || categoryFilter !== 'todas') && (
+            <button
+              onClick={handleClearFilters}
+              className="flex items-center gap-1 text-xs font-medium text-red-600 hover:text-red-800 transition-colors px-2 py-1 rounded-lg hover:bg-red-50"
+            >
+              <X size={13} />
+              Limpiar filtros
+            </button>
+          )}
         </div>
 
         {/* Data filters */}
@@ -522,7 +554,7 @@ const Alertas: React.FC = () => {
       ) : (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <p className="text-xs text-gray-400">
+            <p className="text-sm text-gray-400">
               {severityFilter !== 'todas' || categoryFilter !== 'todas'
                 ? `${filteredAlerts.length} de ${totalCount} alertas`
                 : `${totalCount} alertas`}
