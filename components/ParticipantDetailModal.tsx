@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
-import { X, Calendar, Clock } from 'lucide-react';
+import { X } from 'lucide-react';
 import { Participant } from '../types';
+import { ParticipantTimeline } from './ParticipantTimeline';
 
 interface ParticipantDetailModalProps {
   isOpen: boolean;
@@ -99,30 +100,6 @@ export const ParticipantDetailModal: React.FC<ParticipantDetailModalProps> = ({
     },
   ];
 
-  // ── Derived metrics ──
-  const daysSince = (dateStr: string | null): number | null => {
-    if (!dateStr) return null;
-    const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return null;
-    return Math.floor((Date.now() - d.getTime()) / (1000 * 60 * 60 * 24));
-  };
-
-  const formatTimeDelta = (dateStr: string | null): string | null => {
-    const days = daysSince(dateStr);
-    if (days === null) return null;
-    if (days < 30) return `${days} días`;
-    const years = Math.floor(days / 365);
-    const months = Math.floor((days % 365) / 30);
-    if (years === 0) return `${months} meses`;
-    if (months === 0) return `${years} año${years > 1 ? 's' : ''}`;
-    return `${years}a ${months}m`;
-  };
-
-  const edadAlRegistrar = participant.edadRegistro > 0 ? participant.edadRegistro : null;
-  const diasDesdeRegistro = daysSince(participant.fechaRegistro);
-  const registroFormateado = participant.fechaRegistro ? formatTimeDelta(participant.fechaRegistro) : null;
-  const tiempoEnPrograma = participant.fechaInclusion ? formatTimeDelta(participant.fechaInclusion) : null;
-
   const renderValue = (val: string | number | null) => {
     if (val === null || val === undefined || val === '') {
       return <span className="text-gray-300">&mdash;</span>;
@@ -155,30 +132,13 @@ export const ParticipantDetailModal: React.FC<ParticipantDetailModalProps> = ({
         </div>
 
         {/* Content */}
-        <div className="p-8 overflow-y-auto flex-1 space-y-8">
-          {/* Derived metrics bar */}
-          {(edadAlRegistrar || diasDesdeRegistro || tiempoEnPrograma) && (
-            <div className="flex flex-wrap gap-2">
-              {edadAlRegistrar && (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-full text-xs font-medium">
-                  <Calendar size={13} />
-                  Edad al registrar: {edadAlRegistrar} años
-                </span>
-              )}
-              {diasDesdeRegistro !== null && registroFormateado && (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-full text-xs font-medium">
-                  <Clock size={13} />
-                  Registrado hace {diasDesdeRegistro} días &middot; {registroFormateado}
-                </span>
-              )}
-              {tiempoEnPrograma && (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-50 text-green-700 rounded-full text-xs font-medium">
-                  <Clock size={13} />
-                  En programa: {tiempoEnPrograma}
-                </span>
-              )}
-            </div>
-          )}
+        <div className="p-8 overflow-y-auto flex-1 space-y-6">
+          <ParticipantTimeline
+            fechaRegistro={participant.fechaRegistro}
+            fechaInclusion={participant.fechaInclusion}
+            edadRegistro={participant.edadRegistro}
+            estado={participant.estado}
+          />
 
           {sections.map((section) => (
             <div key={section.title}>
