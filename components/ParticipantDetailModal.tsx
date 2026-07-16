@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { X } from 'lucide-react';
+import { X, Calendar, Clock } from 'lucide-react';
 import { Participant } from '../types';
 
 interface ParticipantDetailModalProps {
@@ -57,6 +57,7 @@ export const ParticipantDetailModal: React.FC<ParticipantDetailModalProps> = ({
         { label: 'Fecha de Nacimiento', value: participant.fechaNacimiento },
         { label: 'Sexo', value: participant.sexo },
         { label: 'Estado Civil', value: participant.estadoCivil },
+        { label: 'Nivel de Estudio', value: participant.nivelEstudio },
       ],
     },
     {
@@ -96,14 +97,31 @@ export const ParticipantDetailModal: React.FC<ParticipantDetailModalProps> = ({
         { label: 'Cédula del Tutor', value: participant.cedulaTutor },
       ],
     },
-    {
-      title: 'Otros',
-      fields: [
-        { label: 'Edad de Registro', value: participant.edadRegistro },
-        { label: 'Nivel de Estudio', value: participant.nivelEstudio },
-      ],
-    },
   ];
+
+  // ── Derived metrics ──
+  const daysSince = (dateStr: string | null): number | null => {
+    if (!dateStr) return null;
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return null;
+    return Math.floor((Date.now() - d.getTime()) / (1000 * 60 * 60 * 24));
+  };
+
+  const formatTimeDelta = (dateStr: string | null): string | null => {
+    const days = daysSince(dateStr);
+    if (days === null) return null;
+    if (days < 30) return `${days} días`;
+    const years = Math.floor(days / 365);
+    const months = Math.floor((days % 365) / 30);
+    if (years === 0) return `${months} meses`;
+    if (months === 0) return `${years} año${years > 1 ? 's' : ''}`;
+    return `${years}a ${months}m`;
+  };
+
+  const edadAlRegistrar = participant.edadRegistro > 0 ? participant.edadRegistro : null;
+  const diasDesdeRegistro = daysSince(participant.fechaRegistro);
+  const registroFormateado = participant.fechaRegistro ? formatTimeDelta(participant.fechaRegistro) : null;
+  const tiempoEnPrograma = participant.fechaInclusion ? formatTimeDelta(participant.fechaInclusion) : null;
 
   const renderValue = (val: string | number | null) => {
     if (val === null || val === undefined || val === '') {
@@ -120,34 +138,58 @@ export const ParticipantDetailModal: React.FC<ParticipantDetailModalProps> = ({
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
       onClick={handleOverlayClick}
     >
-      <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
+      <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[85vh] overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 flex justify-between items-center">
+        <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-5 flex justify-between items-center">
           <div>
-            <h2 className="text-xl font-bold text-white">{fullName}</h2>
-            <p className="text-xs text-blue-100">Detalles del participante</p>
+            <h2 className="text-2xl font-bold text-white">{fullName}</h2>
+            <p className="text-sm text-blue-100 mt-0.5">Detalles del participante</p>
           </div>
           <button
             ref={closeRef}
             onClick={onClose}
             className="p-2 hover:bg-white hover:bg-opacity-20 rounded-lg transition-colors"
           >
-            <X size={24} className="text-white" />
+            <X size={28} className="text-white" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto flex-1 space-y-6">
+        <div className="p-8 overflow-y-auto flex-1 space-y-8">
+          {/* Derived metrics bar */}
+          {(edadAlRegistrar || diasDesdeRegistro || tiempoEnPrograma) && (
+            <div className="flex flex-wrap gap-2">
+              {edadAlRegistrar && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-full text-xs font-medium">
+                  <Calendar size={13} />
+                  Edad al registrar: {edadAlRegistrar} años
+                </span>
+              )}
+              {diasDesdeRegistro !== null && registroFormateado && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-full text-xs font-medium">
+                  <Clock size={13} />
+                  Registrado hace {diasDesdeRegistro} días &middot; {registroFormateado}
+                </span>
+              )}
+              {tiempoEnPrograma && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-50 text-green-700 rounded-full text-xs font-medium">
+                  <Clock size={13} />
+                  En programa: {tiempoEnPrograma}
+                </span>
+              )}
+            </div>
+          )}
+
           {sections.map((section) => (
             <div key={section.title}>
-              <h3 className="text-sm font-semibold text-blue-700 uppercase tracking-wider mb-3 pb-1 border-b border-gray-200">
+              <h3 className="text-base font-semibold text-blue-700 uppercase tracking-wider mb-4 pb-2 border-b border-gray-200">
                 {section.title}
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
                 {section.fields.map((field) => (
                   <div key={field.label}>
-                    <span className="block text-xs font-medium text-gray-500">{field.label}</span>
-                    <span className="block text-sm mt-0.5">{renderValue(field.value)}</span>
+                    <span className="block text-sm font-medium text-gray-500">{field.label}</span>
+                    <span className="block text-base mt-1">{renderValue(field.value)}</span>
                   </div>
                 ))}
               </div>
