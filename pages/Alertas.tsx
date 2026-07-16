@@ -12,6 +12,8 @@ import { formatNumber, formatPercentage } from '../utils/formatters';
 import { ROUTES } from '../types/routes';
 import { DOMINICAN_PROVINCES, PROVINCE_MUNICIPALITIES } from '../constants';
 import { useFilterWorker } from '../hooks/useFilterWorker';
+import ExportPDFButton from '../components/ExportPDFButton';
+import { exportAlertsPDF } from '../services/pdfExport';
 
 // ── Severity config ──
 
@@ -370,6 +372,15 @@ const Alertas: React.FC = () => {
     setCategoryFilter('todas');
   }, []);
 
+  // ── PDF Export ──
+  const handleExportPDF = useCallback(async () => {
+    const now = new Date();
+    const dd = String(now.getDate()).padStart(2, '0');
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const yyyy = now.getFullYear();
+    exportAlertsPDF(filteredAlerts, `Reporte de Alertas — ${dd}/${mm}/${yyyy}`);
+  }, [filteredAlerts]);
+
   // ── Recalcular (NO vacía dashboardData — solo fuerza recálculo local) ──
   const handleRecalcular = useCallback(() => {
     setRefreshKey(k => k + 1);
@@ -419,13 +430,19 @@ const Alertas: React.FC = () => {
             {timeAgo}
           </p>
         </div>
-        <button
-          onClick={handleRecalcular}
-          className="flex items-center gap-1.5 text-xs font-medium px-3 py-2 bg-white border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 hover:text-gray-800 transition-colors"
-        >
-          <RefreshCw size={14} />
-          Recalcular
-        </button>
+        <div className="flex items-center gap-2">
+          <ExportPDFButton
+            onExport={handleExportPDF}
+            label="Exportar PDF"
+          />
+          <button
+            onClick={handleRecalcular}
+            className="flex items-center gap-1.5 text-xs font-medium px-3 py-2 bg-white border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 hover:text-gray-800 transition-colors"
+          >
+            <RefreshCw size={14} />
+            Recalcular
+          </button>
+        </div>
       </div>
 
       {/* KPI Cards */}

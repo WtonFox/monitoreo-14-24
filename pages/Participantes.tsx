@@ -10,6 +10,7 @@ import { ParticipantesFiltersModal } from '../components/ParticipantesFiltersMod
 import type { ParticipantesFiltersState } from '../components/ParticipantesFiltersModal';
 import { ParticipantDetailModal } from '../components/ParticipantDetailModal';
 import type { Participant } from '../types';
+import { exportParticipantsPDF } from '../services/pdfExport';
 
 const Participantes: React.FC = () => {
   const dashboardData = useParticipantStore(s => s.dashboardData);
@@ -30,6 +31,14 @@ const Participantes: React.FC = () => {
   // Modal state
   const [selectedParticipant, setSelectedParticipant] = useState<Participant | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleExportPDF = useCallback(async () => {
+    const now = new Date();
+    const dd = String(now.getDate()).padStart(2, '0');
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const yyyy = now.getFullYear();
+    exportParticipantsPDF(filters.filteredData, `Reporte de Participantes — ${dd}/${mm}/${yyyy}`);
+  }, [filters.filteredData]);
 
   const handleRowClick = (participant: Participant) => {
     setSelectedParticipant(participant);
@@ -181,6 +190,7 @@ const Participantes: React.FC = () => {
         onPageChange={setPageIndex}
         onPageSizeChange={setPageSize}
         onExport={() => {}}
+        onExportPDF={handleExportPDF}
         onCancelExport={massExport.cancelMassExport}
         onOpenMassExport={massExport.openMassExportModal}
         onRowClick={handleRowClick}

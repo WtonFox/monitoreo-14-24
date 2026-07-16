@@ -73,6 +73,7 @@ interface DataTableProps {
   onPageChange: (page: number) => void;
   onPageSizeChange: (size: number) => void;
   onExport: (format: 'csv' | 'json') => void;
+  onExportPDF?: () => void;
   onCancelExport: () => void;
   onOpenMassExport?: () => void;
   onRowClick?: (participant: Participant) => void;
@@ -133,7 +134,7 @@ function getActiveFilterPills(f: FiltersConfig) {
 export const DataTable: React.FC<DataTableProps> = ({
   data, currentPage, totalPages, totalItems, pageSize, loading,
   isExporting, exportProgress,
-  onPageChange, onPageSizeChange, onExport, onCancelExport,
+  onPageChange, onPageSizeChange, onExport, onExportPDF, onCancelExport,
   onOpenMassExport, onRowClick, onOpenAdvancedFilters,
   activeAdvancedFilterCount = 0,
   allFilteredData,
@@ -351,6 +352,15 @@ export const DataTable: React.FC<DataTableProps> = ({
                       <FileJson size={16} className="text-purple-600" />
                       JSON
                     </button>
+                    {onExportPDF && (
+                      <button
+                        onClick={() => { setShowFormatDropdown(false); onExportPDF(); }}
+                        className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
+                      >
+                        <FileText size={16} className="text-red-600" />
+                        PDF
+                      </button>
+                    )}
                     <hr className="my-1 border-gray-100" />
                     <button
                       onClick={() => { setShowFormatDropdown(false); onOpenMassExport?.(); }}
