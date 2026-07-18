@@ -8,6 +8,7 @@ interface MassExportModalProps {
   progress: ExportProgress | null;
   onExport: (format: ExportFormat) => void;
   onCancel: () => void;
+  onAdvancedExport?: () => void;
 }
 
 export const MassExportModal: React.FC<MassExportModalProps> = ({
@@ -15,7 +16,8 @@ export const MassExportModal: React.FC<MassExportModalProps> = ({
   isExporting,
   progress,
   onExport,
-  onCancel
+  onCancel,
+  onAdvancedExport
 }) => {
   if (!isOpen) return null;
 
@@ -135,6 +137,25 @@ export const MassExportModal: React.FC<MassExportModalProps> = ({
               </div>
               <Download size={20} className="text-gray-400 group-hover:text-purple-600" />
             </button>
+
+            {/* Advanced Excel Button (multi-sheet) */}
+            {onAdvancedExport && (
+              <button
+                onClick={onAdvancedExport}
+                className="w-full flex items-center gap-4 p-4 border-2 border-amber-200 rounded-xl hover:border-amber-500 hover:bg-amber-50 transition-all group"
+              >
+                <div className="p-3 bg-amber-100 rounded-lg group-hover:bg-amber-200 transition-colors">
+                  <FileSpreadsheet size={24} className="text-amber-600" />
+                </div>
+                <div className="text-left flex-1">
+                  <h3 className="font-semibold text-gray-900">Excel Avanzado (multi-hoja)</h3>
+                  <p className="text-xs text-gray-500">
+                    Varias hojas con datos agregados por categoría
+                  </p>
+                </div>
+                <Download size={20} className="text-gray-400 group-hover:text-amber-600" />
+              </button>
+            )}
           </div>
         )}
 

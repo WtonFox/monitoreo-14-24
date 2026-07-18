@@ -212,6 +212,7 @@ const Participantes: React.FC = () => {
         progress={massExport.massExportProgress}
         onExport={massExport.handleMassExport}
         onCancel={massExport.cancelMassExport}
+        onAdvancedExport={() => alert('Excel Avanzado disponible desde Mapa Interactivo y tableros de Indicadores')}
       />
 
       <ParticipantesFiltersModal

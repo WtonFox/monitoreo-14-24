@@ -1,10 +1,15 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { DominicanRepublicMap } from './DominicanRepublicMap';
 import { MapFilters } from './MapFilters';
 import { LocationInfoBox } from './LocationInfoBox';
 import { useMapStats } from '../hooks/useMapStats';
+import { useMapExport } from '../hooks/useMapExport';
+import { ExportSheetSelector } from './ExportSheetSelector';
+import { exportMultiSheet, SheetConfig } from '../services/multiSheetExporter';
+import { fetchAllData } from '../services/exporter';
+import { sanitizeParticipant } from '../utils/dataUtils';
 import { Participant } from '../types';
-import { Maximize2, Minimize2, Map as MapIcon, Layers } from 'lucide-react';
+import { FileSpreadsheet, Layers } from 'lucide-react';
 
 interface MapSectionProps {
     data: Participant[];
@@ -23,6 +28,11 @@ export const MapSection: React.FC<MapSectionProps> = ({ data }) => {
 
     // State for map view
     const [mapLevel, setMapLevel] = useState<'region' | 'province' | 'municipality'>('province');
+
+    // Export state
+    const [isExportOpen, setIsExportOpen] = useState(false);
+    const [isExporting, setIsExporting] = useState(false);
+    const [exportProgress, setExportProgress] = useState(0);
 
     // Derived lists for filters
     const availableProvinces = useMemo(() => {
@@ -73,6 +83,96 @@ export const MapSection: React.FC<MapSectionProps> = ({ data }) => {
         }
     };
 
+    // ── Export handler ─────────────────────────────────────────────
+    const handleMapExport = useCallback(async (selectedSheets: SheetConfig[]) => {
+        const hasRawSheet = selectedSheets.some(s => s.name === 'Participantes (raw)');
+        const aggregateSheets = selectedSheets.filter(s => s.name !== 'Participantes (raw)');
+
+        setIsExporting(true);
+        setExportProgress(0);
+
+        try {
+            let finalSheets: SheetConfig[] = [...aggregateSheets];
+            let warningMsg: string | undefined;
+
+            if (hasRawSheet) {
+                // Download all data from API for raw sheet
+                const { data: allData, receipt } = await fetchAllData((progress) => {
+                    setExportProgress(progress.percentage);
+                });
+
+                // Check for partial failure
+                if (receipt.partialFailure) {
+                    warningMsg = `ADVERTENCIA: Exportación incompleta. Se esperaban ${receipt.totalRecordsExpected} registros, se descargaron ${receipt.totalRecordsDownloaded}. Páginas con error: ${receipt.failedPages.join(', ')}.`;
+                }
+
+                // Build sanitized rows matching exportToExcel format
+                const rawRows: unknown[][] = allData.map((item, idx) => {
+                    const clean = sanitizeParticipant(item, idx);
+                    return [
+                        clean.id,
+                        clean.cedula || '',
+                        clean.nombres || '',
+                        clean.apellidos || '',
+                        clean.edad,
+                        clean.fechaNacimiento || '',
+                        clean.fechaRegistro || '',
+                        clean.fechaInclusion || '',
+                        clean.tutor || '',
+                        clean.cedulaTutor || '',
+                        clean.vulnerabilidades || '',
+                        clean.estado || '',
+                        clean.sexo || '',
+                        clean.provincia || '',
+                        clean.municipio || '',
+                        clean.centro || '',
+                        clean.direccion || '',
+                        clean.rutaFormativa || '',
+                        clean.telefonos || '',
+                        clean.telefonosResponsable || '',
+                        clean.edadRegistro,
+                        clean.estadoCivil || '',
+                        clean.nivelEstudio || '',
+                        clean.alergias || '',
+                        clean.discapacidades || '',
+                        clean.enfermedades || '',
+                        clean.programasSociales || '',
+                    ];
+                });
+
+                finalSheets.push({
+                    name: 'Participantes (raw)',
+                    headers: [
+                        'ID', 'Cédula', 'Nombres', 'Apellidos', 'Edad',
+                        'Fecha Nacimiento', 'Fecha Registro', 'Fecha Inclusión',
+                        'Tutor', 'Cédula Tutor', 'Vulnerabilidades', 'Estado',
+                        'Sexo', 'Provincia', 'Municipio', 'Centro', 'Dirección',
+                        'Ruta Formativa', 'Teléfonos', 'Teléfonos Responsable',
+                        'Edad Registro', 'Estado Civil', 'Nivel Estudio',
+                        'Alergias', 'Discapacidades', 'Enfermedades', 'Programas Sociales',
+                    ],
+                    rows: rawRows,
+                    columnWidths: [8, 15, 20, 20, 6, 14, 14, 14, 20, 15, 25, 15, 8, 20, 20, 25, 30, 20, 15, 15, 10, 15, 20, 20, 20, 25, 25],
+                    sheetType: 'table',
+                });
+
+                setExportProgress(100);
+            }
+
+            await exportMultiSheet({
+                sheets: finalSheets,
+                warning: warningMsg,
+                fileName: `mapa_${new Date().toISOString().slice(0, 10)}.xlsx`,
+            });
+        } catch (error) {
+            console.error('Error exportando datos del mapa:', error);
+        } finally {
+            setIsExporting(false);
+            setExportProgress(0);
+            setIsExportOpen(false);
+        }
+    }, []);
+
     // Filter Data
     const filteredData = useMemo(() => {
         if (!data || !Array.isArray(data)) return [];
@@ -121,6 +221,27 @@ export const MapSection: React.FC<MapSectionProps> = ({ data }) => {
         nationalStatusRate,
     } = useMapStats(filteredData, mapLevel, selectedProvince);
 
+    // Build map export sheets
+    const {
+        sheets: mapSheets,
+        preselectNames,
+    } = useMapExport({
+        filteredData,
+        mapStats: {
+            mapData: computedMapData,
+            locationStats,
+            nationalPhoneRate,
+            nationalVulnerabilityRate,
+            nationalAvgAge,
+            nationalGenderRate,
+            nationalEducationRate,
+            nationalStatusRate,
+        },
+        selectedProvince,
+        selectedLocation,
+        level: mapLevel,
+    });
+
     return (
         <div className="space-y-4">
             <div className="flex flex-col md:flex-row gap-4 h-[calc(100vh-140px)] min-h-[600px]">
@@ -166,6 +287,20 @@ export const MapSection: React.FC<MapSectionProps> = ({ data }) => {
                                     🏘️ Municipios
                                 </button>
                             </div>
+
+                            {/* Export Button */}
+                            <button
+                                onClick={() => setIsExportOpen(true)}
+                                disabled={filteredData.length === 0}
+                                title={filteredData.length === 0 ? 'No hay datos filtrados para exportar' : undefined}
+                                className={`w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-all ${filteredData.length === 0
+                                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                    : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm active:scale-[0.98]'
+                                    }`}
+                            >
+                                <FileSpreadsheet size={16} />
+                                Exportar Excel
+                            </button>
                         </div>
                     </div>
 
@@ -322,6 +457,20 @@ export const MapSection: React.FC<MapSectionProps> = ({ data }) => {
                 </div>
 
             </div>
+
+            {/* Export Modal */}
+            <ExportSheetSelector
+                isOpen={isExportOpen}
+                onClose={() => setIsExportOpen(false)}
+                title="Exportar datos del mapa"
+                sheets={mapSheets}
+                defaultSelected={preselectNames}
+                isExporting={isExporting}
+                exportProgress={exportProgress}
+                exportLabel={isExporting ? 'Descargando datos...' : undefined}
+                onExport={handleMapExport}
+                description="Selecciona las hojas para incluir en el archivo Excel con los datos del mapa"
+            />
         </div>
     );
 };
