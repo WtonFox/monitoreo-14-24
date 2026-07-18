@@ -444,6 +444,7 @@ export const IndicatorsBoard: React.FC<IndicatorsBoardProps> = ({ groups }) => {
         <IndicatorModal
           indicator={selectedIndicator}
           boardData={boardData}
+          filteredData={filteredData}
           onClose={() => setSelectedIndicator(null)}
         />
       )}

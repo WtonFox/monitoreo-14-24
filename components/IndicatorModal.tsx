@@ -1,14 +1,17 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
-  X, Users, MapPin, Activity,
+  X, Download, Users, MapPin, Activity,
   CheckCircle2, AlertTriangle, CheckCircle, Calendar, GraduationCap, Building2, XCircle, TrendingDown,
 } from 'lucide-react';
 import type { Indicator, IndicatorCategory } from '../hooks/useIndicators';
 import type { BoardData } from '../hooks/useIndicatorBoards';
+import type { Participant } from '../types';
 import { formatNumber } from '../utils/formatters';
 import { OverviewTab } from './indicator-modal/OverviewTab';
 import { DetailTab } from './indicator-modal/DetailTab';
 import { TrendTab } from './indicator-modal/TrendTab';
+import { useSingleIndicatorExport } from '../hooks/useSingleIndicatorExport';
+import { exportMultiSheet } from '../services/multiSheetExporter';
 
 const CATEGORY_META: Record<
   IndicatorCategory,
@@ -29,6 +32,7 @@ const CATEGORY_META: Record<
 interface IndicatorModalProps {
   indicator: Indicator;
   boardData: BoardData;
+  filteredData: Participant[];
   onClose: () => void;
 }
 
@@ -39,12 +43,38 @@ const TREND_CATEGORIES = new Set(['cobertura-temporal', 'nivel-educativo', 'dese
 export const IndicatorModal: React.FC<IndicatorModalProps> = ({
   indicator,
   boardData,
+  filteredData,
   onClose,
 }) => {
+  const [isExporting, setIsExporting] = useState(false);
   const meta = CATEGORY_META[indicator.category];
   const Icon = meta.icon;
   const isPending = indicator.status === 'pending';
   const isNotViable = indicator.status === 'no-viable';
+
+  const { sheets } = useSingleIndicatorExport({
+    indicator,
+    filteredData,
+    boardData,
+  });
+
+  const handleExport = useCallback(async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isExporting || sheets.length === 0) return;
+    setIsExporting(true);
+    try {
+      const safeName = indicator.name
+        .replace(/[^a-zA-Z0-9áéíóúñ ]/g, '').trim().slice(0, 50);
+      await exportMultiSheet({
+        sheets,
+        fileName: `${safeName}_${new Date().toISOString().slice(0, 10)}.xlsx`,
+      });
+    } catch (err) {
+      console.error('Error al exportar indicador:', err);
+    } finally {
+      setIsExporting(false);
+    }
+  }, [indicator, sheets, isExporting]);
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
@@ -90,9 +120,19 @@ export const IndicatorModal: React.FC<IndicatorModalProps> = ({
               <p className="text-xs text-gray-500 font-mono mt-0.5">{indicator.formula}</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-200/70 transition-colors text-gray-400 hover:text-gray-600 ml-4 flex-shrink-0" aria-label="Cerrar">
-            <X size={20} />
-          </button>
+          <div className="flex items-center gap-1 ml-4 flex-shrink-0">
+            <button
+              onClick={handleExport}
+              disabled={isExporting}
+              title="Descargar este indicador como Excel"
+              className="p-1.5 rounded-lg hover:bg-emerald-100 transition-colors text-gray-400 hover:text-emerald-600"
+            >
+              <Download size={18} />
+            </button>
+            <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-200/70 transition-colors text-gray-400 hover:text-gray-600" aria-label="Cerrar">
+              <X size={20} />
+            </button>
+          </div>
         </div>
 
         {!indicator.topItems?.length && (
@@ -191,7 +231,24 @@ export const IndicatorModal: React.FC<IndicatorModalProps> = ({
             {isPending ? <AlertTriangle size={12} /> : isNotViable ? <XCircle size={12} /> : <CheckCircle2 size={12} />}
             {isPending ? 'PENDIENTE' : isNotViable ? 'NO VIABLE' : 'VIABLE'}
           </span>
-          <button onClick={onClose} className="text-xs text-gray-400 hover:text-gray-600 font-medium transition-colors">Cerrar <span className="text-gray-300">(ESC)</span></button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleExport}
+              disabled={isExporting}
+              className={`flex items-center gap-1.5 text-xs font-medium transition-colors ${
+                isExporting
+                  ? 'text-gray-300 cursor-not-allowed'
+                  : 'text-emerald-600 hover:text-emerald-800'
+              }`}
+            >
+              <Download size={14} />
+              {isExporting ? 'Exportando...' : 'Descargar Excel'}
+            </button>
+            <span className="text-gray-200">|</span>
+            <button onClick={onClose} className="text-xs text-gray-400 hover:text-gray-600 font-medium transition-colors">
+              Cerrar <span className="text-gray-300">(ESC)</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
