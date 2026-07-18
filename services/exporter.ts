@@ -39,7 +39,7 @@ export type ExportFormat = 'csv' | 'xlsx' | 'json';
 /**
  * Descargar TODOS los datos de la API en lotes
  */
-async function fetchAllData(
+export async function fetchAllData(
   onProgress?: (progress: ExportProgress) => void,
   signal?: AbortSignal
 ): Promise<{ data: Participant[]; receipt: ExportReceipt }> {
