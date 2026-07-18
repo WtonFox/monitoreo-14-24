@@ -120,19 +120,9 @@ export const IndicatorModal: React.FC<IndicatorModalProps> = ({
               <p className="text-xs text-gray-500 font-mono mt-0.5">{indicator.formula}</p>
             </div>
           </div>
-          <div className="flex items-center gap-1 ml-4 flex-shrink-0">
-            <button
-              onClick={handleExport}
-              disabled={isExporting}
-              title="Descargar este indicador como Excel"
-              className="p-1.5 rounded-lg hover:bg-emerald-100 transition-colors text-gray-400 hover:text-emerald-600"
-            >
-              <Download size={18} />
-            </button>
-            <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-200/70 transition-colors text-gray-400 hover:text-gray-600" aria-label="Cerrar">
-              <X size={20} />
-            </button>
-          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-200/70 transition-colors text-gray-400 hover:text-gray-600 ml-4 flex-shrink-0" aria-label="Cerrar">
+            <X size={20} />
+          </button>
         </div>
 
         {!indicator.topItems?.length && (
