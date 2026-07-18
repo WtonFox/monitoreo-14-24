@@ -1,9 +1,18 @@
-import React, { useState } from 'react';
-import { Users, MapPin, Activity, CheckCircle, AlertTriangle, Calendar, GraduationCap, Building2, CheckCircle2, XCircle, TrendingDown } from 'lucide-react';
+import React, { useState, useCallback } from 'react';
+import {
+  Users, MapPin, Activity, CheckCircle, AlertTriangle, Calendar,
+  GraduationCap, Building2, CheckCircle2, XCircle, TrendingDown,
+  FileSpreadsheet, Download
+} from 'lucide-react';
 import type { IndicatorGroup, Indicator, IndicatorCategory } from '../hooks/useIndicators';
 import { formatNumber } from '../utils/formatters';
 import { useIndicadoresFilters } from '../contexts/IndicadoresFiltersContext';
 import { IndicatorModal } from './IndicatorModal';
+import { ExportSheetSelector } from './ExportSheetSelector';
+import { exportMultiSheet } from '../services/multiSheetExporter';
+import type { SheetConfig } from '../services/multiSheetExporter';
+import { useIndicatorBoardsExport } from '../hooks/useIndicatorBoardsExport';
+import { useSingleIndicatorExport } from '../hooks/useSingleIndicatorExport';
 
 // ---------------------------------------------------------------------------
 // Per-category style tokens
@@ -138,9 +147,15 @@ const IndicatorTile: React.FC<{
   indicator: Indicator;
   styles: (typeof CATEGORY_STYLES)[IndicatorCategory];
   onClick: () => void;
-}> = ({ indicator, styles, onClick }) => {
+  onDownload: (indicator: Indicator) => void;
+}> = ({ indicator, styles, onClick, onDownload }) => {
   const isPending = indicator.status === 'pending';
   const isNotViable = indicator.status === 'no-viable';
+
+  const handleDownload = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onDownload(indicator);
+  };
 
   return (
     <div
@@ -225,6 +240,15 @@ const IndicatorTile: React.FC<{
           </p>
         )}
       </div>
+
+      {/* Download button — bottom right */}
+      <button
+        onClick={handleDownload}
+        title="Descargar este indicador como Excel"
+        className="absolute bottom-3 right-3 p-1.5 rounded-lg text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 transition-all opacity-60 hover:opacity-100"
+      >
+        <Download size={14} />
+      </button>
     </div>
   );
 };
@@ -236,7 +260,8 @@ const IndicatorTile: React.FC<{
 const CategorySection: React.FC<{
   group: IndicatorGroup;
   onIndicatorClick: (indicator: Indicator) => void;
-}> = ({ group, onIndicatorClick }) => {
+  onIndicatorDownload: (indicator: Indicator) => void;
+}> = ({ group, onIndicatorClick, onIndicatorDownload }) => {
   const styles = CATEGORY_STYLES[group.category];
   const Icon = CATEGORY_ICONS[group.category] || Users;
   const count = group.items.length;
@@ -284,6 +309,7 @@ const CategorySection: React.FC<{
             indicator={indicator}
             styles={styles}
             onClick={() => onIndicatorClick(indicator)}
+            onDownload={onIndicatorDownload}
           />
         ))}
       </div>
@@ -297,16 +323,119 @@ const CategorySection: React.FC<{
 
 export const IndicatorsBoard: React.FC<IndicatorsBoardProps> = ({ groups }) => {
   const [selectedIndicator, setSelectedIndicator] = useState<Indicator | null>(null);
-  const { boardData } = useIndicadoresFilters();
+  const { boardData, filteredData } = useIndicadoresFilters();
+
+  // ── Global export state ─────────────────────────────────────────────
+  const [isExportOpen, setIsExportOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportProgress, setExportProgress] = useState(0);
+
+  const { sheets, preselectNames } = useIndicatorBoardsExport({
+    boardData,
+    groups,
+  });
+
+  const handleExport = async (selectedSheets: SheetConfig[]) => {
+    setIsExporting(true);
+    setExportProgress(0);
+
+    try {
+      // Simulate progress while the workbook builds
+      const interval = setInterval(() => {
+        setExportProgress(prev => Math.min(prev + 10, 90));
+      }, 200);
+
+      await exportMultiSheet({
+        sheets: selectedSheets,
+        fileName: `indicadores_${new Date().toISOString().slice(0, 10)}.xlsx`,
+      });
+
+      clearInterval(interval);
+      setExportProgress(100);
+
+      // Brief delay so user sees 100% before closing
+      setTimeout(() => {
+        setIsExportOpen(false);
+        setIsExporting(false);
+        setExportProgress(0);
+      }, 800);
+    } catch (err) {
+      console.error('Error al exportar indicadores:', err);
+      setIsExporting(false);
+      setExportProgress(0);
+    }
+  };
+
+  // ── Single indicator export state ──────────────────────────────────
+  const [singleExportIndicator, setSingleExportIndicator] = useState<Indicator | null>(null);
+  const [isSingleExportOpen, setIsSingleExportOpen] = useState(false);
+  const [isSingleExporting, setIsSingleExporting] = useState(false);
+  const [singleExportProgress, setSingleExportProgress] = useState(0);
+
+  const { sheets: singleSheets } = useSingleIndicatorExport({
+    indicator: singleExportIndicator!,
+    filteredData,
+    boardData,
+  });
+
+  const handleSingleExport = useCallback(async (selectedSheets: SheetConfig[]) => {
+    if (!singleExportIndicator) return;
+    setIsSingleExporting(true);
+    setSingleExportProgress(0);
+
+    try {
+      const safeName = singleExportIndicator.name
+        .replace(/[^a-zA-Z0-9áéíóúñ ]/g, '').trim().slice(0, 50);
+      await exportMultiSheet({
+        sheets: selectedSheets,
+        fileName: `${safeName}_${new Date().toISOString().slice(0, 10)}.xlsx`,
+      });
+
+      setSingleExportProgress(100);
+      setTimeout(() => {
+        setIsSingleExportOpen(false);
+        setIsSingleExporting(false);
+        setSingleExportProgress(0);
+        setSingleExportIndicator(null);
+      }, 800);
+    } catch (err) {
+      console.error('Error al exportar indicador:', err);
+      setIsSingleExporting(false);
+      setSingleExportProgress(0);
+    }
+  }, [singleExportIndicator]);
+
+  const handleIndicatorDownload = (indicator: Indicator) => {
+    setSingleExportIndicator(indicator);
+    setIsSingleExportOpen(true);
+  };
 
   return (
     <>
+      {/* Toolbar with Export button */}
+      <div className="flex justify-end">
+        <button
+          onClick={() => setIsExportOpen(true)}
+          disabled={groups.length === 0}
+          title={groups.length === 0 ? 'No hay indicadores para exportar' : undefined}
+          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all ${
+            groups.length === 0
+              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+              : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm active:scale-[0.98]'
+          }`}
+        >
+          <FileSpreadsheet size={16} />
+          Exportar Excel
+        </button>
+      </div>
+
       <div className="space-y-8">
         {groups.map(group => (
           <CategorySection
             key={group.category}
             group={group}
             onIndicatorClick={setSelectedIndicator}
+            onIndicatorDownload={handleIndicatorDownload}
           />
         ))}
       </div>
@@ -316,6 +445,43 @@ export const IndicatorsBoard: React.FC<IndicatorsBoardProps> = ({ groups }) => {
           indicator={selectedIndicator}
           boardData={boardData}
           onClose={() => setSelectedIndicator(null)}
+        />
+      )}
+
+      {/* Global export modal */}
+      <ExportSheetSelector
+        isOpen={isExportOpen}
+        onClose={() => {
+          if (!isExporting) setIsExportOpen(false);
+        }}
+        title="Exportar Indicadores"
+        sheets={sheets}
+        defaultSelected={preselectNames}
+        isExporting={isExporting}
+        exportProgress={exportProgress}
+        exportLabel="Generando archivo de indicadores..."
+        onExport={handleExport}
+        description="Seleccioná las hojas que querés incluir en el archivo Excel"
+      />
+
+      {/* Single indicator export modal */}
+      {singleExportIndicator && (
+        <ExportSheetSelector
+          isOpen={isSingleExportOpen}
+          onClose={() => {
+            if (!isSingleExporting) {
+              setIsSingleExportOpen(false);
+              setSingleExportIndicator(null);
+            }
+          }}
+          title={`${singleExportIndicator.name}`}
+          sheets={singleSheets}
+          defaultSelected={singleSheets.map(s => s.name)}
+          isExporting={isSingleExporting}
+          exportProgress={singleExportProgress}
+          exportLabel="Generando archivo del indicador..."
+          onExport={handleSingleExport}
+          description={`Exportar: ${singleExportIndicator.name} — ${singleExportIndicator.description}`}
         />
       )}
     </>
