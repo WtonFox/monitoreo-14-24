@@ -7,9 +7,7 @@ import type { SheetConfig } from './multiSheetExporter';
 // ---------------------------------------------------------------------------
 
 export interface ChartImageSource {
-  /** Sheet tab name (≤31 chars, sanitized) */
   name: string;
-  /** DOM element containing the chart to capture */
   element: HTMLElement;
 }
 
@@ -47,25 +45,32 @@ function resolveUniqueName(base: string, used: Set<string>): string {
 }
 
 // ---------------------------------------------------------------------------
-// Chart capture
+// Chart capture with memory cleanup
 // ---------------------------------------------------------------------------
 
-/**
- * Captures one or more DOM chart elements as PNG ArrayBuffers.
- * Uses html2canvas which is already a project dependency.
- * Returns an array of { name, buffer } pairs.
- */
+function disposeCanvas(canvas: HTMLCanvasElement): void {
+  try {
+    // Free GPU/CPU memory by clearing the canvas
+    canvas.width = 0;
+    canvas.height = 0;
+    const ctx = canvas.getContext('2d');
+    ctx?.clearRect(0, 0, 0, 0);
+  } catch {
+    // Silently ignore — cleanup only
+  }
+}
+
 export async function captureCharts(
   charts: ChartImageSource[]
 ): Promise<{ name: string; buffer: ArrayBuffer }[]> {
   const results: { name: string; buffer: ArrayBuffer }[] = [];
 
   for (const chart of charts) {
+    let canvas: HTMLCanvasElement | null = null;
     try {
-      // Yield to main thread between captures so the UI stays responsive
       await new Promise(r => setTimeout(r, 0));
 
-      const canvas = await html2canvas(chart.element, {
+      canvas = await html2canvas(chart.element, {
         backgroundColor: '#ffffff',
         scale: 1.5,
         useCORS: true,
@@ -73,7 +78,7 @@ export async function captureCharts(
       });
 
       const blob = await new Promise<Blob | null>((resolve) => {
-        canvas.toBlob((b) => resolve(b), 'image/png');
+        canvas!.toBlob((b) => resolve(b), 'image/png');
       });
 
       if (!blob) {
@@ -85,6 +90,9 @@ export async function captureCharts(
       results.push({ name: chart.name, buffer });
     } catch (err) {
       console.warn(`Failed to capture chart "${chart.name}":`, err);
+    } finally {
+      // CRITICAL: free canvas memory immediately after capture
+      if (canvas) disposeCanvas(canvas);
     }
   }
 
@@ -95,15 +103,6 @@ export async function captureCharts(
 // Excel builder with images (ExcelJS)
 // ---------------------------------------------------------------------------
 
-/**
- * Builds an XLSX workbook with data sheets + chart image sheets using ExcelJS.
- *
- * Data sheets use the same SheetConfig interface as multiSheetExporter.
- * Each chart image is placed in its own sheet as a centered PNG.
- *
- * Falls back gracefully: if a chart fails to capture, it's skipped but
- * data sheets are still included.
- */
 export async function buildExcelWithImages(
   dataSheets: SheetConfig[],
   chartImages: { name: string; buffer: ArrayBuffer }[],
@@ -114,7 +113,6 @@ export async function buildExcelWithImages(
   wb.created = new Date();
   const usedNames = new Set<string>();
 
-  // ── Warning sheet ───────────────────────────────────────────────────
   if (warning) {
     const ws = wb.addWorksheet(resolveUniqueName('Advertencia', usedNames));
     ws.getCell('A1').value = warning;
@@ -122,15 +120,11 @@ export async function buildExcelWithImages(
     ws.getCell('A1').font = { bold: true, color: { argb: 'FFDC2626' } };
   }
 
-  // ── Data sheets ──────────────────────────────────────────────────────
   for (const sheet of dataSheets) {
     const name = resolveUniqueName(sheet.name, usedNames);
     const ws = wb.addWorksheet(name);
-
-    // Yield to keep UI responsive between sheets
     await new Promise(r => setTimeout(r, 0));
 
-    // Headers
     const headerRow = ws.addRow(sheet.headers ?? []);
     headerRow.font = { bold: true, size: 11 };
     headerRow.fill = {
@@ -139,18 +133,13 @@ export async function buildExcelWithImages(
       fgColor: { argb: 'FFF0F0F0' },
     };
 
-    // Data rows
     for (const row of (sheet.rows ?? [])) {
       ws.addRow(row.map(cell => {
-        // Sanitize formula injection
-        if (typeof cell === 'string' && /^[=+\-@]/.test(cell)) {
-          return `'${cell}`;
-        }
+        if (typeof cell === 'string' && /^[=+\-@]/.test(cell)) return `'${cell}`;
         return cell;
       }));
     }
 
-    // Column widths
     if (sheet.columnWidths && sheet.columnWidths.length > 0) {
       ws.columns = sheet.columnWidths.map((wch) => ({ width: wch }));
     } else if ((sheet.headers ?? []).length > 0) {
@@ -158,11 +147,9 @@ export async function buildExcelWithImages(
     }
   }
 
-  // ── Chart image sheets ──────────────────────────────────────────────
   for (const img of chartImages) {
     const name = resolveUniqueName(img.name, usedNames);
     const ws = wb.addWorksheet(name);
-
     await new Promise(r => setTimeout(r, 0));
 
     try {
@@ -170,7 +157,6 @@ export async function buildExcelWithImages(
         buffer: img.buffer,
         extension: 'png',
       });
-
       ws.addImage(imageId, {
         tl: { col: 0, row: 0 },
         ext: { width: 600, height: 400 },
@@ -185,17 +171,13 @@ export async function buildExcelWithImages(
 }
 
 // ---------------------------------------------------------------------------
-// Hybrid export: tries image capture, falls back to data-only
+// Hybrid export with memory cleanup
 // ---------------------------------------------------------------------------
 
 export interface HybridExportOptions {
-  /** Data-only sheets (always included) */
   dataSheets: SheetConfig[];
-  /** DOM chart elements to capture as images */
   charts?: ChartImageSource[];
-  /** Warning message for partial exports */
   warning?: string;
-  /** File name for download */
   fileName?: string;
 }
 
@@ -206,10 +188,21 @@ export interface HybridExportResult {
   error?: string;
 }
 
-/**
- * Tries to build an Excel file with embedded chart images (via ExcelJS).
- * If image capture fails, falls back to SheetJS data-only export.
- */
+function downloadBuffer(data: ArrayBuffer | Uint8Array, fileName: string): void {
+  const blob = new Blob([data as BlobPart], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  // Clean up: remove anchor and revoke URL
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 export async function hybridExport(
   options: HybridExportOptions
 ): Promise<HybridExportResult> {
@@ -218,32 +211,34 @@ export async function hybridExport(
   const defaultFileName = `monitoreo_14-24_${new Date().toISOString().slice(0, 10)}.xlsx`;
   const outName = fileName || defaultFileName;
 
-  try {
-    // Try Option A: capture chart images + build with ExcelJS
-    let capturedCharts: { name: string; buffer: ArrayBuffer }[] = [];
+  // Holds chart buffers — will be cleared after use
+  let capturedCharts: { name: string; buffer: ArrayBuffer }[] = [];
 
+  try {
     if (charts && charts.length > 0) {
       capturedCharts = await captureCharts(charts);
     }
 
     if (capturedCharts.length > 0 || charts?.length === 0) {
-      // At least some charts captured, or no charts requested — build with ExcelJS
       const buffer = await buildExcelWithImages(dataSheets, capturedCharts, warning);
+      // Clear chart buffers before download to free memory
+      capturedCharts.length = 0;
       downloadBuffer(buffer, outName);
 
       return {
-        imageExportSucceeded: capturedCharts.length > 0,
+        imageExportSucceeded: true,
         imageCount: capturedCharts.length,
         totalSheets: dataSheets.length + capturedCharts.length + (warning ? 1 : 0),
       };
     }
 
-    // No charts captured — Option C fallback: use SheetJS
-    console.warn('No charts captured, falling back to data-only export');
     return await fallbackToSheetJS(dataSheets, warning, outName);
   } catch (err) {
     console.error('ExcelJS export failed, falling back to SheetJS:', err);
     return await fallbackToSheetJS(dataSheets, warning, outName);
+  } finally {
+    // Final cleanup: ensure chart buffers are released
+    capturedCharts.length = 0;
   }
 }
 
@@ -256,16 +251,10 @@ async function fallbackToSheetJS(
   warning?: string,
   fileName?: string
 ): Promise<HybridExportResult> {
-  // Dynamic import to avoid circular dependency
   const { exportMultiSheet } = await import('./multiSheetExporter');
 
   try {
-    const result = await exportMultiSheet({
-      sheets,
-      warning,
-      fileName,
-    });
-
+    const result = await exportMultiSheet({ sheets, warning, fileName });
     return {
       imageExportSucceeded: false,
       imageCount: 0,
@@ -279,22 +268,4 @@ async function fallbackToSheetJS(
       error: String(err),
     };
   }
-}
-
-// ---------------------------------------------------------------------------
-// Download helper
-// ---------------------------------------------------------------------------
-
-function downloadBuffer(data: ArrayBuffer | Uint8Array, fileName: string): void {
-  const blob = new Blob([data as BlobPart], {
-    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = fileName;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 5000);
 }
