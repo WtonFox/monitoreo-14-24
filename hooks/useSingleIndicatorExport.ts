@@ -401,6 +401,10 @@ function buildTabSheets(indicator: Indicator, boardData: BoardData): SheetConfig
 // Individual sheet builders
 // ---------------------------------------------------------------------------
 
+const BRANDING_HEADER = 'Programa Oportunidad 14-24 — Gabinete de Política Social';
+const BRANDING_SUBTITLE = 'Monitoreo 14-24 — Panel de Indicadores';
+const BRANDING_FOOTER = 'Departamento de Monitoreo y Evaluación — GPS';
+
 function buildInfoSheet(indicator: Indicator): SheetConfig {
   const statusLabel =
     indicator.status === 'viable' ? 'Viable' :
@@ -409,8 +413,11 @@ function buildInfoSheet(indicator: Indicator): SheetConfig {
 
   return {
     name: 'Información',
-    headers: ['Campo', 'Valor'],
+    headers: ['', ''],
     rows: [
+      [BRANDING_HEADER, ''],
+      [BRANDING_SUBTITLE, ''],
+      ['', ''],
       ['Nombre del indicador', indicator.name],
       ['Categoría', indicator.category],
       ['Valor actual', String(indicator.value)],
@@ -420,6 +427,8 @@ function buildInfoSheet(indicator: Indicator): SheetConfig {
       ...(indicator.pendingReason
         ? [['Razón de pendiente', indicator.pendingReason] as [string, string]]
         : []),
+      ['', ''],
+      [BRANDING_FOOTER, ''],
     ],
     columnWidths: [25, 60],
     sheetType: 'table',

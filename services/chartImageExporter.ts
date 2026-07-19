@@ -109,7 +109,9 @@ export async function buildExcelWithImages(
   warning?: string
 ): Promise<ExcelJS.Buffer> {
   const wb = new ExcelJS.Workbook();
-  wb.creator = 'Monitoreo 14-24';
+  wb.creator = 'Departamento de Monitoreo y Evaluación - GPS';
+  wb.title = 'Programa Oportunidad 14-24 - Gabinete de Política Social';
+  wb.description = 'Monitoreo 14-24 - Panel de Indicadores';
   wb.created = new Date();
   const usedNames = new Set<string>();
 

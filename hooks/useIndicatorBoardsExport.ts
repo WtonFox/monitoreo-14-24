@@ -446,12 +446,37 @@ function buildChartDataSheets(boardData: BoardData): SheetConfig[] {
 // Hook
 // ---------------------------------------------------------------------------
 
+const BRANDING_HEADER = 'Programa Oportunidad 14-24 — Gabinete de Política Social';
+const BRANDING_SUBTITLE = 'Monitoreo 14-24 — Panel de Indicadores';
+const BRANDING_FOOTER = 'Departamento de Monitoreo y Evaluación — GPS';
+
+function buildBrandingSheet(): SheetConfig {
+  return {
+    name: 'Información',
+    sheetType: 'table',
+    headers: ['', ''],
+    rows: [
+      [BRANDING_HEADER, ''],
+      [BRANDING_SUBTITLE, ''],
+      ['', ''],
+      ['Descripción', 'Exportación completa de indicadores del panel de monitoreo'],
+      ['Generado', new Date().toLocaleString('es-DO')],
+      ['', ''],
+      [BRANDING_FOOTER, ''],
+    ],
+    columnWidths: [45, 45],
+  };
+}
+
 export function useIndicatorBoardsExport({
   boardData,
   groups,
 }: UseIndicatorBoardsExportOptions): UseIndicatorBoardsExportResult {
   return useMemo(() => {
     const sheets: SheetConfig[] = [];
+
+    // 0 — Branding sheet
+    sheets.push(buildBrandingSheet());
 
     // 1 — BoardData category sheets (table type)
     sheets.push(buildDemograficoSheet(boardData.demographicData));
