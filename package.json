@@ -24,6 +24,7 @@
     "build:ci": "vite build --mode ci"
   },
   "dependencies": {
+    "exceljs": "^4.4.0",
     "idb": "^8.0.3",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.8",

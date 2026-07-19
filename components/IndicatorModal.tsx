@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   X, Download, Users, MapPin, Activity,
   CheckCircle2, AlertTriangle, CheckCircle, Calendar, GraduationCap, Building2, XCircle, TrendingDown,
@@ -11,7 +11,7 @@ import { OverviewTab } from './indicator-modal/OverviewTab';
 import { DetailTab } from './indicator-modal/DetailTab';
 import { TrendTab } from './indicator-modal/TrendTab';
 import { useSingleIndicatorExport } from '../hooks/useSingleIndicatorExport';
-import { exportMultiSheet } from '../services/multiSheetExporter';
+import { hybridExport, type ChartImageSource } from '../services/chartImageExporter';
 
 const CATEGORY_META: Record<
   IndicatorCategory,
@@ -47,6 +47,7 @@ export const IndicatorModal: React.FC<IndicatorModalProps> = ({
   onClose,
 }) => {
   const [isExporting, setIsExporting] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
   const meta = CATEGORY_META[indicator.category];
   const Icon = meta.icon;
   const isPending = indicator.status === 'pending';
@@ -62,13 +63,32 @@ export const IndicatorModal: React.FC<IndicatorModalProps> = ({
     e.stopPropagation();
     if (isExporting || sheets.length === 0) return;
     setIsExporting(true);
+
     try {
+      // ── Option A: try to capture charts from the DOM ──────────────
+      const charts: ChartImageSource[] = [];
+      if (contentRef.current) {
+        const wrappers = contentRef.current.querySelectorAll<HTMLElement>('.recharts-wrapper');
+        wrappers.forEach((el, i) => {
+          const parent = el.closest('div.bg-gray-50');
+          const title = parent?.querySelector('h4')?.textContent || `Gráfica ${i + 1}`;
+          charts.push({ name: title, element: el });
+        });
+      }
+
       const safeName = indicator.name
         .replace(/[^a-zA-Z0-9áéíóúñ ]/g, '').trim().slice(0, 50);
-      await exportMultiSheet({
-        sheets,
-        fileName: `${safeName}_${new Date().toISOString().slice(0, 10)}.xlsx`,
+      const fileName = `${safeName}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+
+      const result = await hybridExport({
+        dataSheets: sheets,
+        charts: charts.length > 0 ? charts : undefined,
+        fileName,
       });
+
+      if (!result.imageExportSucceeded && result.imageCount === 0 && charts.length > 0) {
+        console.warn('Chart images not available — data-only export was used');
+      }
     } catch (err) {
       console.error('Error al exportar indicador:', err);
     } finally {
@@ -109,7 +129,7 @@ export const IndicatorModal: React.FC<IndicatorModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={handleBackdrop}>
-      <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto animate-in zoom-in-95 duration-200" style={{ borderTop: `4px solid ${meta.primary}` }}>
+      <div ref={contentRef} className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto animate-in zoom-in-95 duration-200" style={{ borderTop: `4px solid ${meta.primary}` }}>
         <div className={`flex items-start justify-between px-6 py-4 border-b ${meta.bg}`}>
           <div className="flex items-start gap-3 min-w-0">
             <div className={`p-2 rounded-xl mt-0.5 ${meta.light}`}>

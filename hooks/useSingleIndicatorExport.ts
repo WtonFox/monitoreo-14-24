@@ -6,6 +6,74 @@ import type { Participant } from '../types';
 import { computeFullDistribution, type DistributionItem } from '../utils/computeFullDistribution';
 
 // ---------------------------------------------------------------------------
+// Chart-data helpers (Option C: data-only chart sheets)
+// ---------------------------------------------------------------------------
+
+function addChartData(
+  sheets: SheetConfig[],
+  name: string,
+  labelCol: string,
+  valueCol: string,
+  data: { name: string; value: number }[],
+  value2Col?: string,
+  value2Data?: { name: string; value?: number }[],
+): void {
+  if (data.length === 0) return;
+  const headers = [labelCol, valueCol];
+  const rows: unknown[][] = data.map(d => [d.name, d.value]);
+  if (value2Col && value2Data) {
+    headers.push(value2Col);
+    value2Data.forEach((d, i) => {
+      if (rows[i]) rows[i].push(d.value ?? '');
+    });
+  }
+  sheets.push({
+    name,
+    sheetType: 'chart-data',
+    headers,
+    rows,
+    columnWidths: [30, 15],
+  });
+}
+
+function buildChartDataSheets(indicator: Indicator, boardData: BoardData): SheetConfig[] {
+  const sheets: SheetConfig[] = [];
+  const cat = indicator.category;
+
+  if (cat === 'demograficos') {
+    addChartData(sheets, 'GD - Edad', 'Rango', 'Cantidad', boardData.demographicData.ageBuckets);
+    addChartData(sheets, 'GD - Estado Civil', 'Estado', 'Cantidad', boardData.demographicData.maritalStatus);
+  } else if (cat === 'territoriales') {
+    addChartData(sheets, 'GD - Municipios', 'Municipio', 'Total', boardData.territorialData.topMunicipios);
+    addChartData(sheets, 'GD - Centros', 'Centro', 'Total', boardData.territorialData.topCentros);
+  } else if (cat === 'programa') {
+    addChartData(sheets, 'GD - Estados', 'Estado', 'Cantidad', boardData.programData.statusDistribution);
+  } else if (cat === 'calidad-dato') {
+    const qd = boardData.qualityData;
+    if (qd.fieldBreakdown.length > 0) {
+      sheets.push({
+        name: 'GD - Calidad Campos',
+        sheetType: 'chart-data',
+        headers: ['Campo', '% Completitud', 'Total', 'ND'],
+        rows: qd.fieldBreakdown.map(f => [f.name, f.pct.toFixed(1), f.total, f.ndCount]),
+        columnWidths: [30, 15, 12, 12],
+      });
+    }
+  } else if (cat === 'vulnerabilidad') {
+    addChartData(sheets, 'GD - Discapacidades', 'Tipo', 'Cantidad', boardData.vulnerabilityData.topDisabilities);
+    addChartData(sheets, 'GD - Enfermedades', 'Tipo', 'Cantidad', boardData.vulnerabilityData.topDiseases);
+  } else if (cat === 'cobertura-temporal') {
+    addChartData(sheets, 'GD - Registros x Año', 'Año', 'Registros', boardData.temporalData.registrationsByYear);
+  } else if (cat === 'nivel-educativo') {
+    addChartData(sheets, 'GD - Niveles', 'Nivel', 'Cantidad', boardData.educationData.educationDistribution);
+  } else if (cat === 'desempeno-centro') {
+    addChartData(sheets, 'GD - Top Centros', 'Centro', 'Total', boardData.centerData.topCenters.map(c => ({ name: c.name, value: c.total })));
+  }
+
+  return sheets;
+}
+
+// ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
@@ -136,6 +204,12 @@ export function useSingleIndicatorExport(
       if (full && full.items.length > 0) {
         sheets.push(buildFullDistributionSheet(full.items, full.label, full.total));
       }
+    }
+
+    // 4. Chart-data sheets (Option C: data-only fallback for charts)
+    if (boardData) {
+      const chartDataSheets = buildChartDataSheets(indicator, boardData);
+      sheets.push(...chartDataSheets);
     }
 
     return { sheets };
