@@ -64,25 +64,24 @@ export async function captureCharts(
     try {
       const canvas = await html2canvas(chart.element, {
         backgroundColor: '#ffffff',
-        scale: 2, // Retina quality
+        scale: 2,
         useCORS: true,
         logging: false,
       });
 
-      return new Promise((resolve, reject) => {
-        canvas.toBlob(async (blob) => {
-          if (!blob) {
-            reject(new Error(`Failed to capture chart: ${chart.name}`));
-            return;
-          }
-          const buffer = await blob.arrayBuffer();
-          results.push({ name: chart.name, buffer });
-          resolve(results);
-        }, 'image/png');
+      const blob = await new Promise<Blob | null>((resolve) => {
+        canvas.toBlob((b) => resolve(b), 'image/png');
       });
+
+      if (!blob) {
+        console.warn(`Empty blob for chart "${chart.name}"`);
+        continue;
+      }
+
+      const buffer = await blob.arrayBuffer();
+      results.push({ name: chart.name, buffer });
     } catch (err) {
       console.warn(`Failed to capture chart "${chart.name}":`, err);
-      // Continue with other charts
     }
   }
 
