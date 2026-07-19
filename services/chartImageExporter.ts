@@ -62,9 +62,12 @@ export async function captureCharts(
 
   for (const chart of charts) {
     try {
+      // Yield to main thread between captures so the UI stays responsive
+      await new Promise(r => setTimeout(r, 0));
+
       const canvas = await html2canvas(chart.element, {
         backgroundColor: '#ffffff',
-        scale: 2,
+        scale: 1.5,
         useCORS: true,
         logging: false,
       });
@@ -124,6 +127,9 @@ export async function buildExcelWithImages(
     const name = resolveUniqueName(sheet.name, usedNames);
     const ws = wb.addWorksheet(name);
 
+    // Yield to keep UI responsive between sheets
+    await new Promise(r => setTimeout(r, 0));
+
     // Headers
     const headerRow = ws.addRow(sheet.headers ?? []);
     headerRow.font = { bold: true, size: 11 };
@@ -157,14 +163,14 @@ export async function buildExcelWithImages(
     const name = resolveUniqueName(img.name, usedNames);
     const ws = wb.addWorksheet(name);
 
+    await new Promise(r => setTimeout(r, 0));
+
     try {
-      // Add image to workbook
       const imageId = wb.addImage({
         buffer: img.buffer,
         extension: 'png',
       });
 
-      // Place image starting at A1, scaled to fit
       ws.addImage(imageId, {
         tl: { col: 0, row: 0 },
         ext: { width: 600, height: 400 },

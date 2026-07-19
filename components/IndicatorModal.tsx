@@ -67,8 +67,8 @@ export const IndicatorModal: React.FC<IndicatorModalProps> = ({
     try {
       // ── Force Recharts to recalculate dimensions ─────────────────
       window.dispatchEvent(new Event('resize'));
-      // Wait for charts to render
-      await new Promise(resolve => setTimeout(resolve, 800));
+      // Brief pause for Recharts to render
+      await new Promise(resolve => setTimeout(resolve, 300));
 
       // ── Option A: capture chart cards from the DOM ──────────────
       const charts: ChartImageSource[] = [];

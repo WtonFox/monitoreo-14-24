@@ -504,7 +504,7 @@ function buildRawFilteredSheet(data: Participant[], indicator: Indicator): Sheet
     return labels[f] || f;
   });
 
-  const rows: unknown[][] = data.slice(0, 5000).map(p =>
+  const rows: unknown[][] = data.slice(0, 2000).map(p =>
     relevantFields.map(f => String((p as any)[f] ?? ''))
   );
 
