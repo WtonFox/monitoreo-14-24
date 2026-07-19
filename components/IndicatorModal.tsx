@@ -65,14 +65,21 @@ export const IndicatorModal: React.FC<IndicatorModalProps> = ({
     setIsExporting(true);
 
     try {
-      // ── Option A: try to capture charts from the DOM ──────────────
+      // ── Force Recharts to recalculate dimensions ─────────────────
+      window.dispatchEvent(new Event('resize'));
+      // Wait for charts to render
+      await new Promise(resolve => setTimeout(resolve, 800));
+
+      // ── Option A: capture chart cards from the DOM ──────────────
       const charts: ChartImageSource[] = [];
       if (contentRef.current) {
-        const wrappers = contentRef.current.querySelectorAll<HTMLElement>('.recharts-wrapper');
-        wrappers.forEach((el, i) => {
-          const parent = el.closest('div.bg-gray-50');
-          const title = parent?.querySelector('h4')?.textContent || `Gráfica ${i + 1}`;
-          charts.push({ name: title, element: el });
+        // Find chart cards: .bg-gray-50 containers that have .recharts-wrapper inside
+        const allCards = contentRef.current.querySelectorAll<HTMLElement>('div.bg-gray-50');
+        allCards.forEach((card) => {
+          if (!card.querySelector('.recharts-wrapper')) return;
+          const title = card.querySelector('h4')?.textContent?.trim() || 'Gráfica';
+          // Capture the entire card (title + chart)
+          charts.push({ name: title, element: card });
         });
       }
 
