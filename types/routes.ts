@@ -17,6 +17,7 @@ export const ROUTES = {
   INDICADORES_CENTROS_SIN_MENORES: '/indicadores/centros-sin-menores',
   INDICADORES_DESERCION: '/indicadores/desercion',
   INDICADORES_REGISTRO_DIARIO: '/indicadores/registro-diario',
+  INDICADORES_AUDITORIA: '/indicadores/auditoria',
   INDICADORES_CALIDAD_ND: '/indicadores/calidad-dato',
   ALERTAS: '/alertas',
   COMPARATIVO: '/comparativo',
@@ -52,6 +53,7 @@ export const ROUTE_PERMISSIONS: Record<string, RoutePermission> = {
   [ROUTES.INDICADORES_CENTROS_SIN_MENORES]: { roles: [UserRole.ADMIN, UserRole.SUPERVISOR, UserRole.CONSULTOR] },
   [ROUTES.INDICADORES_DESERCION]: { roles: [UserRole.ADMIN, UserRole.SUPERVISOR, UserRole.CONSULTOR] },
   [ROUTES.INDICADORES_REGISTRO_DIARIO]: { roles: [UserRole.ADMIN, UserRole.SUPERVISOR, UserRole.CONSULTOR] },
+  [ROUTES.INDICADORES_AUDITORIA]: { roles: [UserRole.ADMIN, UserRole.SUPERVISOR, UserRole.CONSULTOR] },
   [ROUTES.ALERTAS]: { roles: [UserRole.ADMIN, UserRole.SUPERVISOR, UserRole.CONSULTOR] },
   [ROUTES.COMPARATIVO]: { roles: [UserRole.ADMIN, UserRole.SUPERVISOR, UserRole.CONSULTOR] },
 };

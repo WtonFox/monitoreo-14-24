@@ -30,6 +30,7 @@ const DesempenoCentroBoard = React.lazy(() => import('./pages/indicadores/Desemp
 const CentrosSinMenoresBoard = React.lazy(() => import('./pages/indicadores/CentrosSinMenoresBoard'));
 const DesercionBoard = React.lazy(() => import('./pages/indicadores/DesercionBoard'));
 const RegistroDiarioBoard = React.lazy(() => import('./pages/indicadores/RegistroDiarioBoard'));
+const AuditoriaBoard = React.lazy(() => import('./pages/indicadores/AuditoriaBoard'));
 const CalidadNdBoard = React.lazy(() => import('./pages/indicadores/CalidadNdBoard'));
 const CalidadIntegradaBoard = React.lazy(() => import('./pages/indicadores/CalidadIntegradaBoard'));
 const ImpactoBoard = React.lazy(() => import('./pages/indicadores/ImpactoBoard'));
@@ -190,6 +191,14 @@ export const router = createHashRouter([
             element: (
               <Suspense fallback={<LoadingSkeleton variant="board" />}>
                 <RegistroDiarioBoard />
+              </Suspense>
+            ),
+          },
+          {
+            path: 'auditoria',
+            element: (
+              <Suspense fallback={<LoadingSkeleton variant="board" />}>
+                <AuditoriaBoard />
               </Suspense>
             ),
           },
