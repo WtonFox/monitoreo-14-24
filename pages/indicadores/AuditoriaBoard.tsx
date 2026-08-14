@@ -18,6 +18,7 @@ import { IndicadoresFilterBar } from '../../components/IndicadoresFilterBar';
 import { useParticipantStore } from '../../stores/participantStore';
 import { computeAuditSignals } from '../../utils/auditSignals';
 import type { AuditSignals } from '../../utils/auditSignals';
+import type { Participant } from '../../types';
 
 interface KpiCard {
   label: string;
@@ -26,6 +27,75 @@ interface KpiCard {
   icon: React.ReactNode;
   tone: string;
 }
+
+// ── Helpers de drill-down (Phase 3) ──
+
+/** Límite de filas por lista para mantener el board liviano (AUD-2..AUD-9). */
+const LIST_LIMIT = 50;
+
+/** Nombre legible de una persona desde la primera fila del grupo. */
+const personName = (rows: Participant[]): string => {
+  const first = rows[0];
+  if (!first) return '—';
+  return `${first.nombres ?? ''} ${first.apellidos ?? ''}`.trim() || '—';
+};
+
+const EmptyList: React.FC = () => <p className="text-sm text-gray-400">Sin datos</p>;
+
+const MoreNotice: React.FC<{ total: number; shown: number }> = ({ total, shown }) =>
+  total > shown ? <p className="text-xs text-gray-400 mt-2">…y {total - shown} más</p> : null;
+
+/** Caveat AUD-12: los grupos Q1/Q2/duplicados son candidatos, no afirmaciones. */
+const CANDIDATE_CAVEAT =
+  'Lista de candidatos: clasificación heurística sin historial en el origen, puede existir homonimia real. No se presenta como afirmación.';
+
+interface SignalCardProps {
+  title: string;
+  icon: React.ReactNode;
+  tone: string;
+  count: string;
+  hint?: string;
+  badge?: string;
+  caveat?: boolean;
+  children: React.ReactNode;
+}
+
+const SignalCard: React.FC<SignalCardProps> = ({
+  title,
+  icon,
+  tone,
+  count,
+  hint,
+  badge,
+  caveat,
+  children,
+}) => (
+  <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+    <div className="flex items-start justify-between gap-3">
+      <div className="flex items-center gap-3">
+        <div className={`p-3 ${tone} rounded-lg`}>{icon}</div>
+        <div>
+          <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
+            {title}
+            {badge && (
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5">
+                {badge}
+              </span>
+            )}
+          </h3>
+          {hint && <p className="text-xs text-gray-400 mt-0.5">{hint}</p>}
+        </div>
+      </div>
+      <span className="text-2xl font-bold text-gray-800 shrink-0">{count}</span>
+    </div>
+    {caveat && (
+      <p className="mt-3 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2">
+        {CANDIDATE_CAVEAT}
+      </p>
+    )}
+    <div className="mt-3">{children}</div>
+  </div>
+);
 
 const AuditoriaBoard: React.FC = () => {
   const { filteredData } = useIndicadoresFilters();
@@ -133,6 +203,250 @@ const AuditoriaBoard: React.FC = () => {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* ── Drill-downs de señales (AUD-2..AUD-9, AUD-12; Phase 3) ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Duplicados de carga (AUD-2) — candidatos */}
+        <SignalCard
+          title="Duplicados de carga"
+          icon={<Copy size={20} />}
+          tone="bg-cyan-50 text-cyan-600"
+          count={formatNumber(signals.duplicados.length)}
+          hint="grupos candidatos de carga repetida"
+          badge="candidatos"
+          caveat
+        >
+          {signals.duplicados.length === 0 ? (
+            <EmptyList />
+          ) : (
+            <ul className="divide-y divide-gray-100">
+              {signals.duplicados.slice(0, LIST_LIMIT).map((g, i) => (
+                <li key={`dup-${g.identity}-${i}`} className="py-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium text-gray-800">{personName(g.rows)}</p>
+                    <span className="text-xs text-gray-400">{g.rows.length} filas</span>
+                  </div>
+                  <p className="text-xs text-gray-500">Ruta: {g.ruta}</p>
+                  <p className="text-xs text-gray-500">
+                    IDs: {g.rows.map(r => r.id).join(', ')}
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    Fechas: {g.fechas.join(' · ') || '—'}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+          <MoreNotice total={signals.duplicados.length} shown={Math.min(signals.duplicados.length, LIST_LIMIT)} />
+        </SignalCard>
+
+        {/* Multi-ruta Q1 (AUD-3) — candidatos */}
+        <SignalCard
+          title="Multi-ruta (Q1)"
+          icon={<GitBranch size={20} />}
+          tone="bg-indigo-50 text-indigo-600"
+          count={formatNumber(signals.q1.length)}
+          hint="candidatos con ≥2 rutas formativas"
+          badge="candidatos"
+          caveat
+        >
+          {signals.q1.length === 0 ? (
+            <EmptyList />
+          ) : (
+            <ul className="divide-y divide-gray-100">
+              {signals.q1.slice(0, LIST_LIMIT).map((c, i) => (
+                <li key={`q1-${c.identity}-${i}`} className="py-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium text-gray-800">{personName(c.rows)}</p>
+                    <span className="text-xs text-gray-400">{c.rows.length} filas</span>
+                  </div>
+                  <p className="text-xs text-gray-500">Rutas: {c.rutas.join(' · ')}</p>
+                  <p className="text-xs text-gray-400">
+                    {c.cedulaConfirmada ? 'Cédula coincide entre rutas' : 'Sin cédula que confirme — posible homonimia'}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+          <MoreNotice total={signals.q1.length} shown={Math.min(signals.q1.length, LIST_LIMIT)} />
+        </SignalCard>
+
+        {/* Re-inscripción Q2 (AUD-4) — candidatos */}
+        <SignalCard
+          title="Re-inscripción (Q2)"
+          icon={<RefreshCw size={20} />}
+          tone="bg-blue-50 text-blue-600"
+          count={formatNumber(signals.q2.length)}
+          hint="candidatos con fechas distantes"
+          badge="candidatos"
+          caveat
+        >
+          {signals.q2.length === 0 ? (
+            <EmptyList />
+          ) : (
+            <ul className="divide-y divide-gray-100">
+              {signals.q2.slice(0, LIST_LIMIT).map((c, i) => (
+                <li key={`q2-${c.identity}-${i}`} className="py-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium text-gray-800">{personName(c.rows)}</p>
+                    <span className="text-xs text-gray-400">{c.rows.length} filas</span>
+                  </div>
+                  <p className="text-xs text-gray-500">Ruta: {c.ruta}</p>
+                  <p className="text-xs text-gray-400">
+                    Fechas: {c.fechas.join(' · ') || '—'}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+          <MoreNotice total={signals.q2.length} shown={Math.min(signals.q2.length, LIST_LIMIT)} />
+        </SignalCard>
+
+        {/* ND cédula (AUD-5) */}
+        <SignalCard
+          title="ND Cédula"
+          icon={<IdCard size={20} />}
+          tone="bg-amber-50 text-amber-600"
+          count={formatNumber(signals.ndCedula.count)}
+          hint={`${formatPercentage(signals.ndCedula.pct)} del universo filtrado`}
+        >
+          {signals.ndCedula.rows.length === 0 ? (
+            <EmptyList />
+          ) : (
+            <ul className="divide-y divide-gray-100">
+              {signals.ndCedula.rows.slice(0, LIST_LIMIT).map(r => (
+                <li key={`nd-${r.id}`} className="py-1.5 flex items-center justify-between">
+                  <p className="text-sm text-gray-700">
+                    <span className="text-xs text-gray-400 mr-2">#{r.id}</span>
+                    {personName([r])}
+                  </p>
+                  <span className="text-xs text-gray-400">{r.cedula || '—'}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+          <MoreNotice total={signals.ndCedula.rows.length} shown={Math.min(signals.ndCedula.rows.length, LIST_LIMIT)} />
+        </SignalCard>
+
+        {/* Anomalías fecha/edad (AUD-6) */}
+        <SignalCard
+          title="Anomalías fecha/edad"
+          icon={<AlertTriangle size={20} />}
+          tone="bg-red-50 text-red-600"
+          count={formatNumber(signals.anomalias.totalFilas)}
+          hint="filas con ≥1 anomalía lógica"
+        >
+          {signals.anomalias.totalFilas === 0 ? (
+            <EmptyList />
+          ) : (
+            <ul className="divide-y divide-gray-100">
+              {[
+                ...signals.anomalias.futura.map(a => ({ row: a.row, reason: 'Fecha de nacimiento futura' })),
+                ...signals.anomalias.inclusionPrevia.map(a => ({ row: a.row, reason: 'Inclusión anterior al registro' })),
+                ...signals.anomalias.edadMismatch.map(a => ({ row: a.row, reason: 'Edad no coincide con fecha de nacimiento' })),
+                ...signals.anomalias.edadRegistroMenor.map(a => ({ row: a.row, reason: 'Edad menor que edad de registro' })),
+              ]
+                .slice(0, LIST_LIMIT)
+                .map((entry, i) => (
+                  <li key={`an-${entry.row.id}-${i}`} className="py-1.5">
+                    <p className="text-sm text-gray-700">
+                      <span className="text-xs text-gray-400 mr-2">#{entry.row.id}</span>
+                      {personName([entry.row])}
+                    </p>
+                    <p className="text-xs text-red-500 ml-7">{entry.reason}</p>
+                  </li>
+                ))}
+            </ul>
+          )}
+          <MoreNotice
+            total={
+              signals.anomalias.futura.length +
+              signals.anomalias.inclusionPrevia.length +
+              signals.anomalias.edadMismatch.length +
+              signals.anomalias.edadRegistroMenor.length
+            }
+            shown={LIST_LIMIT}
+          />
+        </SignalCard>
+
+        {/* Vocabulario de estados (AUD-7) */}
+        <SignalCard
+          title="Vocabulario de estados"
+          icon={<BookOpen size={20} />}
+          tone="bg-violet-50 text-violet-600"
+          count={formatNumber(signals.vocabulario.fueraVocabulario)}
+          hint="valores fuera del vocabulario conocido"
+        >
+          {signals.vocabulario.fueraVocabulario === 0 ? (
+            <EmptyList />
+          ) : (
+            <ul className="divide-y divide-gray-100">
+              {signals.vocabulario.valores
+                .filter(v => !v.conocido)
+                .slice(0, LIST_LIMIT)
+                .map(v => (
+                  <li key={`voc-${v.valor}`} className="py-1.5 flex items-center justify-between">
+                    <p className="text-sm text-gray-700">{v.valor}</p>
+                    <span className="text-xs font-medium text-violet-600">{v.count} filas</span>
+                  </li>
+                ))}
+            </ul>
+          )}
+        </SignalCard>
+
+        {/* Centinelas (AUD-8) */}
+        <SignalCard
+          title="Centinelas"
+          icon={<ShieldAlert size={20} />}
+          tone="bg-orange-50 text-orange-600"
+          count={formatNumber(sentinelTotal)}
+          hint="valores N/D · N/A · S/D por campo"
+        >
+          <ul className="divide-y divide-gray-100">
+            {([
+              ['Centro', signals.centinelas.centro],
+              ['Estado', signals.centinelas.estado],
+              ['Provincia', signals.centinelas.provincia],
+              ['Ruta formativa', signals.centinelas.rutaFormativa],
+            ] as const).map(([campo, count]) => (
+              <li key={`cen-${campo}`} className="py-1.5 flex items-center justify-between">
+                <p className="text-sm text-gray-700">{campo}</p>
+                <span className="text-sm font-semibold text-gray-800">{formatNumber(count)}</span>
+              </li>
+            ))}
+          </ul>
+        </SignalCard>
+
+        {/* Corruptos (AUD-9, AD-9) */}
+        <SignalCard
+          title="Corruptos"
+          icon={<FileWarning size={20} />}
+          tone="bg-rose-50 text-rose-600"
+          count={formatNumber(signals.corruptos.count)}
+          hint="registros del sync"
+        >
+          {signals.corruptos.count === 0 ? (
+            <EmptyList />
+          ) : signals.corruptos.items.length === 0 ? (
+            <p className="text-xs text-gray-400">
+              El conteo proviene del sync, pero la lista de razones no se
+              persiste en caché (best-effort, AD-9).
+            </p>
+          ) : (
+            <ul className="divide-y divide-gray-100">
+              {signals.corruptos.items.slice(0, LIST_LIMIT).map(item => (
+                <li key={`cor-${item.id}`} className="py-1.5">
+                  <p className="text-sm text-gray-700">
+                    <span className="text-xs text-gray-400 mr-2">#{item.id}</span>
+                    {item.reason}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+          <MoreNotice total={signals.corruptos.items.length} shown={Math.min(signals.corruptos.items.length, LIST_LIMIT)} />
+        </SignalCard>
       </div>
 
       {/* ── Q3 Callout (AUD-10) ── */}
