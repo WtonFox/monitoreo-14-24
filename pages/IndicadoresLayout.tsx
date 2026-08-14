@@ -39,6 +39,7 @@ const TAB_GROUPS: MoreTabGroup[] = [
     label: 'Datos y Calidad',
     items: [
       { to: ROUTES.INDICADORES_CALIDAD, label: 'Calidad del Dato', icon: CheckCircle },
+      { to: ROUTES.INDICADORES_AUDITORIA, label: 'Auditoría', icon: CheckCircle },
       { to: ROUTES.INDICADORES_CENTROS_SIN_MENORES, label: 'Centros sin Menores', icon: Users },
     ],
   },

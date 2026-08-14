@@ -22,6 +22,7 @@ const ROUTES: { hash: string; assertUrl?: RegExp; title: string }[] = [
   { hash: '/indicadores/programa', title: 'Programa' },
   { hash: '/indicadores/impacto', title: 'Impacto Compuesto' },
   { hash: '/indicadores/calidad-dato', title: 'Calidad del Dato' },
+  { hash: '/indicadores/auditoria', title: 'Auditoría' },
   { hash: '/indicadores/vulnerabilidad', title: 'Vulnerabilidad' },
   { hash: '/indicadores/cobertura-temporal', title: 'Cobertura' },
   { hash: '/indicadores/nivel-educativo', title: 'Nivel Educativo' },

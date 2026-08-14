@@ -2,7 +2,205 @@ import { Page } from '@playwright/test';
 import { Participant, PaginationResult } from '../types';
 
 /**
+ * Fixed audit fixtures appended to every generated dataset.
+ *
+ * These create deterministic repeated identities (AUD-2/AUD-3/AUD-4) so the
+ * Auditoria board (utils/auditSignals.ts) produces predictable signals in e2e:
+ *
+ * - Q1 (multi-ruta): "María De León" in 2 DIFFERENT rutaFormativa
+ *   → 1 Q1 candidate (precedence over temporal, AD-6)
+ * - Duplicado de carga: "Juan Fernández" with CONSECUTIVE ids (100003/100004),
+ *   same ruta and same fechaRegistro → 1 duplicate group
+ * - Q2 (re-inscripción): "Rosa Castillo" same ruta, fechas ~8 months apart
+ *   (244 days > T1=30) → 1 Q2 candidate
+ *
+ * Ids use a reserved range (100001+) that never collides with generated ids
+ * (1..count), and last names are outside the generator's list so fixture
+ * identities never merge with generated rows for any count. Dates and cedulas
+ * are fixed; rows use a dedicated provincia/municipio/centro so they do not
+ * disturb the aggregation-based assertions of other e2e specs.
+ */
+const AUDIT_FIXTURES: Participant[] = [
+  {
+    id: 100001,
+    nombres: 'María',
+    apellidos: 'De León',
+    cedula: '001-0000001-1',
+    edad: 31,
+    fechaNacimiento: '1995-03-10',
+    fechaRegistro: '2024-01-15',
+    fechaInclusion: '2024-01-15',
+    tutor: null,
+    cedulaTutor: null,
+    vulnerabilidades: null,
+    estado: 'Identificado',
+    sexo: 'femenino',
+    provincia: 'Monte Plata',
+    municipio: 'Monte Plata',
+    centro: 'Centro Especializado',
+    direccion: 'Calle 1, No. 1',
+    rutaFormativa: 'Informática',
+    telefonos: '809-555-0101',
+    telefonosResponsable: '829-555-0102',
+    edadRegistro: 20,
+    estadoCivil: 'soltero',
+    nivelEstudio: 'medio',
+    alergias: null,
+    discapacidades: null,
+    enfermedades: null,
+    programasSociales: null,
+  },
+  {
+    id: 100002,
+    nombres: 'María',
+    apellidos: 'De León',
+    cedula: '001-0000001-1',
+    edad: 31,
+    fechaNacimiento: '1995-03-10',
+    fechaRegistro: '2024-01-20',
+    fechaInclusion: '2024-01-20',
+    tutor: null,
+    cedulaTutor: null,
+    vulnerabilidades: null,
+    estado: 'Identificado',
+    sexo: 'femenino',
+    provincia: 'Monte Plata',
+    municipio: 'Monte Plata',
+    centro: 'Centro Especializado',
+    direccion: 'Calle 1, No. 1',
+    rutaFormativa: 'Camarero de Barra',
+    telefonos: '809-555-0101',
+    telefonosResponsable: '829-555-0102',
+    edadRegistro: 20,
+    estadoCivil: 'soltero',
+    nivelEstudio: 'medio',
+    alergias: null,
+    discapacidades: null,
+    enfermedades: null,
+    programasSociales: null,
+  },
+  {
+    id: 100003,
+    nombres: 'Juan',
+    apellidos: 'Fernández',
+    cedula: '001-0000002-2',
+    edad: 28,
+    fechaNacimiento: '1997-11-05',
+    fechaRegistro: '2024-05-02',
+    fechaInclusion: '2024-05-02',
+    tutor: null,
+    cedulaTutor: null,
+    vulnerabilidades: null,
+    estado: 'Identificado',
+    sexo: 'masculino',
+    provincia: 'Monte Plata',
+    municipio: 'Monte Plata',
+    centro: 'Centro Especializado',
+    direccion: 'Calle 1, No. 1',
+    rutaFormativa: 'Programa A',
+    telefonos: '809-555-0201',
+    telefonosResponsable: '829-555-0202',
+    edadRegistro: 21,
+    estadoCivil: 'casado',
+    nivelEstudio: 'basico',
+    alergias: null,
+    discapacidades: null,
+    enfermedades: null,
+    programasSociales: null,
+  },
+  {
+    id: 100004,
+    nombres: 'Juan',
+    apellidos: 'Fernández',
+    cedula: '001-0000002-2',
+    edad: 28,
+    fechaNacimiento: '1997-11-05',
+    fechaRegistro: '2024-05-02',
+    fechaInclusion: '2024-05-02',
+    tutor: null,
+    cedulaTutor: null,
+    vulnerabilidades: null,
+    estado: 'Identificado',
+    sexo: 'masculino',
+    provincia: 'Monte Plata',
+    municipio: 'Monte Plata',
+    centro: 'Centro Especializado',
+    direccion: 'Calle 1, No. 1',
+    rutaFormativa: 'Programa A',
+    telefonos: '809-555-0201',
+    telefonosResponsable: '829-555-0202',
+    edadRegistro: 21,
+    estadoCivil: 'casado',
+    nivelEstudio: 'basico',
+    alergias: null,
+    discapacidades: null,
+    enfermedades: null,
+    programasSociales: null,
+  },
+  {
+    id: 100005,
+    nombres: 'Rosa',
+    apellidos: 'Castillo',
+    cedula: '001-0000003-3',
+    edad: 35,
+    fechaNacimiento: '1990-07-25',
+    fechaRegistro: '2024-01-20',
+    fechaInclusion: '2024-01-20',
+    tutor: null,
+    cedulaTutor: null,
+    vulnerabilidades: null,
+    estado: 'Identificado',
+    sexo: 'femenino',
+    provincia: 'Monte Plata',
+    municipio: 'Monte Plata',
+    centro: 'Centro Especializado',
+    direccion: 'Calle 1, No. 1',
+    rutaFormativa: 'Programa B',
+    telefonos: '809-555-0301',
+    telefonosResponsable: '829-555-0302',
+    edadRegistro: 30,
+    estadoCivil: 'divorciado',
+    nivelEstudio: 'superior',
+    alergias: null,
+    discapacidades: null,
+    enfermedades: null,
+    programasSociales: null,
+  },
+  {
+    id: 100006,
+    nombres: 'Rosa',
+    apellidos: 'Castillo',
+    cedula: '001-0000003-3',
+    edad: 35,
+    fechaNacimiento: '1990-07-25',
+    fechaRegistro: '2024-09-20',
+    fechaInclusion: '2024-09-20',
+    tutor: null,
+    cedulaTutor: null,
+    vulnerabilidades: null,
+    estado: 'Identificado',
+    sexo: 'femenino',
+    provincia: 'Monte Plata',
+    municipio: 'Monte Plata',
+    centro: 'Centro Especializado',
+    direccion: 'Calle 1, No. 1',
+    rutaFormativa: 'Programa B',
+    telefonos: '809-555-0301',
+    telefonosResponsable: '829-555-0302',
+    edadRegistro: 30,
+    estadoCivil: 'divorciado',
+    nivelEstudio: 'superior',
+    alergias: null,
+    discapacidades: null,
+    enfermedades: null,
+    programasSociales: null,
+  },
+];
+
+/**
  * Generate N realistic-looking participants for E2E test mock data.
+ * Appends the fixed audit fixtures (AUDIT_FIXTURES) so audit signals are
+ * deterministic for any spec that navigates to /indicadores/auditoria.
  */
 function generateParticipants(count: number): Participant[] {
   const firstNames = ['Ana', 'Luis', 'Carlos', 'Maria', 'Pedro', 'Rosa', 'Juan', 'Diana', 'Jose', 'Elena'];
@@ -16,7 +214,7 @@ function generateParticipants(count: number): Participant[] {
   const edoCiviles = ['soltero', 'casado', 'divorciado', 'union libre'];
   const niveles = ['basico', 'medio', 'superior', 'ninguno'];
 
-  return Array.from({ length: count }, (_, i) => ({
+  const generated = Array.from({ length: count }, (_, i) => ({
     id: i + 1,
     nombres: firstNames[i % firstNames.length],
     apellidos: lastNames[i % lastNames.length],
@@ -45,6 +243,8 @@ function generateParticipants(count: number): Participant[] {
     enfermedades: null,
     programasSociales: null,
   }));
+
+  return [...generated, ...AUDIT_FIXTURES];
 }
 
 /**
