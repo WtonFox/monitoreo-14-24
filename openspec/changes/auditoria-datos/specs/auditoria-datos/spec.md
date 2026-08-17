@@ -10,7 +10,7 @@ Semántica de filas CONFIRMADA (2026-08-13): 1 fila por persona registrada, sin 
 
 ## ADDED Requirements
 
-### AUD-0: Identidad normalizada
+### Requirement: Identidad normalizada (AUD-0)
 
 La clave primaria de detección de grupos repetidos MUST ser `nombres + apellidos` normalizados (trim, case-fold, sin acentos, sin espacios internos). La cédula normalizada (solo dígitos) MUST usarse como confirmación secundaria cuando exista; los valores `'N/D'`/vacíos MUST excluirse del matching por cédula pero NO del matching por nombre.
 
@@ -32,7 +32,7 @@ La clave primaria de detección de grupos repetidos MUST ser `nombres + apellido
 - WHEN se agrupa por identidad
 - THEN ambas SHALL pertenecer al mismo grupo candidato
 
-### AUD-1: Board Auditoría
+### Requirement: Board Auditoría (AUD-1)
 
 El sistema MUST renderizar `AuditoriaBoard` en `/indicadores/auditoria`, con tab "Auditoría" en el grupo "Datos y Calidad" de `TAB_GROUPS` y acceso con los permisos existentes de `/indicadores`. Extiende R11 de `indicators-board` sin cambios a `computeIndicators` ni `routeBoardMap`.
 
@@ -60,7 +60,7 @@ El sistema MUST renderizar `AuditoriaBoard` en `/indicadores/auditoria`, con tab
 - WHEN el board renderiza
 - THEN SHALL mostrar el estado de carga del shell
 
-### AUD-2: Señal — Duplicados de carga
+### Requirement: Señal — Duplicados de carga (AUD-2)
 
 El sistema MUST detectar duplicados de carga como grupos con identidad normalizada repetida, misma `rutaFormativa` e ids consecutivos o fechas cercanas, y MOSTRAR count + lista candidata.
 
@@ -76,7 +76,7 @@ El sistema MUST detectar duplicados de carga como grupos con identidad normaliza
 - WHEN se computa la señal
 - THEN NO SHALL clasificarse como duplicado de carga (candidato Q2, AUD-4)
 
-### AUD-3: Señal — Multi-ruta (Q1)
+### Requirement: Señal — Multi-ruta (Q1) (AUD-3)
 
 El sistema MUST detectar candidatos multi-ruta como identidad repetida con ≥2 `rutaFormativa` distintas, y MOSTRAR count + lista con las rutas.
 
@@ -92,7 +92,7 @@ El sistema MUST detectar candidatos multi-ruta como identidad repetida con ≥2 
 - WHEN se computa la señal
 - THEN SHALL listarse como candidato con caveat de homonimia visible
 
-### AUD-4: Señal — Re-inscripción (Q2)
+### Requirement: Señal — Re-inscripción (Q2) (AUD-4)
 
 El sistema MUST detectar candidatos re-inscripción como identidad repetida con `fechaRegistro` distante o misma ruta con fechas separadas, y MOSTRAR count + lista candidata.
 
@@ -108,7 +108,7 @@ El sistema MUST detectar candidatos re-inscripción como identidad repetida con 
 - WHEN se computa la señal
 - THEN las cercanas SHALL ir a duplicados (AUD-2) y la distante a Q2
 
-### AUD-5: Señal — ND cédula
+### Requirement: Señal — ND cédula (AUD-5)
 
 El sistema MUST mostrar count y porcentaje de registros sin cédula válida (`'N/D'`, vacía o solo no-dígitos) sobre el universo filtrado, y listar los registros afectados.
 
@@ -124,7 +124,7 @@ El sistema MUST mostrar count y porcentaje de registros sin cédula válida (`'N
 - WHEN se computa la señal
 - THEN SHALL mostrar `0` y `0.0%` con lista vacía
 
-### AUD-6: Señal — Anomalías fecha/edad
+### Requirement: Señal — Anomalías fecha/edad (AUD-6)
 
 El sistema MUST detectar y contar: `fechaNacimiento` futura, `fechaInclusion < fechaRegistro`, edad que no coincide con `fechaNacimiento`, y `edadRegistro` inconsistente con `edad`.
 
@@ -146,7 +146,7 @@ El sistema MUST detectar y contar: `fechaNacimiento` futura, `fechaInclusion < f
 - WHEN se computa la señal
 - THEN NO SHALL contar como anomalía lógica (ya contada como corrupta, AUD-9)
 
-### AUD-7: Señal — Vocabulario de estados
+### Requirement: Señal — Vocabulario de estados (AUD-7)
 
 El sistema MUST enumerar los valores distintos de `estado` con su count y MARCAR los que no pertenecen al vocabulario conocido (`PARTICIPANT_STATUSES` y estados conocidos: Identificado, Egresado pasantía, Egresado fase lectiva, Desertor, No admitido, Baja, Cancelado, Inactivo).
 
@@ -162,7 +162,7 @@ El sistema MUST enumerar los valores distintos de `estado` con su count y MARCAR
 - WHEN se computa la señal
 - THEN SHALL mostrarse la enumeración sin valores marcados
 
-### AUD-8: Señal — Centinelas
+### Requirement: Señal — Centinelas (AUD-8)
 
 El sistema MUST contar valores centinela (`n/d`, `n/a`, `s/d`, "sin centro", "sin estado", "sin provincia", case-insensitive) en `centro`, `estado`, `provincia` y `rutaFormativa`, reutilizando los clasificadores de `utils/normalize.ts`.
 
@@ -178,7 +178,7 @@ El sistema MUST contar valores centinela (`n/d`, `n/a`, `s/d`, "sin centro", "si
 - WHEN se computa la señal
 - THEN SHALL mostrar 0 en cada campo
 
-### AUD-9: Señal — Corruptos
+### Requirement: Señal — Corruptos (AUD-9)
 
 El sistema MUST mostrar counts de registros corruptos del sync (`corruptedItems` y `syncStats.corrupted`, estados `GENERIC_ERROR`/`CRITICALLY_CORRUPT`) con drill-down de razones.
 
@@ -194,7 +194,7 @@ El sistema MUST mostrar counts de registros corruptos del sync (`corruptedItems`
 - WHEN se computa la señal
 - THEN SHALL mostrar 0 y lista vacía
 
-### AUD-10: Callout Q3
+### Requirement: Callout Q3 (AUD-10)
 
 El sistema MUST mostrar un callout informativo: el egreso repetido (Q3) NO es respondible porque el modelo no expone `fechaEgreso` (confirmado en Swagger).
 
@@ -204,7 +204,7 @@ El sistema MUST mostrar un callout informativo: el egreso repetido (Q3) NO es re
 - WHEN se visualiza la sección de señales
 - THEN SHALL verse el texto "no respondible sin fecha de egreso"
 
-### AUD-11: Filtros globales
+### Requirement: Filtros globales (AUD-11)
 
 El board MUST computar todas las señales sobre `filteredData` de `useIndicadoresFilters()`, respetando los filtros globales existentes (año/provincia/municipio/sexo/estado).
 
@@ -220,7 +220,7 @@ El board MUST computar todas las señales sobre `filteredData` de `useIndicadore
 - WHEN el board re-renderiza
 - THEN las señales SHALL recalcularse sobre el nuevo universo
 
-### AUD-12: Etiquetado de candidatos
+### Requirement: Etiquetado de candidatos (AUD-12)
 
 Toda lista de duplicados, Q1 o Q2 MUST etiquetarse como "candidatos" con caveat visible (homonimia posible, clasificación heurística) y NO SHALL presentarse como afirmación.
 
