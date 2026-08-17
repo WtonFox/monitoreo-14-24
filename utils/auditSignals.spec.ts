@@ -309,3 +309,81 @@ describe('utils/auditSignals — corruptos (AUD-9, AD-9)', () => {
         expect(s.corruptos.items).toHaveLength(0);
     });
 });
+
+describe('utils/auditSignals — Q3 egreso repetido (AUD-10, AD-6)', () => {
+    it('2 filas + 1 "Egresado pasantía" → 1 candidato Q3 con identity/rows/rutas/estados/fechas', () => {
+        const data = [
+            row({ id: 6001, estado: 'Egresado pasantía' }),
+            row({ id: 6002, estado: 'Identificado' })
+        ];
+        const s = computeAuditSignals(data, [], syncStats());
+        expect(s.q3).toHaveLength(1);
+        expect(s.q3[0].identity).toBeDefined();
+        expect(s.q3[0].rows.map((r) => r.id)).toEqual([6001, 6002]);
+        expect(s.q3[0].rutas).toEqual(['Programa A']);
+        expect(s.q3[0].estados).toEqual(['Egresado pasantía', 'Identificado']);
+        expect(s.q3[0].fechas).toEqual(['2025-01-15', '2025-01-15']);
+    });
+
+    it('2 filas sin estado egresado → Q3 vacío', () => {
+        const data = [
+            row({ id: 6003, estado: 'Identificado' }),
+            row({ id: 6004, estado: 'Desertor' })
+        ];
+        const s = computeAuditSignals(data, [], syncStats());
+        expect(s.q3).toHaveLength(0);
+    });
+
+    it('1 sola fila egresado → Q3 vacío (requiere ≥2 filas)', () => {
+        const data = [row({ id: 6005, estado: 'Egresado fase lectiva' })];
+        const s = computeAuditSignals(data, [], syncStats());
+        expect(s.q3).toHaveLength(0);
+    });
+
+    it('1 sola fila sin egresado → Q3 vacío', () => {
+        const data = [row({ id: 6006, estado: 'Identificado' })];
+        const s = computeAuditSignals(data, [], syncStats());
+        expect(s.q3).toHaveLength(0);
+    });
+
+    it('overlap: 2 rutas distintas + egresado → presente en Q1 Y Q3', () => {
+        const data = [
+            row({ id: 6007, rutaFormativa: 'Programa A', estado: 'Egresado pasantía' }),
+            row({ id: 6008, rutaFormativa: 'Programa B', estado: 'Identificado' })
+        ];
+        const s = computeAuditSignals(data, [], syncStats());
+        expect(s.q1).toHaveLength(1);
+        expect(s.q3).toHaveLength(1);
+    });
+
+    it('overlap: misma ruta con fechas distantes + egresado → presente en Q2 Y Q3', () => {
+        const data = [
+            row({ id: 6009, fechaRegistro: '2024-01-15', estado: 'Egresado pasantía' }),
+            row({ id: 6010, fechaRegistro: '2024-09-15', estado: 'Identificado' })
+        ];
+        const s = computeAuditSignals(data, [], syncStats());
+        expect(s.q2).toHaveLength(1);
+        expect(s.q3).toHaveLength(1);
+    });
+
+    it('`estados` mapea `rows` en orden', () => {
+        const data = [
+            row({ id: 6011, estado: 'Identificado' }),
+            row({ id: 6012, estado: 'Egresado pasantía' }),
+            row({ id: 6013, estado: 'Desertor' })
+        ];
+        const s = computeAuditSignals(data, [], syncStats());
+        expect(s.q3).toHaveLength(1);
+        expect(s.q3[0].rows.map((r) => r.id)).toEqual([6011, 6012, 6013]);
+        expect(s.q3[0].estados).toEqual(['Identificado', 'Egresado pasantía', 'Desertor']);
+    });
+
+    it('corruptos excluidos del agrupamiento → Q3 vacío', () => {
+        const data = [
+            row({ id: 6014, estado: 'GENERIC_ERROR' }),
+            row({ id: 6015, estado: 'Egresado pasantía' })
+        ];
+        const s = computeAuditSignals(data, [], syncStats());
+        expect(s.q3).toHaveLength(0);
+    });
+});

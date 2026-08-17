@@ -12,7 +12,7 @@
  */
 import type { Participant } from '../types';
 import type { CorruptedRecord, SyncStats } from '../stores/participantStore';
-import { isNotAvailable } from './normalize';
+import { isGraduatedStatus, isNotAvailable } from './normalize';
 import { normalizeCedula, normalizeIdentity } from './auditIdentity';
 
 /** Umbral T1 (AD-4): dos registros separados por más de 30 días no son una carga duplicada. */
@@ -107,10 +107,20 @@ export interface Q2Candidate {
     fechas: string[];
 }
 
+export interface Q3Candidate {
+    identity: string;
+    rows: Participant[];
+    rutas: string[];
+    estados: string[];          // por fila, en orden de rows
+    fechas: string[];           // fechaRegistro ?? ''
+    cedulaConfirmada?: boolean; // desambigua homonimia (como Q1)
+}
+
 export interface AuditSignals {
     duplicados: DuplicateGroup[];
     q1: Q1Candidate[];
     q2: Q2Candidate[];
+    q3: Q3Candidate[];
     ndCedula: { count: number; pct: number; rows: Participant[] };
     anomalias: {
         totalFilas: number;
@@ -290,6 +300,7 @@ export function computeAuditSignals(
     const duplicados: DuplicateGroup[] = [];
     const q1: Q1Candidate[] = [];
     const q2: Q2Candidate[] = [];
+    const q3: Q3Candidate[] = [];
 
     for (const [identity, rows] of groups) {
         if (rows.length < 2) continue;
@@ -299,6 +310,20 @@ export function computeAuditSignals(
             q1.push({ identity, rutas: [...routes], rows, cedulaConfirmada: hasConfirmedCedula(rows) });
         } else {
             classifySameRoute(identity, rows, duplicados, q2);
+        }
+
+        // AD-6: rama Q3 INDEPENDIENTE — ≥2 filas y ≥1 fila con estado egresado.
+        // Se evalúa para todo grupo (overlap Q3↔Q1/Q2 es requisito explícito, AUD-10);
+        // reutiliza `routes` calculado arriba; no altera la semántica de Q1/Q2/duplicados.
+        if (rows.length >= 2 && rows.some((row) => isGraduatedStatus(row.estado))) {
+            q3.push({
+                identity,
+                rows,
+                rutas: [...routes],
+                estados: rows.map((row) => row.estado ?? ''),
+                fechas: rows.map((row) => row.fechaRegistro ?? ''),
+                cedulaConfirmada: hasConfirmedCedula(rows)
+            });
         }
     }
 
@@ -317,6 +342,7 @@ export function computeAuditSignals(
         duplicados,
         q1,
         q2,
+        q3,
         ndCedula: {
             count: ndCount,
             pct: filteredData.length > 0 ? Math.round((ndCount / filteredData.length) * 1000) / 10 : 0,
