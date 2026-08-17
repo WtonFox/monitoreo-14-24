@@ -42,7 +42,7 @@ Chain strategy: feature-branch-chain
 
 ## Phase 3: S3 — Tarjeta Q3 + caveatText (PR 3)
 
-- [ ] 3.1 `SignalCard` gana prop `caveatText?: string` (default `CANDIDATE_CAVEAT`); `AuditListModal` gana `caveat?: React.ReactNode` como footer (AUD-12). Gate: `npm run typecheck`.
-- [ ] 3.2 Reemplazar callout Q3 (líneas 452–463) por SignalCard Q3: badge "candidatos", caveat Q3 propio (homonimia + "sin `fechaEgreso` no se confirma un egreso repetido"), lista `slice(VER_MAS_LIMIT)`, botón "Ver más" → `setOpenModal('q3')`; nota `<p>` hermano conservando EXACTO "no respondible sin fecha de egreso" (AD-7). Gate: `npm run typecheck`.
-- [ ] 3.3 Modal q3: children con `personName(rows)` + "N filas", `Rutas`, `estados` (egresado `isGraduatedStatus` → `text-emerald-600 font-semibold`), `Fechas`; footer caveat Q3. Gate: `npm run typecheck`.
-- [ ] 3.4 `AuditoriaBoard.spec.tsx`: mantener test AUD-10 existente pasando (frase preservada); nuevo test — fixture con fila egresado → tarjeta Q3 lista candidato + nota "no respondible sin fecha de egreso" + caveat Q3. Gate: `npx vitest run --project integration pages/indicadores/AuditoriaBoard.spec.tsx`.
+- [x] 3.1 `SignalCard` gana prop `caveatText?: string` (default `CANDIDATE_CAVEAT`); `AuditListModal` gana `caveat?: React.ReactNode` como footer (AUD-12). Gate: `npm run typecheck`.
+- [x] 3.2 Reemplazar callout Q3 (líneas 452–463) por SignalCard Q3: badge "candidatos", caveat Q3 propio (homonimia + "sin `fechaEgreso` no se confirma un egreso repetido"), lista `slice(VER_MAS_LIMIT)`, botón "Ver más" → `setOpenModal('q3')`; nota `<p>` hermano conservando EXACTO "no respondible sin fecha de egreso" (AD-7). Gate: `npm run typecheck`.
+- [x] 3.3 Modal q3: children con `personName(rows)` + "N filas", `Rutas`, `estados` (egresado `isGraduatedStatus` → `text-emerald-600 font-semibold`), `Fechas`; footer caveat Q3. Gate: `npm run typecheck`.
+- [x] 3.4 `AuditoriaBoard.spec.tsx`: mantener test AUD-10 existente pasando (frase preservada); nuevo test — fixture con fila egresado → tarjeta Q3 lista candidato + nota "no respondible sin fecha de egreso" + caveat Q3. Gate: `npx vitest run --project integration pages/indicadores/AuditoriaBoard.spec.tsx`.

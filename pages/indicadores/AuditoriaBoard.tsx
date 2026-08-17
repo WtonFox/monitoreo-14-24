@@ -19,6 +19,7 @@ import { useParticipantStore } from '../../stores/participantStore';
 import { computeAuditSignals } from '../../utils/auditSignals';
 import type { AuditSignals } from '../../utils/auditSignals';
 import AuditListModal from '../../components/AuditListModal';
+import { isGraduatedStatus } from '../../utils/normalize';
 import type { Participant } from '../../types';
 
 interface KpiCard {
@@ -46,6 +47,10 @@ const EmptyList: React.FC = () => <p className="text-sm text-gray-400">Sin datos
 /** Caveat AUD-12: los grupos Q1/Q2/duplicados son candidatos, no afirmaciones. */
 const CANDIDATE_CAVEAT =
   'Lista de candidatos: clasificación heurística sin historial en el origen, puede existir homonimia real. No se presenta como afirmación.';
+
+/** Caveat Q3 (AUD-12/AD-5): sin fechaEgreso no se confirma un egreso repetido. */
+const Q3_CAVEAT =
+  'Candidatos: sin fechaEgreso no se confirma un egreso repetido; posible homonimia. Clasificación heurística, no se presenta como afirmación.';
 
 /** Botón "Ver más" (AUD-13): abre el modal con la lista COMPLETA. */
 const VerMasButton: React.FC<{ onClick: () => void }> = ({ onClick }) => (
@@ -113,6 +118,7 @@ const MODAL_META: Record<ModalSignal, { title: string; icon: React.ReactNode; to
     title: 'Egreso repetido (Q3)',
     icon: <Info size={20} />,
     tone: 'bg-amber-50 text-amber-600',
+    caveat: Q3_CAVEAT,
   },
 };
 
@@ -268,6 +274,23 @@ const renderModalChildren = (signals: AuditSignals, signal: ModalSignal): React.
                 <span className="text-xs text-gray-400">{c.rows.length} filas</span>
               </div>
               <p className="text-xs text-gray-500">Rutas: {c.rutas.join(' · ')}</p>
+              <p className="text-xs text-gray-500">
+                Estados:{' '}
+                {c.estados.map((estado, j) => (
+                  <span key={`q3s-${c.identity}-${j}`}>
+                    {j > 0 && ' · '}
+                    <span
+                      className={
+                        isGraduatedStatus(estado)
+                          ? 'text-emerald-600 font-semibold'
+                          : ''
+                      }
+                    >
+                      {estado || '—'}
+                    </span>
+                  </span>
+                ))}
+              </p>
               <p className="text-xs text-gray-400">Fechas: {c.fechas.join(' · ') || '—'}</p>
             </li>
           ))}
@@ -284,6 +307,7 @@ interface SignalCardProps {
   hint?: string;
   badge?: string;
   caveat?: boolean;
+  caveatText?: string;
   children: React.ReactNode;
 }
 
@@ -295,6 +319,7 @@ const SignalCard: React.FC<SignalCardProps> = ({
   hint,
   badge,
   caveat,
+  caveatText = CANDIDATE_CAVEAT,
   children,
 }) => (
   <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
@@ -317,7 +342,7 @@ const SignalCard: React.FC<SignalCardProps> = ({
     </div>
     {caveat && (
       <p className="mt-3 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2">
-        {CANDIDATE_CAVEAT}
+        {caveatText}
       </p>
     )}
     <div className="mt-3">{children}</div>
@@ -686,17 +711,61 @@ const AuditoriaBoard: React.FC = () => {
         </SignalCard>
       </div>
 
-      {/* ── Q3 Callout (AUD-10) ── */}
-      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
-        <Info size={20} className="text-amber-600 mt-0.5 shrink-0" />
-        <div className="text-sm text-amber-800">
-          <p className="font-semibold">Egreso repetido (Q3)</p>
-          <p>
-            Egreso repetido: no respondible sin fecha de egreso. El modelo de
-            datos no expone el campo fechaEgreso, por lo que esta señal no es
-            respondible desde el dataset actual.
-          </p>
-        </div>
+      {/* ── Q3 Egreso repetido (AUD-10, AD-7): tarjeta candidata reemplaza el callout ── */}
+      <div className="mt-4">
+        <SignalCard
+          title="Egreso repetido (Q3)"
+          icon={<Info size={20} />}
+          tone="bg-amber-50 text-amber-600"
+          count={formatNumber(signals.q3.length)}
+          hint="candidatos con estado egresado en ≥2 filas"
+          badge="candidatos"
+          caveat
+          caveatText={Q3_CAVEAT}
+        >
+          {signals.q3.length === 0 ? (
+            <EmptyList />
+          ) : (
+            <ul className="divide-y divide-gray-100">
+              {signals.q3.slice(0, VER_MAS_LIMIT).map((c, i) => (
+                <li key={`q3-${c.identity}-${i}`} className="py-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium text-gray-800">{personName(c.rows)}</p>
+                    <span className="text-xs text-gray-400">{c.rows.length} filas</span>
+                  </div>
+                  <p className="text-xs text-gray-500">Rutas: {c.rutas.join(' · ')}</p>
+                  <p className="text-xs text-gray-500">
+                    Estados:{' '}
+                    {c.estados.map((estado, j) => (
+                      <span key={`q3c-${c.identity}-${j}`}>
+                        {j > 0 && ' · '}
+                        <span
+                          className={
+                            isGraduatedStatus(estado)
+                              ? 'text-emerald-600 font-semibold'
+                              : ''
+                          }
+                        >
+                          {estado || '—'}
+                        </span>
+                      </span>
+                    ))}
+                  </p>
+                  <p className="text-xs text-gray-400">Fechas: {c.fechas.join(' · ') || '—'}</p>
+                </li>
+              ))}
+            </ul>
+          )}
+          {signals.q3.length > VER_MAS_LIMIT && (
+            <VerMasButton onClick={() => setOpenModal('q3')} />
+          )}
+        </SignalCard>
+        {/* Nota de limitación bajo la tarjeta (AD-7): preserva la frase del test AUD-10. */}
+        <p className="text-xs text-gray-400 mt-3">
+          Egreso repetido: no respondible sin fecha de egreso. El modelo de
+          datos no expone el campo fechaEgreso, por lo que esta señal no es
+          respondible desde el dataset actual.
+        </p>
       </div>
 
       {/* ── Filtros + Info ── */}
