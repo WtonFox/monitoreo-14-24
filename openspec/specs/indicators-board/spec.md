@@ -217,6 +217,18 @@ The system MUST update routing for the unified calidad board and add any new boa
 - WHEN the route resolves
 - THEN the app SHALL redirect to `/indicadores/calidad-dato`
 
+#### Scenario: Auditoría route
+
+- GIVEN a user navigates to `/indicadores/auditoria`
+- WHEN the route resolves
+- THEN `AuditoriaBoard` SHALL render
+
+#### Scenario: Auditoría tab
+
+- GIVEN the "Datos y Calidad" tab group in `TAB_GROUPS`
+- WHEN the user opens the tab group
+- THEN a tab "Auditoría" SHALL exist alongside "Calidad del Dato"
+
 ### R12: Total Indicator Count
 
 The system MUST report the correct total count (65 existing + N new = 65 + 18 = 83 total indicators).
