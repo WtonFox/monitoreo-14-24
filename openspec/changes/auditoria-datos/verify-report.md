@@ -1,6 +1,6 @@
 ```yaml
 schema: gentle-ai.verify-result/v1
-evidence_revision: sha256:b4d9c0424fa86f2fce6f08cde09aa3d8c16c19999607d91f95d8d77bed527849
+evidence_revision: sha256:837df2f8ffb5d576a36b52c329cdc0aeb513bf426d73b17ae60bbcdaae1e5d32
 verdict: pass_with_warnings
 blockers: 0
 critical_findings: 0
@@ -8,10 +8,10 @@ requirements: 13/13
 scenarios: 29/29
 test_command: npx vitest run --project unit utils/auditIdentity.spec.ts utils/auditSignals.spec.ts && npx vitest run --project integration pages/indicadores/AuditoriaBoard.spec.tsx && npx playwright test e2e/navigation.spec.ts
 test_exit_code: 0
-test_output_hash: sha256:7dd737c77b9294dfb8b996a4a1f1c9648f62ef555f5c94f40d8fff7928de4dfc
+test_output_hash: sha256:442989d49d632d805232751dc24562c144257a69a07133c262904209ab6a130d
 build_command: npm run typecheck && npm run build
 build_exit_code: 0
-build_output_hash: sha256:379a2f5f04746b7a18d67f022e2b332bed59562a399bb82eba57980e74eabbeb
+build_output_hash: sha256:fb0e59a25a4663e68d14a6a29fa711bfcffd7d69d8c0ba3c52c076cfd6090b53
 ```
 
 ## Verification Report
@@ -20,14 +20,27 @@ build_output_hash: sha256:379a2f5f04746b7a18d67f022e2b332bed59562a399bb82eba5798
 **Version**: N/A
 **Mode**: Standard (strict_tdd: false per openspec/config.yaml)
 
+### Post-Merge Refresh (2026-08-17)
+
+- **HEAD**: `4bd1a6a6bd8edb7764f7eb099fd2999a78266d79` — "Merge pull request #15 from WtonFox/feature/auditoria-datos" (branch `main`, working tree clean, `git status --porcelain` empty).
+- **What changed since the original verify**: only git history — PR #15 merged the feature branch into `main`. No implementation files changed; the merged tree is byte-identical for this change's files to the originally verified state.
+- **Gates re-run against merged HEAD** (focused only, per the S2 vitest worker-crash environmental constraint):
+  - `npm run typecheck` → **exit 0** (`tsc --noEmit`, clean)
+  - `npm run build` → **exit 0** (vite v8.1.4 · 2704 modules transformed · built in 16.08s · PWA precache 40 entries)
+  - `npx vitest run --project unit utils/auditIdentity.spec.ts utils/auditSignals.spec.ts` → **33/33 PASS** (1.40s)
+  - `npx vitest run --project integration pages/indicadores/AuditoriaBoard.spec.tsx` → **5/5 PASS** (31.50s)
+  - `npx playwright test e2e/navigation.spec.ts` → **21/21 PASS** (1.2m, incl. "/indicadores/auditoria renders")
+- **Fresh evidence revision**: `sha256:837df2f8ffb5d576a36b52c329cdc0aeb513bf426d73b17ae60bbcdaae1e5d32` computed as SHA-256 (UTF-8, LF) over `HEAD commit + test_exit_code + test_output_hash + build_exit_code + build_output_hash`, with the output hashes below taken from the exact captured bytes of the re-run gates.
+- **Conclusion**: verification evidence refreshed against the merged HEAD; implementation unchanged (only history advanced via merge); the prior findings and verdict stand.
+
 ### Completeness
 | Metric | Value |
 |--------|-------|
 | Tasks total | 14 (1.1–1.4, 2.1–2.4, 3.1–3.2, 4.1–4.2, 5.1) |
-| Tasks complete | 14 (5.1 marked by this verify phase) |
+| Tasks complete | 14 (5.1 marked by the original verify phase) |
 | Tasks incomplete | 0 |
 
-### Build & Tests Execution
+### Build & Tests Execution (re-run @ merged HEAD 4bd1a6a)
 
 **Type Check**: ✅ Passed (exit 0)
 ```text
@@ -35,12 +48,12 @@ build_output_hash: sha256:379a2f5f04746b7a18d67f022e2b332bed59562a399bb82eba5798
 (no output — clean)
 ```
 
-**Build**: ✅ Passed (exit 0, 10.50s)
+**Build**: ✅ Passed (exit 0, 16.08s)
 ```text
 > vite build
-✓ 2704 modules transformed
+✓ 2704 modules transformed.
 dist/assets/AuditoriaBoard-qgSZm_yX.js  16.47 kB │ gzip: 4.80 kB
-✓ built in 10.50s
+✓ built in 16.08s
 PWA v1.3.0 — mode generateSW — precache 40 entries (3473.09 KiB)
 dist/sw.js, dist/workbox-9c191d2f.js generated
 ```
@@ -48,13 +61,13 @@ dist/sw.js, dist/workbox-9c191d2f.js generated
 **Tests (focused gates, per the S2 worker-crash environmental constraint)**:
 ```text
 unit:         npx vitest run --project unit utils/auditIdentity.spec.ts utils/auditSignals.spec.ts
-              Test Files 2 passed (2) · Tests 33 passed (33) · Duration 1.08s
+              Test Files 2 passed (2) · Tests 33 passed (33) · Duration 1.40s
 integration:  npx vitest run --project integration pages/indicadores/AuditoriaBoard.spec.tsx
-              Test Files 1 passed (1) · Tests 5 passed (5) · Duration 24.32s
+              Test Files 1 passed (1) · Tests 5 passed (5) · Duration 31.50s
 e2e:          npx playwright test e2e/navigation.spec.ts
-              21 passed (1.1m) — incl. "/indicadores/auditoria renders"
+              21 passed (1.2m) — incl. "/indicadores/auditoria renders"
 ```
-All three focused test commands exited 0. The full suites (`test:unit`, `test:int`, `test:e2e`) are NOT runnable reliably on this Windows machine (vitest worker fork crash `Worker exited unexpectedly`, 6+ min suites) — documented in S2; the focused runs above are the valid substitute evidence.
+All three focused test commands exited 0 on the merged HEAD. The full suites (`test:unit`, `test:int`, `test:e2e`) are NOT runnable reliably on this Windows machine (vitest worker fork crash `Worker exited unexpectedly`, 6+ min suites) — documented in S2; the focused runs above are the valid substitute evidence.
 
 **Lint**: ⚠️ Red repo-wide, pre-existing — NOT attributable to this change
 ```text
@@ -65,7 +78,7 @@ dropdown backdrop) — none in files created by this change.
 Prettier --check fails on untouched files too (utils/normalize.ts, App.tsx, BoardShell.tsx,
 useDashboardData.ts): repo convention is 4-space indent vs .prettierrc default (no tabWidth) 2-space.
 ```
-Zero lint findings introduced by auditoria-datos. The new files (`auditIdentity.ts`, `auditSignals.ts`, both specs, `AuditoriaBoard.tsx`, `AuditoriaBoard.spec.tsx`) are oxlint-clean.
+Zero lint findings introduced by auditoria-datos. The new files (`auditIdentity.ts`, `auditSignals.ts`, both specs, `AuditoriaBoard.tsx`, `AuditoriaBoard.spec.tsx`) are oxlint-clean. (Not re-run in this refresh — applies to the same merged bytes.)
 
 **Coverage**: ➖ Not available (no coverage threshold configured for this change; `test:coverage` not run).
 
@@ -76,7 +89,7 @@ Zero lint findings introduced by auditoria-datos. The new files (`auditIdentity.
 | AUD-0 Identidad normalizada | Variantes ortográficas coinciden | `utils/auditIdentity.spec.ts > normalizeNamePart equivale variantes` | ✅ COMPLIANT |
 | AUD-0 | Cédula refuerza sin ser requisito | `utils/auditIdentity.spec.ts > normalizeCedula '001-0000001-1' ≡ '00100000011'` | ✅ COMPLIANT |
 | AUD-0 | Sin cédula no excluye del grupo | `utils/auditIdentity.spec.ts > no depende de la cédula` + `utils/auditSignals.spec.ts > fila sin cédula comparte grupo por nombre` | ✅ COMPLIANT |
-| AUD-1 Board Auditoría | Navegación al board | `e2e/navigation.spec.ts > /indicadores/auditoria renders` (21/21 PASS) | ✅ COMPLIANT |
+| AUD-1 Board Auditoría | Navegación al board | `e2e/navigation.spec.ts > /indicadores/auditoria renders` (21/21 PASS @ 4bd1a6a) | ✅ COMPLIANT |
 | AUD-1 | Acceso por tab | `IndicadoresLayout.tsx` TAB_GROUPS "Datos y Calidad" item Auditoría (junto a Calidad del Dato) + e2e title "Auditoría" visible | ✅ COMPLIANT (static + e2e) |
 | AUD-1 | Dataset vacío | `AuditoriaBoard.spec.tsx > muestra estado vacío "Sin datos"` | ✅ COMPLIANT |
 | AUD-1 | Carga en curso | `AuditoriaBoard.spec.tsx > muestra el estado de carga del shell` | ✅ COMPLIANT |
@@ -143,7 +156,7 @@ Zero lint findings introduced by auditoria-datos. The new files (`auditIdentity.
 
 **WARNING**:
 1. **Gate 5.1 lint red repo-wide (pre-existing)** — `npm run lint` (oxlint && prettier --check) falla en todo el repo con ~100 hallazgos en archivos ajenos a este cambio (vite.config.ts, MapFilters, Alertas, Sidebar, etc.) y prettier falla también en archivos intocados (convención 4-space del repo vs default 2-space de .prettierrc). El scoped check sobre los 11 archivos del cambio: solo 4 hallazgos pre-existentes en líneas no añadidas por esta change; los 6 archivos NUEVOS están limpios. No es atribuible a auditoria-datos.
-2. **Full test suites no ejecutables** — vitest worker fork crash ambiental en Windows (`Worker exited unexpectedly`), suites de 6+ min. Focalizados: unit 33/33, integration 5/5, playwright 21/21 — todos exit 0 (evidencia válida sustituta).
+2. **Full test suites no ejecutables** — vitest worker fork crash ambiental en Windows (`Worker exited unexpectedly`), suites de 6+ min. Focalizados (re-run @ 4bd1a6a): unit 33/33, integration 5/5, playwright 21/21 — todos exit 0 (evidencia válida sustituta).
 
 **SUGGESTION**:
 1. **LIST_LIMIT=50** — los drill-downs acotan listas a 50 con "+N más" y conteo. Los escenarios AUD-2..AUD-9 piden "listar" sin límite; la capa de datos (`computeAuditSignals`) NO limita (solo la vista). Con 70.283 registros reales y ~51 grupos repetidos en la muestra, 50 cubre el caso real; escalar implicaría paginación/virtualización.
@@ -154,4 +167,4 @@ Zero lint findings introduced by auditoria-datos. The new files (`auditIdentity.
 
 ### Verdict
 **PASS WITH WARNINGS**
-Las 13/13 requirements y 29/29 escenarios están cubiertos con tests pasando en runtime (focused: unit 33/33, integration 5/5, e2e 21/21; typecheck y build exit 0). Cero hallazgos nuevos de lint; los 4 hallazgos en archivos tocados son pre-existentes. Las advertencias son ambientales/pre-existentes (suites completas no confiables en Windows, lint repo-wide red, LIST_LIMIT=50, isInvalid stub, best-effort de corruptedItems), ninguna rompe un escenario de spec. Listo para archive.
+Las 13/13 requirements y 29/29 escenarios están cubiertos con tests pasando en runtime sobre el HEAD mergeado `4bd1a6a` (PR #15): focused unit 33/33, integration 5/5, e2e 21/21; typecheck y build exit 0. Cero hallazgos nuevos de lint; los 4 hallazgos en archivos tocados son pre-existentes. Las advertencias son ambientales/pre-existentes (suites completas no confiables en Windows, lint repo-wide red, LIST_LIMIT=50, isInvalid stub, best-effort de corruptedItems), ninguna rompe un escenario de spec. La implementación no cambió respecto a la verificación original — solo avanzó el historial vía merge. Listo para archive.
