@@ -112,6 +112,26 @@ const ndRows = (n: number): Participant[] =>
     })
   );
 
+/** Fixture Q3 (AUD-10): identidad con 2 filas y 1 estado egresado → candidato. */
+const q3Fixture = (): Participant[] => [
+  makeParticipant({
+    id: 8001,
+    nombres: 'Pedro',
+    apellidos: 'Mora',
+    estado: 'Egresado pasantía',
+    fechaRegistro: '2023-01-10',
+    fechaInclusion: null,
+  }),
+  makeParticipant({
+    id: 8002,
+    nombres: 'Pedro',
+    apellidos: 'Mora',
+    estado: 'Identificado',
+    fechaRegistro: '2024-06-20',
+    fechaInclusion: null,
+  }),
+];
+
 describe('AuditoriaBoard — "Ver más" y modal (AUD-13, S2)', () => {
   it('no muestra botón "Ver más" cuando la lista ND está dentro del límite (15)', () => {
     vi.mocked(useIndicadoresFilters).mockReturnValue({
@@ -242,7 +262,7 @@ describe('AuditoriaBoard — drill-downs y señales (AUD-2..AUD-10, AUD-12)', ()
     expect(text).toContain('Ruta formativa');
   });
 
-  it('muestra el callout Q3 (AUD-10)', () => {
+  it('muestra la nota de limitación Q3 (AUD-10)', () => {
     vi.mocked(useIndicadoresFilters).mockReturnValue({
       ...baseMockContext,
       filteredData: signalFixture(),
@@ -251,6 +271,25 @@ describe('AuditoriaBoard — drill-downs y señales (AUD-2..AUD-10, AUD-12)', ()
 
     const { container } = render(<AuditoriaBoard />);
     expect(container.textContent).toContain('no respondible sin fecha de egreso');
+  });
+
+  it('muestra la tarjeta Q3 con lista candidata, nota y caveat (AUD-10/AUD-12)', () => {
+    vi.mocked(useIndicadoresFilters).mockReturnValue({
+      ...baseMockContext,
+      filteredData: q3Fixture(),
+    });
+    setStoreState();
+
+    const { container } = render(<AuditoriaBoard />);
+    const text = container.textContent ?? '';
+    // Nota de limitación bajo la tarjeta (AD-7), frase preservada.
+    expect(text).toContain('no respondible sin fecha de egreso');
+    // Candidato listado en la tarjeta Q3 con N filas.
+    expect(text).toContain('Pedro Mora');
+    expect(text).toContain('2 filas');
+    // Badge "candidatos" + caveat Q3 (AUD-12).
+    expect(text).toContain('candidatos');
+    expect(text).toContain('sin fechaEgreso no se confirma un egreso repetido');
   });
 
   it('etiqueta las listas Q1/Q2/duplicados como candidatos con caveat (AUD-12)', () => {
