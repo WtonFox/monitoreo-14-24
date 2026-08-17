@@ -11,7 +11,7 @@
  * RegistroDiarioBoard.spec.tsx / CalidadIntegradaBoard.spec.tsx pattern.
  */
 import { describe, it, expect, vi } from 'vitest';
-import { render } from '@testing-library/react';
+import { render, fireEvent, waitFor, within } from '@testing-library/react';
 import { validParticipant } from '../../tests/helpers/participants';
 import type { Participant } from '../../types';
 import type { CorruptedRecord, SyncStats } from '../../stores/participantStore';
@@ -100,6 +100,99 @@ const signalFixture = (): Participant[] => [
   // Centinela (AUD-8): "Sin Centro".
   makeParticipant({ id: 7001, nombres: 'Eva', apellidos: 'Cruz', centro: 'Sin Centro' }),
 ];
+
+/** `n` filas ND de cédula (identidades distintas → sin agrupación Q1/Q2/dup). */
+const ndRows = (n: number): Participant[] =>
+  Array.from({ length: n }, (_, i) =>
+    makeParticipant({
+      id: 10000 + i,
+      nombres: `Persona ${i + 1}`,
+      apellidos: 'Test',
+      cedula: 'N/D',
+    })
+  );
+
+describe('AuditoriaBoard — "Ver más" y modal (AUD-13, S2)', () => {
+  it('no muestra botón "Ver más" cuando la lista ND está dentro del límite (15)', () => {
+    vi.mocked(useIndicadoresFilters).mockReturnValue({
+      ...baseMockContext,
+      filteredData: ndRows(15),
+    });
+    setStoreState();
+
+    const { container } = render(<AuditoriaBoard />);
+    expect(within(container).queryByText('Ver más')).toBeNull();
+  });
+
+  it('muestra botón y abre modal con las 16 filas, título y count (16 ND)', () => {
+    vi.mocked(useIndicadoresFilters).mockReturnValue({
+      ...baseMockContext,
+      filteredData: ndRows(16),
+    });
+    setStoreState();
+
+    const { container } = render(<AuditoriaBoard />);
+    // Fila 16 NO visible en la tarjeta (solo slice(0,15)).
+    expect(within(container).queryByText(/Persona 16/)).toBeNull();
+    expect(within(container).getByText('Ver más')).toBeTruthy();
+
+    fireEvent.click(within(container).getByText('Ver más'));
+
+    const dialog = within(container).getByRole('dialog');
+    expect(within(dialog).getByText('ND Cédula')).toBeTruthy();
+    expect(within(dialog).getByText('16')).toBeTruthy();
+    expect(within(dialog).getByText(/Persona 16/)).toBeTruthy();
+  });
+
+  it('cierra el modal con la tecla Escape', () => {
+    vi.mocked(useIndicadoresFilters).mockReturnValue({
+      ...baseMockContext,
+      filteredData: ndRows(16),
+    });
+    setStoreState();
+
+    const { container } = render(<AuditoriaBoard />);
+    fireEvent.click(within(container).getByText('Ver más'));
+    expect(within(container).getByRole('dialog')).toBeTruthy();
+
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(within(container).queryByRole('dialog')).toBeNull();
+  });
+
+  it('cierra el modal al hacer clic en el backdrop', () => {
+    vi.mocked(useIndicadoresFilters).mockReturnValue({
+      ...baseMockContext,
+      filteredData: ndRows(16),
+    });
+    setStoreState();
+
+    const { container } = render(<AuditoriaBoard />);
+    fireEvent.click(within(container).getByText('Ver más'));
+    const dialog = within(container).getByRole('dialog');
+    expect(dialog).toBeTruthy();
+
+    fireEvent.click(dialog);
+    expect(within(container).queryByRole('dialog')).toBeNull();
+  });
+
+  it('desmonta el modal ante un cambio de filteredData (stale-guard AD-3)', async () => {
+    let data: Participant[] = ndRows(16);
+    vi.mocked(useIndicadoresFilters).mockImplementation(
+      () => ({ ...baseMockContext, filteredData: data })
+    );
+    setStoreState();
+
+    const { container, rerender } = render(<AuditoriaBoard />);
+    fireEvent.click(within(container).getByText('Ver más'));
+    expect(within(container).getByRole('dialog')).toBeTruthy();
+
+    // Cambio de filtro global → nueva referencia de array.
+    data = ndRows(16);
+    rerender(<AuditoriaBoard />);
+
+    expect(within(container).queryByRole('dialog')).toBeNull();
+  });
+});
 
 describe('AuditoriaBoard — drill-downs y señales (AUD-2..AUD-10, AUD-12)', () => {
   it('renderiza KPIs y drill-downs con valores de computeAuditSignals real', () => {
