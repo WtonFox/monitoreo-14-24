@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { formatNumber, formatPercentage } from '../../utils/formatters';
 import {
   Copy,
@@ -18,6 +18,8 @@ import { IndicadoresFilterBar } from '../../components/IndicadoresFilterBar';
 import { useParticipantStore } from '../../stores/participantStore';
 import { computeAuditSignals } from '../../utils/auditSignals';
 import type { AuditSignals } from '../../utils/auditSignals';
+import AuditListModal from '../../components/AuditListModal';
+import { isGraduatedStatus } from '../../utils/normalize';
 import type { Participant } from '../../types';
 
 interface KpiCard {
@@ -30,8 +32,8 @@ interface KpiCard {
 
 // ── Helpers de drill-down (Phase 3) ──
 
-/** Límite de filas por lista para mantener el board liviano (AUD-2..AUD-9). */
-const LIST_LIMIT = 50;
+/** Límite visible de filas por tarjeta con lista; "Ver más" abre el modal (AUD-13). */
+export const VER_MAS_LIMIT = 15;
 
 /** Nombre legible de una persona desde la primera fila del grupo. */
 const personName = (rows: Participant[]): string => {
@@ -42,12 +44,260 @@ const personName = (rows: Participant[]): string => {
 
 const EmptyList: React.FC = () => <p className="text-sm text-gray-400">Sin datos</p>;
 
-const MoreNotice: React.FC<{ total: number; shown: number }> = ({ total, shown }) =>
-  total > shown ? <p className="text-xs text-gray-400 mt-2">…y {total - shown} más</p> : null;
-
 /** Caveat AUD-12: los grupos Q1/Q2/duplicados son candidatos, no afirmaciones. */
 const CANDIDATE_CAVEAT =
   'Lista de candidatos: clasificación heurística sin historial en el origen, puede existir homonimia real. No se presenta como afirmación.';
+
+/** Caveat Q3 (AUD-12/AD-5): sin fechaEgreso no se confirma un egreso repetido. */
+const Q3_CAVEAT =
+  'Candidatos: sin fechaEgreso no se confirma un egreso repetido; posible homonimia. Clasificación heurística, no se presenta como afirmación.';
+
+/** Botón "Ver más" (AUD-13): abre el modal con la lista COMPLETA. */
+const VerMasButton: React.FC<{ onClick: () => void }> = ({ onClick }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className="mt-2 text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline transition-colors"
+  >
+    Ver más
+  </button>
+);
+
+/** Señales con modal "Ver más" (AUD-13). 'q3' se añade en S3 (tarjeta Q3). */
+type ModalSignal =
+  | 'duplicados'
+  | 'q1'
+  | 'q2'
+  | 'nd'
+  | 'anomalias'
+  | 'vocabulario'
+  | 'corruptos'
+  | 'q3';
+
+/** Metadatos estáticos del modal por señal (AD-2): título, icono, tono y caveat. */
+const MODAL_META: Record<ModalSignal, { title: string; icon: React.ReactNode; tone: string; caveat?: React.ReactNode }> = {
+  duplicados: {
+    title: 'Duplicados de carga',
+    icon: <Copy size={20} />,
+    tone: 'bg-cyan-50 text-cyan-600',
+    caveat: CANDIDATE_CAVEAT,
+  },
+  q1: {
+    title: 'Multi-ruta (Q1)',
+    icon: <GitBranch size={20} />,
+    tone: 'bg-indigo-50 text-indigo-600',
+    caveat: CANDIDATE_CAVEAT,
+  },
+  q2: {
+    title: 'Re-inscripción (Q2)',
+    icon: <RefreshCw size={20} />,
+    tone: 'bg-blue-50 text-blue-600',
+    caveat: CANDIDATE_CAVEAT,
+  },
+  nd: {
+    title: 'ND Cédula',
+    icon: <IdCard size={20} />,
+    tone: 'bg-amber-50 text-amber-600',
+  },
+  anomalias: {
+    title: 'Anomalías fecha/edad',
+    icon: <AlertTriangle size={20} />,
+    tone: 'bg-red-50 text-red-600',
+  },
+  vocabulario: {
+    title: 'Vocabulario de estados',
+    icon: <BookOpen size={20} />,
+    tone: 'bg-violet-50 text-violet-600',
+  },
+  corruptos: {
+    title: 'Corruptos',
+    icon: <FileWarning size={20} />,
+    tone: 'bg-rose-50 text-rose-600',
+  },
+  q3: {
+    title: 'Egreso repetido (Q3)',
+    icon: <Info size={20} />,
+    tone: 'bg-amber-50 text-amber-600',
+    caveat: Q3_CAVEAT,
+  },
+};
+
+/** Merge de los 4 sub-checks de anomalías en una lista única (AD-2). */
+const flattenAnomalias = (
+  a: AuditSignals['anomalias']
+): { row: Participant; reason: string }[] => [
+  ...a.futura.map((x) => ({ row: x.row, reason: 'Fecha de nacimiento futura' })),
+  ...a.inclusionPrevia.map((x) => ({ row: x.row, reason: 'Inclusión anterior al registro' })),
+  ...a.edadMismatch.map((x) => ({ row: x.row, reason: 'Edad no coincide con fecha de nacimiento' })),
+  ...a.edadRegistroMenor.map((x) => ({ row: x.row, reason: 'Edad menor que edad de registro' })),
+];
+
+/** Count formateado del modal por señal (AD-2). */
+const modalCount = (signals: AuditSignals, signal: ModalSignal): string => {
+  switch (signal) {
+    case 'duplicados':
+      return formatNumber(signals.duplicados.length);
+    case 'q1':
+      return formatNumber(signals.q1.length);
+    case 'q2':
+      return formatNumber(signals.q2.length);
+    case 'nd':
+      return formatNumber(signals.ndCedula.count);
+    case 'anomalias':
+      return formatNumber(signals.anomalias.totalFilas);
+    case 'vocabulario':
+      return formatNumber(signals.vocabulario.fueraVocabulario);
+    case 'corruptos':
+      return formatNumber(signals.corruptos.count);
+    case 'q3':
+      return formatNumber(signals.q3.length);
+  }
+};
+
+/**
+ * Children del modal: lista COMPLETA (sin `.slice()`, AD-2) en el mismo orden
+ * que la tarjeta. El board arma el markup por señal (duplicación aceptada).
+ */
+const renderModalChildren = (signals: AuditSignals, signal: ModalSignal): React.ReactNode => {
+  switch (signal) {
+    case 'duplicados':
+      return (
+        <ul className="divide-y divide-gray-100">
+          {signals.duplicados.map((g, i) => (
+            <li key={`dup-${g.identity}-${i}`} className="py-2">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-gray-800">{personName(g.rows)}</p>
+                <span className="text-xs text-gray-400">{g.rows.length} filas</span>
+              </div>
+              <p className="text-xs text-gray-500">Ruta: {g.ruta}</p>
+              <p className="text-xs text-gray-500">IDs: {g.rows.map(r => r.id).join(', ')}</p>
+              <p className="text-xs text-gray-400">Fechas: {g.fechas.join(' · ') || '—'}</p>
+            </li>
+          ))}
+        </ul>
+      );
+    case 'q1':
+      return (
+        <ul className="divide-y divide-gray-100">
+          {signals.q1.map((c, i) => (
+            <li key={`q1-${c.identity}-${i}`} className="py-2">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-gray-800">{personName(c.rows)}</p>
+                <span className="text-xs text-gray-400">{c.rows.length} filas</span>
+              </div>
+              <p className="text-xs text-gray-500">Rutas: {c.rutas.join(' · ')}</p>
+              <p className="text-xs text-gray-400">
+                {c.cedulaConfirmada
+                  ? 'Cédula coincide entre rutas'
+                  : 'Sin cédula que confirme — posible homonimia'}
+              </p>
+            </li>
+          ))}
+        </ul>
+      );
+    case 'q2':
+      return (
+        <ul className="divide-y divide-gray-100">
+          {signals.q2.map((c, i) => (
+            <li key={`q2-${c.identity}-${i}`} className="py-2">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-gray-800">{personName(c.rows)}</p>
+                <span className="text-xs text-gray-400">{c.rows.length} filas</span>
+              </div>
+              <p className="text-xs text-gray-500">Ruta: {c.ruta}</p>
+              <p className="text-xs text-gray-400">Fechas: {c.fechas.join(' · ') || '—'}</p>
+            </li>
+          ))}
+        </ul>
+      );
+    case 'nd':
+      return (
+        <ul className="divide-y divide-gray-100">
+          {signals.ndCedula.rows.map(r => (
+            <li key={`nd-${r.id}`} className="py-1.5 flex items-center justify-between">
+              <p className="text-sm text-gray-700">
+                <span className="text-xs text-gray-400 mr-2">#{r.id}</span>
+                {personName([r])}
+              </p>
+              <span className="text-xs text-gray-400">{r.cedula || '—'}</span>
+            </li>
+          ))}
+        </ul>
+      );
+    case 'anomalias':
+      return (
+        <ul className="divide-y divide-gray-100">
+          {flattenAnomalias(signals.anomalias).map((entry, i) => (
+            <li key={`an-${entry.row.id}-${i}`} className="py-1.5">
+              <p className="text-sm text-gray-700">
+                <span className="text-xs text-gray-400 mr-2">#{entry.row.id}</span>
+                {personName([entry.row])}
+              </p>
+              <p className="text-xs text-red-500 ml-7">{entry.reason}</p>
+            </li>
+          ))}
+        </ul>
+      );
+    case 'vocabulario':
+      return (
+        <ul className="divide-y divide-gray-100">
+          {signals.vocabulario.valores
+            .filter(v => !v.conocido)
+            .map(v => (
+              <li key={`voc-${v.valor}`} className="py-1.5 flex items-center justify-between">
+                <p className="text-sm text-gray-700">{v.valor}</p>
+                <span className="text-xs font-medium text-violet-600">{v.count} filas</span>
+              </li>
+            ))}
+        </ul>
+      );
+    case 'corruptos':
+      return (
+        <ul className="divide-y divide-gray-100">
+          {signals.corruptos.items.map(item => (
+            <li key={`cor-${item.id}`} className="py-1.5">
+              <p className="text-sm text-gray-700">
+                <span className="text-xs text-gray-400 mr-2">#{item.id}</span>
+                {item.reason}
+              </p>
+            </li>
+          ))}
+        </ul>
+      );
+    case 'q3':
+      return (
+        <ul className="divide-y divide-gray-100">
+          {signals.q3.map((c, i) => (
+            <li key={`q3-${c.identity}-${i}`} className="py-2">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-gray-800">{personName(c.rows)}</p>
+                <span className="text-xs text-gray-400">{c.rows.length} filas</span>
+              </div>
+              <p className="text-xs text-gray-500">Rutas: {c.rutas.join(' · ')}</p>
+              <p className="text-xs text-gray-500">
+                Estados:{' '}
+                {c.estados.map((estado, j) => (
+                  <span key={`q3s-${c.identity}-${j}`}>
+                    {j > 0 && ' · '}
+                    <span
+                      className={
+                        isGraduatedStatus(estado)
+                          ? 'text-emerald-600 font-semibold'
+                          : ''
+                      }
+                    >
+                      {estado || '—'}
+                    </span>
+                  </span>
+                ))}
+              </p>
+              <p className="text-xs text-gray-400">Fechas: {c.fechas.join(' · ') || '—'}</p>
+            </li>
+          ))}
+        </ul>
+      );
+  }
+};
 
 interface SignalCardProps {
   title: string;
@@ -57,6 +307,7 @@ interface SignalCardProps {
   hint?: string;
   badge?: string;
   caveat?: boolean;
+  caveatText?: string;
   children: React.ReactNode;
 }
 
@@ -68,6 +319,7 @@ const SignalCard: React.FC<SignalCardProps> = ({
   hint,
   badge,
   caveat,
+  caveatText = CANDIDATE_CAVEAT,
   children,
 }) => (
   <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
@@ -90,7 +342,7 @@ const SignalCard: React.FC<SignalCardProps> = ({
     </div>
     {caveat && (
       <p className="mt-3 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2">
-        {CANDIDATE_CAVEAT}
+        {caveatText}
       </p>
     )}
     <div className="mt-3">{children}</div>
@@ -108,6 +360,13 @@ const AuditoriaBoard: React.FC = () => {
     () => computeAuditSignals(filteredData, corruptedItems, syncStats),
     [filteredData, corruptedItems, syncStats]
   );
+
+  // ── Modal "Ver más" (AUD-13): estado + stale-guard (AD-3) ──
+  // Hooks van ANTES de los early-returns de loading/empty (regla de hooks).
+  const [openModal, setOpenModal] = useState<ModalSignal | null>(null);
+  useEffect(() => {
+    setOpenModal(null);
+  }, [filteredData]);
 
   // ── Loading / Empty states (AUD-1) ──
   if (isSyncing) {
@@ -221,7 +480,7 @@ const AuditoriaBoard: React.FC = () => {
             <EmptyList />
           ) : (
             <ul className="divide-y divide-gray-100">
-              {signals.duplicados.slice(0, LIST_LIMIT).map((g, i) => (
+              {signals.duplicados.slice(0, VER_MAS_LIMIT).map((g, i) => (
                 <li key={`dup-${g.identity}-${i}`} className="py-2">
                   <div className="flex items-center justify-between">
                     <p className="text-sm font-medium text-gray-800">{personName(g.rows)}</p>
@@ -238,7 +497,9 @@ const AuditoriaBoard: React.FC = () => {
               ))}
             </ul>
           )}
-          <MoreNotice total={signals.duplicados.length} shown={Math.min(signals.duplicados.length, LIST_LIMIT)} />
+          {signals.duplicados.length > VER_MAS_LIMIT && (
+            <VerMasButton onClick={() => setOpenModal('duplicados')} />
+          )}
         </SignalCard>
 
         {/* Multi-ruta Q1 (AUD-3) — candidatos */}
@@ -255,7 +516,7 @@ const AuditoriaBoard: React.FC = () => {
             <EmptyList />
           ) : (
             <ul className="divide-y divide-gray-100">
-              {signals.q1.slice(0, LIST_LIMIT).map((c, i) => (
+              {signals.q1.slice(0, VER_MAS_LIMIT).map((c, i) => (
                 <li key={`q1-${c.identity}-${i}`} className="py-2">
                   <div className="flex items-center justify-between">
                     <p className="text-sm font-medium text-gray-800">{personName(c.rows)}</p>
@@ -269,7 +530,9 @@ const AuditoriaBoard: React.FC = () => {
               ))}
             </ul>
           )}
-          <MoreNotice total={signals.q1.length} shown={Math.min(signals.q1.length, LIST_LIMIT)} />
+          {signals.q1.length > VER_MAS_LIMIT && (
+            <VerMasButton onClick={() => setOpenModal('q1')} />
+          )}
         </SignalCard>
 
         {/* Re-inscripción Q2 (AUD-4) — candidatos */}
@@ -286,7 +549,7 @@ const AuditoriaBoard: React.FC = () => {
             <EmptyList />
           ) : (
             <ul className="divide-y divide-gray-100">
-              {signals.q2.slice(0, LIST_LIMIT).map((c, i) => (
+              {signals.q2.slice(0, VER_MAS_LIMIT).map((c, i) => (
                 <li key={`q2-${c.identity}-${i}`} className="py-2">
                   <div className="flex items-center justify-between">
                     <p className="text-sm font-medium text-gray-800">{personName(c.rows)}</p>
@@ -300,7 +563,9 @@ const AuditoriaBoard: React.FC = () => {
               ))}
             </ul>
           )}
-          <MoreNotice total={signals.q2.length} shown={Math.min(signals.q2.length, LIST_LIMIT)} />
+          {signals.q2.length > VER_MAS_LIMIT && (
+            <VerMasButton onClick={() => setOpenModal('q2')} />
+          )}
         </SignalCard>
 
         {/* ND cédula (AUD-5) */}
@@ -315,7 +580,7 @@ const AuditoriaBoard: React.FC = () => {
             <EmptyList />
           ) : (
             <ul className="divide-y divide-gray-100">
-              {signals.ndCedula.rows.slice(0, LIST_LIMIT).map(r => (
+              {signals.ndCedula.rows.slice(0, VER_MAS_LIMIT).map(r => (
                 <li key={`nd-${r.id}`} className="py-1.5 flex items-center justify-between">
                   <p className="text-sm text-gray-700">
                     <span className="text-xs text-gray-400 mr-2">#{r.id}</span>
@@ -326,7 +591,9 @@ const AuditoriaBoard: React.FC = () => {
               ))}
             </ul>
           )}
-          <MoreNotice total={signals.ndCedula.rows.length} shown={Math.min(signals.ndCedula.rows.length, LIST_LIMIT)} />
+          {signals.ndCedula.rows.length > VER_MAS_LIMIT && (
+            <VerMasButton onClick={() => setOpenModal('nd')} />
+          )}
         </SignalCard>
 
         {/* Anomalías fecha/edad (AUD-6) */}
@@ -341,13 +608,8 @@ const AuditoriaBoard: React.FC = () => {
             <EmptyList />
           ) : (
             <ul className="divide-y divide-gray-100">
-              {[
-                ...signals.anomalias.futura.map(a => ({ row: a.row, reason: 'Fecha de nacimiento futura' })),
-                ...signals.anomalias.inclusionPrevia.map(a => ({ row: a.row, reason: 'Inclusión anterior al registro' })),
-                ...signals.anomalias.edadMismatch.map(a => ({ row: a.row, reason: 'Edad no coincide con fecha de nacimiento' })),
-                ...signals.anomalias.edadRegistroMenor.map(a => ({ row: a.row, reason: 'Edad menor que edad de registro' })),
-              ]
-                .slice(0, LIST_LIMIT)
+              {flattenAnomalias(signals.anomalias)
+                .slice(0, VER_MAS_LIMIT)
                 .map((entry, i) => (
                   <li key={`an-${entry.row.id}-${i}`} className="py-1.5">
                     <p className="text-sm text-gray-700">
@@ -359,15 +621,9 @@ const AuditoriaBoard: React.FC = () => {
                 ))}
             </ul>
           )}
-          <MoreNotice
-            total={
-              signals.anomalias.futura.length +
-              signals.anomalias.inclusionPrevia.length +
-              signals.anomalias.edadMismatch.length +
-              signals.anomalias.edadRegistroMenor.length
-            }
-            shown={LIST_LIMIT}
-          />
+          {flattenAnomalias(signals.anomalias).length > VER_MAS_LIMIT && (
+            <VerMasButton onClick={() => setOpenModal('anomalias')} />
+          )}
         </SignalCard>
 
         {/* Vocabulario de estados (AUD-7) */}
@@ -384,7 +640,7 @@ const AuditoriaBoard: React.FC = () => {
             <ul className="divide-y divide-gray-100">
               {signals.vocabulario.valores
                 .filter(v => !v.conocido)
-                .slice(0, LIST_LIMIT)
+                .slice(0, VER_MAS_LIMIT)
                 .map(v => (
                   <li key={`voc-${v.valor}`} className="py-1.5 flex items-center justify-between">
                     <p className="text-sm text-gray-700">{v.valor}</p>
@@ -392,6 +648,9 @@ const AuditoriaBoard: React.FC = () => {
                   </li>
                 ))}
             </ul>
+          )}
+          {signals.vocabulario.valores.filter(v => !v.conocido).length > VER_MAS_LIMIT && (
+            <VerMasButton onClick={() => setOpenModal('vocabulario')} />
           )}
         </SignalCard>
 
@@ -435,7 +694,7 @@ const AuditoriaBoard: React.FC = () => {
             </p>
           ) : (
             <ul className="divide-y divide-gray-100">
-              {signals.corruptos.items.slice(0, LIST_LIMIT).map(item => (
+              {signals.corruptos.items.slice(0, VER_MAS_LIMIT).map(item => (
                 <li key={`cor-${item.id}`} className="py-1.5">
                   <p className="text-sm text-gray-700">
                     <span className="text-xs text-gray-400 mr-2">#{item.id}</span>
@@ -445,21 +704,68 @@ const AuditoriaBoard: React.FC = () => {
               ))}
             </ul>
           )}
-          <MoreNotice total={signals.corruptos.items.length} shown={Math.min(signals.corruptos.items.length, LIST_LIMIT)} />
+          {/* AD-8: sin modal si no hay items (best-effort), aunque count > 0. */}
+          {signals.corruptos.items.length > VER_MAS_LIMIT && (
+            <VerMasButton onClick={() => setOpenModal('corruptos')} />
+          )}
         </SignalCard>
       </div>
 
-      {/* ── Q3 Callout (AUD-10) ── */}
-      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
-        <Info size={20} className="text-amber-600 mt-0.5 shrink-0" />
-        <div className="text-sm text-amber-800">
-          <p className="font-semibold">Egreso repetido (Q3)</p>
-          <p>
-            Egreso repetido: no respondible sin fecha de egreso. El modelo de
-            datos no expone el campo fechaEgreso, por lo que esta señal no es
-            respondible desde el dataset actual.
-          </p>
-        </div>
+      {/* ── Q3 Egreso repetido (AUD-10, AD-7): tarjeta candidata reemplaza el callout ── */}
+      <div className="mt-4">
+        <SignalCard
+          title="Egreso repetido (Q3)"
+          icon={<Info size={20} />}
+          tone="bg-amber-50 text-amber-600"
+          count={formatNumber(signals.q3.length)}
+          hint="candidatos con estado egresado en ≥2 filas"
+          badge="candidatos"
+          caveat
+          caveatText={Q3_CAVEAT}
+        >
+          {signals.q3.length === 0 ? (
+            <EmptyList />
+          ) : (
+            <ul className="divide-y divide-gray-100">
+              {signals.q3.slice(0, VER_MAS_LIMIT).map((c, i) => (
+                <li key={`q3-${c.identity}-${i}`} className="py-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium text-gray-800">{personName(c.rows)}</p>
+                    <span className="text-xs text-gray-400">{c.rows.length} filas</span>
+                  </div>
+                  <p className="text-xs text-gray-500">Rutas: {c.rutas.join(' · ')}</p>
+                  <p className="text-xs text-gray-500">
+                    Estados:{' '}
+                    {c.estados.map((estado, j) => (
+                      <span key={`q3c-${c.identity}-${j}`}>
+                        {j > 0 && ' · '}
+                        <span
+                          className={
+                            isGraduatedStatus(estado)
+                              ? 'text-emerald-600 font-semibold'
+                              : ''
+                          }
+                        >
+                          {estado || '—'}
+                        </span>
+                      </span>
+                    ))}
+                  </p>
+                  <p className="text-xs text-gray-400">Fechas: {c.fechas.join(' · ') || '—'}</p>
+                </li>
+              ))}
+            </ul>
+          )}
+          {signals.q3.length > VER_MAS_LIMIT && (
+            <VerMasButton onClick={() => setOpenModal('q3')} />
+          )}
+        </SignalCard>
+        {/* Nota de limitación bajo la tarjeta (AD-7): preserva la frase del test AUD-10. */}
+        <p className="text-xs text-gray-400 mt-3">
+          Egreso repetido: no respondible sin fecha de egreso. El modelo de
+          datos no expone el campo fechaEgreso, por lo que esta señal no es
+          respondible desde el dataset actual.
+        </p>
       </div>
 
       {/* ── Filtros + Info ── */}
@@ -499,6 +805,20 @@ const AuditoriaBoard: React.FC = () => {
           />
         </div>
       </div>
+
+      {/* ── Modal "Ver más" (AUD-13, AD-1/AD-2/AD-4) ── */}
+      {openModal && (
+        <AuditListModal
+          title={MODAL_META[openModal].title}
+          icon={MODAL_META[openModal].icon}
+          tone={MODAL_META[openModal].tone}
+          count={modalCount(signals, openModal)}
+          caveat={MODAL_META[openModal].caveat}
+          onClose={() => setOpenModal(null)}
+        >
+          {renderModalChildren(signals, openModal)}
+        </AuditListModal>
+      )}
     </BoardShell>
   );
 };
