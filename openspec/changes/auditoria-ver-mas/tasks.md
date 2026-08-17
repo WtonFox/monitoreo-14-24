@@ -27,9 +27,9 @@ Chain strategy: feature-branch-chain
 
 ## Phase 1: S1 — Heurística Q3 (PR 1)
 
-- [ ] 1.1 `utils/auditSignals.ts`: importar `isGraduatedStatus` de `./normalize`; definir `export interface Q3Candidate { identity; rows; rutas; estados; fechas; cedulaConfirmada? }`; añadir `q3: Q3Candidate[]` a `AuditSignals`. Gate: `npm run typecheck`.
-- [ ] 1.2 En el loop de `groups` de `computeAuditSignals`: rama Q3 **independiente** — `rows.length >= 2 && rows.some(isGraduatedStatus)` → push candidato con `rutas` (reutiliza `routes`), `estados`/`fechas` mapeando `rows` en orden, `cedulaConfirmada: hasConfirmedCedula(rows)`. NO cambiar semántica Q1/Q2/duplicados. Gate: `npm run typecheck`.
-- [ ] 1.3 Unit specs `utils/auditSignals.spec.ts` (describe Q3 AUD-10): (1) 2 filas + 1 "Egresado pasantía" → 1 candidato con identity/rows/rutas/estados/fechas; (2) 2 filas sin egresado → vacío; (3) 1 fila egresado → vacío (≥2); (4) 1 fila sin egresado → vacío; (5) overlap 2 rutas + egresado → en q1 Y q3; (6) misma ruta fechas distantes + egresado → q2 Y q3; (7) `estados` mapea `rows` en orden; (8) corruptos → q3=0. Fixture `row()`. Gate: `npx vitest run --project unit utils/auditSignals.spec.ts`.
+- [x] 1.1 `utils/auditSignals.ts`: importar `isGraduatedStatus` de `./normalize`; definir `export interface Q3Candidate { identity; rows; rutas; estados; fechas; cedulaConfirmada? }`; añadir `q3: Q3Candidate[]` a `AuditSignals`. Gate: `npm run typecheck`.
+- [x] 1.2 En el loop de `groups` de `computeAuditSignals`: rama Q3 **independiente** — `rows.length >= 2 && rows.some(isGraduatedStatus)` → push candidato con `rutas` (reutiliza `routes`), `estados`/`fechas` mapeando `rows` en orden, `cedulaConfirmada: hasConfirmedCedula(rows)`. NO cambiar semántica Q1/Q2/duplicados. Gate: `npm run typecheck`.
+- [x] 1.3 Unit specs `utils/auditSignals.spec.ts` (describe Q3 AUD-10): (1) 2 filas + 1 "Egresado pasantía" → 1 candidato con identity/rows/rutas/estados/fechas; (2) 2 filas sin egresado → vacío; (3) 1 fila egresado → vacío (≥2); (4) 1 fila sin egresado → vacío; (5) overlap 2 rutas + egresado → en q1 Y q3; (6) misma ruta fechas distantes + egresado → q2 Y q3; (7) `estados` mapea `rows` en orden; (8) corruptos → q3=0. Fixture `row()`. Gate: `npx vitest run --project unit utils/auditSignals.spec.ts`.
 
 ## Phase 2: S2 — Modal + límite 15 (PR 2)
 
